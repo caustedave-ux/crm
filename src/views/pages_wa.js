@@ -604,11 +604,20 @@ function sessionPage(ctx) {
         notes: String((mapping && mapping.notes) || ''), firstSeenAt: String(active.ad_first_seen_at || '').slice(0, 16),
       };
     }
+    // 广告条默认只占一行（标题 + ID + 两个按钮），详情收到折叠里，省出消息区高度。
     const adAttributionHtml = !activeAdConfig ? '' : `
       <div class="wa-ad-strip">
         <div class="wa-ad-icon"><i class="bi bi-megaphone-fill"></i></div>
         <div class="wa-ad-main">
-          <div class="wa-ad-title"><span class="badge text-bg-primary">广告</span><b>${esc(activeAdConfig.displayName)}</b></div>
+          <div class="wa-ad-title"><span class="badge text-bg-primary">广告</span><b>${esc(activeAdConfig.displayName)}</b>${activeAdConfig.sourceId ? '<code class="wa-ad-id">' + esc(activeAdConfig.sourceId) + '</code>' : ''}</div>
+        </div>
+        <div class="wa-ad-actions">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#waAdDetails" aria-expanded="false" aria-controls="waAdDetails"><i class="bi bi-chevron-down me-1"></i>详情</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#waAdEditor" aria-expanded="false" aria-controls="waAdEditor"><i class="bi bi-pencil"></i> 标记广告</button>
+        </div>
+      </div>
+      <div class="collapse" id="waAdDetails">
+        <div class="wa-ad-details">
           <div class="wa-ad-meta">
             ${activeAdConfig.sourceId ? '<span>广告 ID <code>' + esc(activeAdConfig.sourceId) + '</code></span>' : ''}
             ${activeAdConfig.campaignName ? '<span>广告系列：' + esc(activeAdConfig.campaignName) + '</span>' : ''}
@@ -617,11 +626,10 @@ function sessionPage(ctx) {
             ${activeAdConfig.firstSeenAt ? '<span>首次进入：' + esc(activeAdConfig.firstSeenAt) + '</span>' : ''}
           </div>
           ${activeAdConfig.body ? '<div class="wa-ad-copy">' + esc(activeAdConfig.body) + '</div>' : ''}
-        </div>
-        <div class="wa-ad-actions">
-          ${activeAdConfig.sourceUrl ? '<a class="btn btn-sm btn-outline-secondary" href="' + esc(activeAdConfig.sourceUrl) + '" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i> 落地页</a>' : ''}
-          ${activeAdConfig.sourceId ? '<button type="button" class="btn btn-sm btn-outline-secondary wa-ad-copy-id" data-copy="' + esc(activeAdConfig.sourceId) + '"><i class="bi bi-copy"></i> 复制 ID</button>' : ''}
-          <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#waAdEditor" aria-expanded="false" aria-controls="waAdEditor"><i class="bi bi-pencil"></i> 标记广告</button>
+          <div class="wa-ad-detail-actions">
+            ${activeAdConfig.sourceUrl ? '<a class="btn btn-sm btn-outline-secondary" href="' + esc(activeAdConfig.sourceUrl) + '" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i> 落地页</a>' : ''}
+            ${activeAdConfig.sourceId ? '<button type="button" class="btn btn-sm btn-outline-secondary wa-ad-copy-id" data-copy="' + esc(activeAdConfig.sourceId) + '"><i class="bi bi-copy"></i> 复制 ID</button>' : ''}
+          </div>
         </div>
       </div>
       <div class="collapse" id="waAdEditor">
@@ -695,6 +703,21 @@ function sessionPage(ctx) {
         </form>
       </div>
       <div id="waMsgs" class="wa-messages">${msgs.map(m => msgHtml(m, active, msgByWaId)).join('') || '<div class="text-muted small py-4 text-center">暂无消息</div>'}</div>
+      ${'' /* 快捷回复管理放在输入框前面：原来在输入框下面，输入框 sticky 置底后它会被盖住、点不到。 */}
+      <details class="wa-quick-manage px-3 pt-2">
+          <summary class="small text-muted">管理快捷回复</summary>
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            ${quickReplies.map(r => `<form method="post" action="/whatsapp/quick-replies/${r.id}/delete" class="d-inline"><input type="hidden" name="chat_id" value="${active.id}"><button class="btn btn-sm btn-light border">${esc(r.title)} ×</button></form>`).join('') || '<span class="small text-muted">还没有快捷回复</span>'}
+          </div>
+          <div class="input-group input-group-sm mt-2">
+            <input class="form-control" name="title" form="waSaveReply" placeholder="名称，如：询问型号和数量" required>
+            <button class="btn btn-outline-secondary" form="waSaveReply">保存当前输入内容</button>
+          </div>
+          <form method="post" action="/whatsapp/quick-replies" id="waSaveReply">
+            <input type="hidden" name="chat_id" value="${active.id}">
+            <input type="hidden" name="content" id="waQuickContent">
+          </form>
+      </details>
       <form method="post" action="/whatsapp/send" class="wa-compose" id="waSendForm" enctype="multipart/form-data">
         <input type="hidden" name="chat_id" value="${active.id}">
         <input type="hidden" name="quote_id" id="waQuoteId" value="">
@@ -716,25 +739,11 @@ function sessionPage(ctx) {
           <div id="waAttachmentItems" class="wa-attachment-items"></div>
         </div>
         <div class="d-flex gap-2 align-items-end mt-2">
-          <textarea class="form-control" name="text" rows="2" placeholder="输入消息，可粘贴图片，Ctrl+Enter 发送" id="waText"></textarea>
+          <textarea class="form-control" name="text" rows="3" placeholder="输入消息，可粘贴图片，Ctrl+Enter 发送" id="waText"></textarea>
           <button class="btn btn-primary" ${v.status === 'online' ? '' : 'disabled'}><i class="bi bi-send me-1"></i>发送</button>
         </div>
         ${v.status === 'online' ? '' : '<div class="form-text text-danger">当前未连接，无法发送。</div>'}
       </form>
-      <details class="mt-2 px-3 pb-3">
-          <summary class="small text-muted">管理快捷回复</summary>
-          <div class="d-flex flex-wrap gap-2 mt-2">
-            ${quickReplies.map(r => `<form method="post" action="/whatsapp/quick-replies/${r.id}/delete" class="d-inline"><input type="hidden" name="chat_id" value="${active.id}"><button class="btn btn-sm btn-light border">${esc(r.title)} ×</button></form>`).join('') || '<span class="small text-muted">还没有快捷回复</span>'}
-          </div>
-          <div class="input-group input-group-sm mt-2">
-            <input class="form-control" name="title" form="waSaveReply" placeholder="名称，如：询问型号和数量" required>
-            <button class="btn btn-outline-secondary" form="waSaveReply">保存当前输入内容</button>
-          </div>
-          <form method="post" action="/whatsapp/quick-replies" id="waSaveReply">
-            <input type="hidden" name="chat_id" value="${active.id}">
-            <input type="hidden" name="content" id="waQuickContent">
-          </form>
-      </details>
 `;
   }
 
@@ -1077,12 +1086,32 @@ function sessionPage(ctx) {
           if (box) box.scrollTop = box.scrollHeight;
           var ta = document.getElementById('waText');
           var form = document.getElementById('waSendForm');
+          // 输入框自动长高（2026-11-22）：rows=3 起步，多打几行时跟着长，最高 160px 后框内滚动，
+          // 避免原来 rows=2、打的字被截看不到。程序填入草稿后也要调一次（见下面各 ta.value 赋值处）。
+          function autoGrowWaText() {
+            if (!ta) return;
+            ta.style.height = 'auto';
+            ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
+            // 输入框长高时跟随滚动（2026-11-22）：页面已滚到底看消息时，打字把框撑高会把发送按钮
+            // 顶出视口底边，这里把超出部分滚回来，发送按钮始终可见。刚打开页面（scrollY=0）不触发，
+            // 落地滚动由下面首次打开的 scrollTo 负责，避免两者打架。
+            try {
+              if ((window.scrollY || 0) > 0 && form) {
+                var _fb = form.getBoundingClientRect().bottom;
+                if (_fb > window.innerHeight - 4) window.scrollBy(0, _fb - window.innerHeight + 8);
+              }
+            } catch (e) {}
+          }
           if (ta && form) ta.addEventListener('keydown', function (e) {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
               e.preventDefault();
               if (form.requestSubmit) form.requestSubmit();
             }
           });
+          if (ta) {
+            ta.addEventListener('input', autoGrowWaText);
+            autoGrowWaText();
+          }
 
           var attachmentFiles = [];
           var attachmentObjectUrls = [];
@@ -1456,6 +1485,7 @@ function sessionPage(ctx) {
                   renderAttachments();
                   if (firstItemSent) {
                     if (ta) ta.value = '';
+                    autoGrowWaText();
                     try { sessionStorage.removeItem('waDraft:' + chatId); } catch (err) {}
                     clearQuote();
                   }
@@ -1466,6 +1496,7 @@ function sessionPage(ctx) {
                 if (!files.length) {
                   try { sessionStorage.removeItem('waDraft:' + chatId); } catch (err) {}
                   if (ta) ta.value = '';
+                  autoGrowWaText();
                   clearQuote();
                 } else {
                   clearAttachment();
@@ -1492,7 +1523,7 @@ function sessionPage(ctx) {
           }
           var qr = document.getElementById('waQuickReply');
           if (qr && ta) qr.addEventListener('change', function () {
-            if (qr.value) { ta.value = qr.value; ta.focus(); }
+            if (qr.value) { ta.value = qr.value; ta.focus(); autoGrowWaText(); }
           });
           var ai = document.getElementById('waAiDraft');
           var aiState = document.getElementById('waAiState');
@@ -1501,7 +1532,7 @@ function sessionPage(ctx) {
             if (aiState) aiState.textContent = '正在读取对话并起草…';
             fetch('/api/wa/draft?chat_id=' + chatId, { headers: { 'Accept': 'application/json' } })
               .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'AI 起草失败'); return d; }); })
-              .then(function (d) { ta.value = d.text || ''; ta.focus(); if (aiState) aiState.textContent = '草稿已填入，请核对后发送'; })
+              .then(function (d) { ta.value = d.text || ''; ta.focus(); autoGrowWaText(); if (aiState) aiState.textContent = '草稿已填入，请核对后发送'; })
               .catch(function (e) { if (aiState) aiState.textContent = e.message || 'AI 起草失败'; })
               .finally(function () { ai.disabled = false; });
           });
@@ -1530,6 +1561,7 @@ function sessionPage(ctx) {
             }).then(function (d) {
               ta.value = d.text || '';
               ta.focus();
+              autoGrowWaText();
               try { sessionStorage.setItem('waDraft:' + chatId, ta.value); } catch (e) {}
               if (aiState) aiState.textContent = '翻译完成，请核对后发送';
             }).catch(function (e) {
@@ -1594,7 +1626,7 @@ function sessionPage(ctx) {
           }
           try {
             var draft = sessionStorage.getItem('waDraft:' + chatId);
-            if (draft && ta && !ta.value) ta.value = draft;
+            if (draft && ta && !ta.value) { ta.value = draft; autoGrowWaText(); }
           } catch (e) {}
           if (chatId) {
             pollNow = function () {
@@ -2033,6 +2065,15 @@ function sessionPage(ctx) {
           }, 250);
         });
         initConversation();
+        // 首次打开会话时把页面滚到底（2026-11-22）：消息区在页签/客户头/广告条下面，
+        // 不滚的话首屏只能看到一两行。滚到底后最新消息和完整输入框一次可见，
+        // 页签和客户头是 sticky 的，不会滚丢。只往下滚、不往上滚；
+        // 轮询刷新走 loadChat + restoreChatScroll，不经过这里，不会反复跳动。
+        try {
+          var _doc = document.documentElement;
+          var _max = Math.max(_doc.scrollHeight, document.body ? document.body.scrollHeight : 0) - (window.innerHeight || 0);
+          if (_max > (window.scrollY || 0) + 40) window.scrollTo(0, _max);
+        } catch (e) {}
       })();
     </script>`;
   return page({ title: 'WhatsApp 会话', active: 'wa', user: ctx.user, content, flash: ctx.flash() });

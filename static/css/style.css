@@ -575,10 +575,10 @@ a:hover{color:var(--neo-coral);}
 .wa-mini-tag{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid var(--neo-line);border-radius:5px;padding:1px 5px;font-size:9px;color:var(--neo-muted);}
 .wa-mini-tag-green{background:#e8f0ea;border-color:#c8dccf;color:#1f4d3d;}
 .wa-mini-tag-muted{background:var(--neo-surface-2);}
-.wa-conversation-head{display:flex;align-items:center;gap:11px;padding:13px 16px;border-bottom:1px solid var(--neo-line);background:var(--neo-surface);}
-.wa-bindbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--neo-line);background:var(--neo-surface-2);flex-wrap:wrap;}
+.wa-conversation-head{display:flex;align-items:center;gap:11px;padding:9px 16px;border-bottom:1px solid var(--neo-line);background:var(--neo-surface);}
+.wa-bindbar{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--neo-line);background:var(--neo-surface-2);flex-wrap:wrap;}
 .wa-bindbar form:first-child{min-width:260px;}
-.wa-note-strip{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:8px 14px;border-bottom:1px solid var(--neo-line);background:#fbfaf6;}
+.wa-note-strip{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:6px 14px;border-bottom:1px solid var(--neo-line);background:#fbfaf6;}
 .wa-note-strip.has-note{background:#fbf6e8;border-bottom-color:#e4d6b5;}
 .wa-note-content{display:flex;align-items:flex-start;gap:8px;min-width:0;flex:1;}
 .wa-note-content>i{margin-top:2px;color:#8b6b24;font-size:13px;}
@@ -650,7 +650,8 @@ a:hover{color:var(--neo-coral);}
 .wa-compose-quote>i{flex:0 0 auto;color:var(--neo-coral);}
 .wa-compose-quote-sender{font-weight:700;line-height:1.3;}
 .wa-compose-quote-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--neo-muted);line-height:1.4;}
-.wa-compose{padding:12px 16px;border-top:1px solid var(--neo-line);background:var(--neo-surface);}
+.wa-compose{padding:10px 16px;border-top:1px solid var(--neo-line);background:var(--neo-surface);}
+#waText{max-height:160px;}
 .wa-compose-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
 .wa-attachment-preview{display:block;margin-top:9px;padding:8px 10px;border:1px solid var(--neo-line);border-radius:8px;background:var(--neo-surface-2);}
 .wa-attachment-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;font-size:12px;}
@@ -682,7 +683,12 @@ a:hover{color:var(--neo-coral);}
 .wa-side-document-meta{text-align:right;flex:0 0 auto;}
 .wa-side-documents-empty{padding:8px 0;color:var(--neo-muted);font-size:11px;}
 .wa-inbox > div:nth-child(2) > .card > .card-body{padding:0;}
-@media (max-width:991.98px){.wa-chat-list{max-height:300px}.wa-messages{height:44vh;min-height:320px}.wa-inbox > div:nth-child(2) > .card > .card-body{padding:0;}}
+@media (max-width:991.98px){.wa-chat-list{max-height:300px}.wa-messages{height:44vh;min-height:320px}.wa-inbox > div:nth-child(2) > .card > .card-body{padding:0;}
+/* 窄屏消息区定高 44vh（2026-11-22）：上面这条 .wa-messages{height:44vh} 本是窄屏的本意，
+   但被全局的 .wa-main-tab-panel[data-wa-main-panel="chat"]>.wa-messages{flex:1 1 auto;height:auto}
+   以更高优先级盖掉，消息区按 15 条内容撑到 1354px、页面拉到 3737px、输入框在三屏之外。
+   这里用更高优先级把它拉回来：消息区 44vh、框内滚动，输入框在首屏附近就能摸到。 */
+.wa-inbox.wa-3col #waChatPanel .wa-main-tab-panel[data-wa-main-panel="chat"] > .wa-messages{flex:0 0 auto;height:44vh;min-height:320px;}}
 
 /* WhatsApp desktop workbench: inbox, conversation workspace and contextual AI. */
 .wa-workbench-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;flex:0 0 auto;margin:0 0 10px;}
@@ -694,12 +700,12 @@ a:hover{color:var(--neo-coral);}
 .wa-inbox.wa-3col{display:grid;grid-template-columns:minmax(245px,.22fr) minmax(430px,.43fr) minmax(330px,.35fr);gap:10px;min-width:0;min-height:0;margin:0;}
 .wa-inbox.wa-3col>.wa-left-column,.wa-inbox.wa-3col>.wa-center-column,.wa-inbox.wa-3col>.wa-right-column{width:auto;min-width:0;margin:0;padding:0;}
 .wa-inbox.wa-3col>.wa-left-column,.wa-inbox.wa-3col>.wa-center-column{height:100%;min-height:0;}
-.wa-left-column>.card,.wa-center-column>.card{height:100%;min-height:0;display:flex;flex-direction:column;margin:0!important;overflow:hidden;}
+.wa-left-column>.card,.wa-center-column>.card{height:100%;min-height:0;display:flex;flex-direction:column;margin:0!important;overflow:clip;}
 .wa-left-column>.card>.card-body,.wa-center-column>.card>.card-body{flex:1;min-height:0;}
 .wa-left-column>.card>.card-body{display:flex;flex-direction:column;padding:12px;}
 .wa-left-column .wa-chat-list{flex:1;min-height:0;max-height:none;margin:0 -4px;}
 .wa-left-column .wa-chat-row{padding:10px 6px;}
-.wa-center-column>.card>.card-body{display:flex;flex-direction:column;padding:0;overflow:hidden;}
+.wa-center-column>.card>.card-body{display:flex;flex-direction:column;padding:0;overflow:clip;}
 .wa-center-column .wa-main-tabs{display:flex;align-items:stretch;flex:0 0 auto;gap:3px;overflow:auto;padding:6px 9px;border-bottom:1px solid #332942;background:#191323;}
 .wa-main-tabs button{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;padding:8px 10px;border:0;border-radius:6px;background:transparent;color:#b9aec8;font-size:10px;font-weight:650;white-space:nowrap;}
 .wa-main-tabs button:hover{background:#281b38;color:#fff;}
@@ -824,22 +830,28 @@ a:hover{color:var(--neo-coral);}
 
 @media (min-width:992px){
   .page-wa .content{
-    height:100vh;
-    height:100dvh;
-    min-height:0;
+    /* 2026-11-22 聊天区改大：原来 height:100dvh 把整页锁死在视口高度，
+       中间栏被页头 + 统计卡 + 页签 + 客户头 + 备注 + 广告条 + 绑定栏 + 输入框
+       挤得只剩 120px、只能看两行消息。改成高度随内容走、文档滚动：
+       中间栏按内容长高，页面在最右边出现窗口滚动条（紫色，见下），
+       输入框 sticky 置底、页签和客户头 sticky 置顶，左右两栏 sticky 跟随。
+       横向仍锁死，避免三栏被横向撑开。 */
+    height:auto;
+    min-height:100vh;
+    min-height:100dvh;
     padding-bottom:16px;
     display:flex;
     flex-direction:column;
-    /* 页面兜底滚动（2026-11-22）：原来 overflow:hidden 把整页锁死，
-       右栏内容超出视口时既看不到页面滚动条、也拉不到底。
-       改成纵向 auto：平时三栏各滚各的、页面不出现滚动条；
-       内容一旦超出视口高度，页面本身在最右边出现滚动条，能拉到底。
-       横向仍锁死，避免三栏被横向撑开。 */
-    overflow-x:hidden;
-    overflow-y:auto;
-    scrollbar-width:thin;
-    scrollbar-color:#7c3aed #171725;
+    /* 横向用 clip 不用 hidden：clip 只裁剪、不产生滚动容器，页签/客户头/输入框的
+       sticky 才能贴住窗口滚动；用 hidden 的话 sticky 会被锁在不滚动的祖先里失效。 */
+    overflow-x:clip;
   }
+  /* 文档滚动条（窗口最右边，紫色）：内容不再锁在 .content 里滚，滚动条回到窗口上。 */
+  body.page-wa{scrollbar-width:thin;scrollbar-color:#7c3aed #171725;}
+  body.page-wa::-webkit-scrollbar{width:10px;height:10px;}
+  body.page-wa::-webkit-scrollbar-track{background:#171725;}
+  body.page-wa::-webkit-scrollbar-thumb{background:#7c3aed;border-radius:999px;border:2px solid #171725;}
+  body.page-wa::-webkit-scrollbar-thumb:hover{background:#a855f7;}
   .page-wa .content > .page-heading,
   .page-wa .content > .wa-account-details,
   .page-wa .content > .wa-auto-reply-bar{flex:0 0 auto;}
@@ -855,7 +867,10 @@ a:hover{color:var(--neo-coral);}
   #waChatPanel > .card > .card-body{display:flex;flex-direction:column;padding:0;min-height:0;}
   #waChatPanel .wa-conversation-head,#waChatPanel .wa-bindbar,#waChatPanel .wa-compose{flex:0 0 auto;}
   #waChatPanel .wa-messages{flex:1 1 auto;height:auto;min-height:0;}
-  #waChatPanel > .card > .card-body{overflow-y:auto;overscroll-behavior:contain;}
+  #waChatPanel > .card > .card-body{overflow-y:visible;overscroll-behavior:contain;}
+  /* 聊天页签不用 overflow:auto（2026-11-22）：auto 会把它变成滚动容器，
+     里面的输入框 sticky 就贴不住窗口了；卡片本身有 clip 裁剪，内容不会漏出去。 */
+  #waChatPanel .wa-main-tab-panel[data-wa-main-panel="chat"]{overflow:visible;}
   #waChatPanel .wa-messages{min-height:180px;}
   #waChatPanel .wa-compose{
     position:sticky;
@@ -863,6 +878,11 @@ a:hover{color:var(--neo-coral);}
     z-index:12;
     box-shadow:0 -8px 22px rgba(31,42,55,.08);
   }
+  /* 页签和客户头滚动时贴在顶部（2026-11-22）：页面往下滚看消息时，正在和谁聊、切哪个页签
+     一直可见；消息区往上滚也不会被它们盖住。输入框仍是 sticky 置底。 */
+  .wa-center-column .wa-main-tabs{position:sticky;top:0;z-index:11;}
+  .wa-main-tab-panel[data-wa-main-panel="chat"] > .wa-conversation-head{position:sticky;top:48px;z-index:11;}
+  .wa-quick-manage summary{cursor:pointer;}
   #waCustomerPanel > .card > .card-body{overflow:auto;}
 }
 
@@ -1038,17 +1058,24 @@ a:hover{color:var(--neo-coral);}
   .wa-auto-reply-action .btn { width: 100%; }
 }
 
+/* 广告条默认只占一行（2026-11-22）：原来标题 + 多行 meta + 正文 + 三个按钮要 180px，
+   把消息区压到只剩 120px。改成紧凑条 + “详情”折叠，详情里仍有全部信息和落地页/复制 ID。 */
 .wa-ad-strip {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
-  margin: 8px 12px 0;
-  padding: 10px 12px;
+  margin: 6px 12px 0;
+  padding: 8px 12px;
   border: 1px solid #b9d7ff;
   border-radius: 12px;
   background: linear-gradient(135deg, #f5f9ff, #eef6ff);
   color: #123;
 }
+.wa-ad-strip .wa-ad-title b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wa-ad-strip .wa-ad-id { flex: 0 0 auto; padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,.8); color: #234; font-size: 11px; }
+.wa-ad-details { margin: 0 12px 8px; padding: 10px 12px; border: 1px dashed #b9d7ff; border-top: 0; border-radius: 0 0 12px 12px; background: #fbfdff; }
+.wa-ad-details .wa-ad-copy { white-space: normal; max-width: none; }
+.wa-ad-detail-actions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
 .wa-ad-icon {
   width: 32px;
   height: 32px;
@@ -1275,7 +1302,7 @@ a:hover { color: #c18bff; }
 .wa-message .text-muted { color: #c7bad4 !important; }
 .wa-auto-reply-bar, .wa-account-details { border-color: #3b2c4c; background: #1b1426; color: #ece4f4; }
 .wa-auto-reply-note { color: #b9aec8; }
-.wa-ad-strip, .wa-ad-editor { border-color: #4e3b68; background: #21182d; color: #e9def4; }
+.wa-ad-strip, .wa-ad-editor, .wa-ad-details { border-color: #4e3b68; background: #21182d; color: #e9def4; }
 .wa-ad-meta, .wa-ad-copy { color: #c7b8d8; }
 .wa-chat-item.has-unread { background-color: #291d37; }
 .wa-side-document-main, .wa-customer-panel { color: #eee7f4; }
@@ -1516,18 +1543,30 @@ a:hover { color: #c18bff; }
 
 @media (min-width: 992px) {
   .page-wa .content > .wa-workbench-metrics { flex: 0 0 auto; }
-  .wa-inbox.wa-3col { flex: 1 1 auto; display: grid; grid-template-rows: minmax(0, 1fr); height: auto;
-    /* 网格最低高度（2026-11-22）：视口很矮时三栏会被 flex 压到内容最小高度以下，
-       里面的 overflow:hidden 直接裁掉输入框等内容，页面又报不出溢出、滑不动。
-       锁一个 420px 下限，压不下去时宁可让 .page-wa .content 纵向滚动（见上），
-       也不锁死。824px 高的常规窗口三栏约 560px，不受影响。 */
+  .wa-inbox.wa-3col { flex: 1 1 auto; display: grid; grid-template-rows: auto; height: auto;
+    /* 2026-11-22 聊天区改大：行高原来是 minmax(0, 1fr)，被锁在视口高度里，
+       消息区只能分到 120px。改成 auto，行高由中间栏内容决定，页面纵向滚动。
+       左右两栏不跟中间栏一起长高：定高 + sticky，往下滚看消息时会话列表和 AI 助手还贴在原地。
+       左侧列表最多渲染 300 个会话，绝不能让行高按它内容算，否则行会被撑爆。
+       420px 下限保留，内容少时三栏不至于太矮。 */
     min-height: 420px; }
+  .wa-inbox.wa-3col > .wa-left-column, .wa-inbox.wa-3col > .wa-right-column {
+    height: calc(100dvh - 250px); min-height: 480px;
+    position: sticky; top: calc(var(--neo-topbar) + 12px);
+  }
+  .wa-inbox.wa-3col > .wa-center-column { height: auto; }
+  .wa-inbox.wa-3col > .wa-center-column > .card { height: auto; }
   .wa-inbox.wa-3col > .wa-left-column { grid-column: 1; grid-row: 1; }
   .wa-inbox.wa-3col > .wa-center-column { grid-column: 2; grid-row: 1; }
   .wa-inbox.wa-3col > .wa-right-column { grid-column: 3; grid-row: 1; }
   .wa-inbox.wa-3col > .wa-left-column > .card > .card-body { overflow: hidden; }
-  .wa-inbox.wa-3col #waChatPanel > .card > .card-body { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
-  .wa-inbox.wa-3col #waChatPanel .wa-main-tab-panel[data-wa-main-panel="chat"] > .wa-messages { min-height: 120px; }
+  .wa-inbox.wa-3col #waChatPanel > .card > .card-body { display: flex; flex-direction: column; overflow: clip; padding: 0; }
+  .wa-inbox.wa-3col #waChatPanel .wa-main-tab-panel[data-wa-main-panel="chat"] > .wa-messages {
+    /* 消息区定高 560px（2026-11-22）：原来是 flex:1 挤在 514px 的栏里，只剩 120px、两行消息。
+       现在栏高随内容走，消息区给足 560px（约 6 条气泡、10 行以上文字），框内滚动看历史；
+       打开会话时页面自动滚到消息区，最新消息和输入框一次可见。 */
+    flex: 0 0 auto; height: 560px; min-height: 320px;
+  }
   .wa-inbox.wa-3col #waChatPanel .wa-main-tab-panel[data-wa-main-panel="chat"] > .wa-compose { position: sticky; bottom: 0; }
 }
 @media (max-width: 1100px) and (min-width: 992px) {
