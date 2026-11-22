@@ -97,12 +97,36 @@ function shortErr(e) {
   return tail.slice(0, 220);
 }
 
-function curlOnce(url, proxy) {
+// 从本机 Git 凭据管理器读取已授权的 GitHub token（动态读取，绝不落盘、绝不写入代码库）。
+// 匿名 API 每小时仅 60 次，很容易撞 rate limit；带 token 可达 5000 次/小时。
+// GIT_TERMINAL_PROMPT=0 保证不会弹交互输入把服务卡住。
+let _tokenCache = null;
+let _tokenCacheAt = 0;
+function githubToken() {
+  const now = Date.now();
+  if (_tokenCache && now - _tokenCacheAt < 10 * 60 * 1000) return _tokenCache; // 缓存 10 分钟
+  try {
+    const input = 'protocol=https\nhost=github.com\n\n';
+    const out = execFileSync('git', ['credential', 'fill'], {
+      input, encoding: 'utf8', timeout: 8000,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+      stdio: ['pipe', 'pipe', 'ignore'],
+    });
+    const m = String(out).match(/^password=(.+)$/m);
+    const token = m ? m[1].trim().replace(/\r/g, '') : '';
+    if (token) { _tokenCache = token; _tokenCacheAt = now; return token; }
+  } catch (e) { /* 取不到就回退匿名 */ }
+  return '';
+}
+
+function curlOnce(url, proxy, token) {
   const args = [
     '-sSL', '--compressed', '--max-time', String(REQUEST_TIMEOUT_MS / 1000),
     '-H', 'Accept: application/vnd.github+json',
     '-H', 'User-Agent: hq-crm-updater',
   ];
+  // 认证头只在拿到 token 时附加，避免把 token 出现在命令行日志里；失败会自动回退匿名。
+  if (token) args.push('-H', 'Authorization: Bearer ' + token);
   if (proxy) args.push('--proxy', proxy);
   else args.push('--noproxy', '*'); // 无代理时明确直连，避免继承到异常的环境代理变量
   args.push(url);
@@ -112,22 +136,39 @@ function curlOnce(url, proxy) {
 function api(pathname, { raw = false } = {}) {
   const url = API + pathname;
   const proxy = resolveProxy();
-  const routes = proxy ? [proxy, ''] : ['']; // 代理优先，直连兜底
+  const token = githubToken();
+  // 认证优先；token 不可用时回退匿名。每种凭据都试「代理优先、直连兜底」。
+  const creds = token ? [token, ''] : [''];
   const errors = [];
   let text = null;
-  for (const route of routes) {
-    for (let attempt = 0; attempt < 2 && text === null; attempt++) {
-      try {
-        text = curlOnce(url, route);
-      } catch (e) {
-        errors.push((route ? '代理 ' + route : '直连') + '：' + shortErr(e));
-        if (attempt === 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 400); // 瞬时失败等 400ms 再试
+  let rateLimited = false;
+  for (const cred of creds) {
+    const routes = proxy ? [proxy, ''] : [''];
+    for (const route of routes) {
+      for (let attempt = 0; attempt < 2 && text === null; attempt++) {
+        try {
+          const t = curlOnce(url, route, cred);
+          // 识别 API 级 rate limit（返回体是 JSON 但带 documentation_url）
+          let parsed = null;
+          try { parsed = JSON.parse(t); } catch (e) {}
+          if (parsed && parsed.message && /rate limit/i.test(parsed.message) && parsed.documentation_url) {
+            rateLimited = true;
+            errors.push((cred ? '认证' : '匿名') + '达到速率限制');
+            break;
+          }
+          text = t;
+        } catch (e) {
+          errors.push((cred ? '认证/' : '匿名/') + (route ? '代理' : '直连') + '：' + shortErr(e));
+          if (attempt === 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 400); // 瞬时失败等 400ms 再试
+        }
       }
+      if (text !== null) break;
     }
     if (text !== null) break;
   }
   if (text === null) {
-    throw new Error('连接 GitHub 失败：' + errors.join('；') + '（可在「系统设置 → WhatsApp 连接」检查代理是否可用）');
+    const hint = rateLimited ? '（GitHub API 速率限制，稍后再试或检查凭据）' : '（可在「系统设置 → WhatsApp 连接」检查代理是否可用）';
+    throw new Error('连接 GitHub 失败：' + errors.join('；') + hint);
   }
   if (raw) return text;
   let json;

@@ -564,6 +564,83 @@ function templateFormPage(ctx) {
 }
 
 // ================= 系统设置 =================
+// GitHub 应用内自动升级 + 系统重启卡片（仅管理员可见）。
+// 注意：本段生成页面 <script> 时，字符串字面量里的换行必须写 \\n（双反斜杠），
+// 否则外层模板字符串会把它解析成真实换行，导致页面脚本 SyntaxError、按钮全部失效。
+function githubUpdateCard() {
+  return card({ title: "GitHub 自动升级 / 系统重启", body: `
+    <div id="guBox" class="small text-muted">正在读取升级状态…</div>
+    <div class="d-flex flex-wrap gap-2 my-3">
+      <button type="button" class="btn btn-sm btn-outline-primary" id="guStatus"><i class="bi bi-arrow-clockwise"></i> 刷新状态</button>
+      <button type="button" class="btn btn-sm btn-outline-info" id="guCheck"><i class="bi bi-search"></i> 检查更新</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="guBaseline"><i class="bi bi-flag"></i> 建立基线</button>
+      <button type="button" class="btn btn-sm btn-primary" id="guApply"><i class="bi bi-download"></i> 一键升级</button>
+      <button type="button" class="btn btn-sm btn-outline-warning" id="guRollback"><i class="bi bi-arrow-counterclockwise"></i> 回滚</button>
+      <button type="button" class="btn btn-sm btn-danger" id="sysRestart"><i class="bi bi-power"></i> 重启系统</button>
+    </div>
+    <label class="form-check small mb-2"><input class="form-check-input" type="checkbox" id="guForce"><span class="form-check-label">强制覆盖本地改动（默认关闭，保护本机定制）</span></label>
+    <pre id="guOut" class="bg-dark text-light p-3 rounded small" style="max-height:340px;overflow:auto;white-space:pre-wrap;display:none"></pre>
+    <div class="form-text">升级只覆盖预设的代码文件；客户数据、聊天记录、登录态、上传素材永不写入，覆盖前自动备份、可回滚。升级或重启完成后需等待几秒让服务恢复，再刷新页面。</div>
+    <script>
+    (function(){
+      if (window.__guBound) return; window.__guBound = true;
+      var out = document.getElementById('guOut');
+      var box = document.getElementById('guBox');
+      function show(o){ out.style.display='block'; out.textContent = typeof o==='string'?o:JSON.stringify(o,null,2); }
+      function post(url, body){
+        return fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body||''}).then(function(r){return r.json();});
+      }
+      function status(){
+        fetch('/api/upgrade/status').then(function(r){return r.json();}).then(function(r){
+          if(!r.ok){ box.textContent='读取状态失败：'+(r.error||'未知'); return; }
+          box.innerHTML = '当前版本 <b>'+(r.currentVersion||'?')+'</b> · 仓库 '+escHtml(r.repo||'?')
+            +'<br>已装提交 <code>'+escHtml(String(r.installedCommit||'未建立基线').slice(0,12))+'</code>'
+            +'<br>升级次数 '+(r.appliedCount||0)+(r.installedAt?(' · 最近 '+escHtml(r.installedAt.slice(0,19).replace('T',' '))):'');
+        }).catch(function(e){ box.textContent='读取状态失败：'+e.message; });
+      }
+      function escHtml(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+      document.getElementById('guStatus').onclick = status;
+      document.getElementById('guCheck').onclick = function(){
+        show('正在检查更新…');
+        post('/api/upgrade/check').then(function(r){
+          if(!r.ok){ show(r); return; }
+          if(r.needBaseline){ show('尚未建立基线。请先点「建立基线」，把当前版本标记为升级起点。'); return; }
+          if(!r.hasUpdate){ var lc=(r.latestCommit&&r.latestCommit.sha)||r.latestCommit||''; show('已是最新版本。远端提交：'+String(lc).slice(0,12)); return; }
+          var lines=['发现新版本（远端领先 '+(r.aheadBy||'?')+' 个提交）：'];
+          (r.items||[]).forEach(function(it){ lines.push((it.willUpdate?'[将更新] ':(it.allowed?'[本地改动·跳过] ':'[受保护·跳过] '))+it.name); });
+          show(lines.join('\\n'));
+        }).catch(function(e){ show('检查失败：'+e.message); });
+      };
+      document.getElementById('guBaseline').onclick = function(){
+        if(!confirm('把当前 GitHub 最新版本标记为「已安装基线」？\\n\\n适用于首次启用升级功能。之后的新提交才会被识别为更新。')) return;
+        show('正在建立基线…');
+        post('/api/upgrade/baseline').then(function(r){ show(r); status(); }).catch(function(e){ show('失败：'+e.message); });
+      };
+      document.getElementById('guApply').onclick = function(){
+        var force = document.getElementById('guForce').checked ? '1':'0';
+        var tip = force ? '警告：强制模式会覆盖本机改过的文件（含本升级界面所在文件可能导致界面消失）。\\n\\n确认继续？' : '从 GitHub 下载并覆盖有更新的代码文件？\\n\\n· 数据与聊天记录目录永不写入\\n· 本机改过的文件自动跳过\\n· 升级前自动备份，可回滚\\n· 完成后需重启系统生效';
+        if(!confirm(tip)) return;
+        show('正在升级，请稍候…');
+        post('/api/upgrade/apply','force='+force).then(function(r){ show(r); status(); }).catch(function(e){ show('失败：'+e.message); });
+      };
+      document.getElementById('guRollback').onclick = function(){
+        if(!confirm('回滚到上一次升级前的文件状态？\\n\\n只恢复升级备份的代码文件，不会改动客户数据与聊天记录。')) return;
+        show('正在回滚…');
+        post('/api/upgrade/rollback').then(function(r){ show(r); status(); }).catch(function(e){ show('失败：'+e.message); });
+      };
+      document.getElementById('sysRestart').onclick = function(){
+        if(!confirm('立即重启系统？\\n\\n服务会在几秒内自动恢复，期间页面暂时无法访问。数据与聊天记录不会丢失。')) return;
+        show('正在重启系统，请稍候…');
+        post('/api/system/restart').then(function(r){
+          show(r);
+          if(r.ok){ var n=15; var t=setInterval(function(){ n--; if(n<=0){ clearInterval(t); location.reload(); } },1000); }
+        }).catch(function(e){ show('失败：'+e.message); });
+      };
+      status();
+    })();
+    </script>` });
+}
+
 function settingsPage(ctx) {
   const company = dbx.getCompany();
   const isAdmin = ctx.user.role === 'admin';
@@ -578,6 +655,7 @@ function settingsPage(ctx) {
     const aiKey = dbx.getSetting("ai_api_key") || "";
     const aiClearHtml = aiKey ? "<label class=\"form-check mt-2\"><input class=\"form-check-input\" type=\"checkbox\" name=\"clear_ai_key\" value=\"1\"><span class=\"form-check-label small\">清除已保存的 API Key</span></label>" : "";
     const tmapKey = dbx.getSetting("tmap_key") || "";
+    parts.push(githubUpdateCard());
     parts.push(card({ title: "腾讯地图 Key（AI 外贸工作台地图）", body: `<form method="post" action="/settings/tmap">
       <div class="row g-3">
         <div class="col-md-8">${fld({ label: "腾讯位置服务 Key", name: "tmap_key", type: "password", value: "", placeholder: tmapKey ? "已配置，输入新值可替换；留空保持不变" : "请到腾讯位置服务控制台申请" })}</div>
