@@ -1803,7 +1803,7 @@ a:hover { color: #c18bff; }
 }
 
 /* 右下角强弹窗：客户给出具体需求转人工（常驻，直到点“知道了”才消失） */
-.notify-toast-stack { position: fixed; right: 18px; bottom: 18px; z-index: 1080; display: flex; flex-direction: column-reverse; gap: 12px; width: min(380px, calc(100vw - 36px)); }
+.notify-toast-stack { position: fixed; right: 18px; bottom: 18px; z-index: 1080; display: flex; flex-direction: column-reverse; gap: 12px; width: min(380px, calc(100vw - 36px)); max-height: calc(100vh - 36px); overflow-y: auto; scrollbar-width: thin; }
 .notify-toast { background: #1e1e2e; border: 2px solid #a855f7; border-radius: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, .55), 0 0 0 1px rgba(168, 85, 247, .35); color: #f1f1f8; padding: 14px 16px; animation: notifyToastIn .25s ease-out; }
 @keyframes notifyToastIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .notify-toast-head { display: flex; align-items: center; gap: 6px; color: #d5b1f4; font-size: 12px; font-weight: 700; }

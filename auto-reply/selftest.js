@@ -66,6 +66,7 @@ console.log('== v2 精准度归一化 ==');
 t('中文"精准" → high', () => assert.strictEqual(L.normalizePrecision('精准'), 'high'));
 t('英文 high/qualified → high', () => assert.strictEqual(L.normalizePrecision('qualified'), 'high'));
 t('"不精准/low" → low', () => assert.strictEqual(L.normalizePrecision('low'), 'low'));
+t('"not qualified" 含 qualified 子串 → low，不是 high（L10）', () => assert.strictEqual(L.normalizePrecision('not qualified'), 'low'));
 t('"可能无法判断" → unknown', () => assert.strictEqual(L.normalizePrecision('maybe'), 'unknown'));
 
 const cfg2 = { maxQualifyRounds: 2, minHighConfidence: 0.82, minLowConfidence: 0.85 };
@@ -184,6 +185,9 @@ t('空时间戳 → null', () => assert.strictEqual(L.silenceHours('', Date.now(
 t('中文不感兴趣 → 拒接', () => assert.strictEqual(L.isRefusal('不感兴趣，谢谢'), true));
 t('英文 not interested → 拒接', () => assert.strictEqual(L.isRefusal('Not interested, thanks'), true));
 t('普通问价不是拒接', () => assert.strictEqual(L.isRefusal('请问这个多少钱'), false));
+t('“这个型号不用了，换另一个”仍在谈 → 不是拒接（M6）', () => assert.strictEqual(L.isRefusal('这个型号不用了，换另一个'), false));
+t('单独“不用了” → 拒接', () => assert.strictEqual(L.isRefusal('不用了'), true));
+t('“不用了，换个大一号的” → 不是拒接', () => assert.strictEqual(L.isRefusal('不用了，换个大一号的'), false));
 
 console.log('== 跟进判定 followupDue ==');
 const fcfg = { minSilenceHours: 24, maxSilenceHours: 72, maxFollowups: 2, sendClosing: true };
@@ -207,9 +211,17 @@ t('第 1 次跟进后 30 小时 → 第 2 次', () => {
   const d = L.followupDue({ followupsSent: 1, closingSent: false, silenceHours: 60, silenceSinceFollowupHours: 30 }, fcfg);
   assert.strictEqual(d.due, true); assert.strictEqual(d.kind, 'followup');
 });
+t('第 2 次跟进总静默超 72 小时 → 不跟（M1：只看距上次跟进会翻旧账）', () => {
+  const d = L.followupDue({ followupsSent: 1, closingSent: false, silenceHours: 100, silenceSinceFollowupHours: 30 }, fcfg);
+  assert.strictEqual(d.due, false);
+});
 t('跟进 2 次后 → 发收尾', () => {
-  const d = L.followupDue({ followupsSent: 2, closingSent: false, silenceHours: 90, silenceSinceFollowupHours: 30 }, fcfg);
+  const d = L.followupDue({ followupsSent: 2, closingSent: false, silenceHours: 60, silenceSinceFollowupHours: 30 }, fcfg);
   assert.strictEqual(d.due, true); assert.strictEqual(d.kind, 'closing');
+});
+t('收尾时总静默超 72 小时 → 不发收尾（M1：停工/重启后静默 30 天的客户不打扰）', () => {
+  const d = L.followupDue({ followupsSent: 2, closingSent: false, silenceHours: 90, silenceSinceFollowupHours: 30 }, fcfg);
+  assert.strictEqual(d.due, false);
 });
 t('收尾已发 → 不再打扰', () => {
   const d = L.followupDue({ followupsSent: 2, closingSent: true, silenceHours: 90, silenceSinceFollowupHours: 30 }, fcfg);
@@ -226,12 +238,16 @@ t('要目录的新客户判精准 → 追问，不发全套', () => {
   assert.strictEqual(d.action, 'ask');
 });
 t('要目录的老客户判精准 → 直接发素材', () => {
-  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { existingCustomer: true } }, null, cfg2);
+  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { existingCustomer: true } }, null, cfg2, { customerBound: true });
   assert.strictEqual(d.action, 'send_material');
 });
 t('要目录的老客户信息不足 → 也不追问，直接发素材', () => {
-  const d = L.decideQualification({ precision: 'unknown', purpose: 'catalog', confidence: 0.3, signals: { existingCustomer: true } }, null, cfg2);
+  const d = L.decideQualification({ precision: 'unknown', purpose: 'catalog', confidence: 0.3, signals: { existingCustomer: true } }, null, cfg2, { customerBound: true });
   assert.strictEqual(d.action, 'send_material');
+});
+t('AI 说是老客户但会话未绑定客户 → 不直发，仍走追问（M4）', () => {
+  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { existingCustomer: true } }, null, cfg2, { customerBound: false });
+  assert.strictEqual(d.action, 'ask');
 });
 t('要目录的新客户报了采购量 → 转人工', () => {
   const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { quantityGiven: true } }, null, cfg2);
@@ -351,11 +367,22 @@ t('要目录判精准 + 报采购量 → 转人工且弹强通知', () => {
   assert.strictEqual(d.action, 'hold');
   assert.strictEqual(d.notify, true);
 });
-t('要目录判精准 + 问满 6 轮 → 转人工且弹强通知', () => {
-  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { productSpecific: true } }, { ask_rounds: 6 }, cfg6);
+t('要目录信息不足 + 报采购量 → 转人工且弹强通知（M2：unknown 分支同款 hold 也带 notify）', () => {
+  const d = L.decideQualification({ precision: 'unknown', purpose: 'catalog', confidence: 0.3, signals: { quantityGiven: true } }, null, cfg6);
+  assert.strictEqual(d.action, 'hold');
+  assert.strictEqual(d.notify, true);
+});
+t('要目录判精准 + 问满 6 轮且真给过具体需求 → 转人工且弹强通知', () => {
+  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { productSpecific: true, destinationGiven: true } }, { ask_rounds: 6 }, cfg6);
   assert.strictEqual(d.action, 'hold');
   assert.strictEqual(d.notify, true);
   assert.ok(d.reason.includes('已挖到'));
+});
+t('要目录判精准 + 问满 6 轮但只给过一个信号 → 转人工但不弹强通知，理由如实写未给具体需求（M2）', () => {
+  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { productSpecific: true } }, { ask_rounds: 6 }, cfg6);
+  assert.strictEqual(d.action, 'hold');
+  assert.strictEqual(d.notify, undefined);
+  assert.ok(d.reason.includes('仍未给具体需求'));
 });
 t('问满 6 轮仍不明（没给具体需求）→ 转人工但不弹强通知', () => {
   const d = L.decideQualification({ precision: 'unknown', purpose: 'other', confidence: 0.25 }, { ask_rounds: 6 }, cfg6);
@@ -389,6 +416,56 @@ t('布局有右下角弹窗轮询（25 秒、常驻、去跟进/知道了）', (
 });
 t('铃铛下拉挂未读通知数', () => {
   assert(layout.includes('客户给出具体需求') && layout.includes('notifUnread'));
+});
+t('L2：点“去跟进”也标已读（M12：未读上限放宽到 50、弹窗容器可滚动）', () => {
+  assert(layout.includes("go.addEventListener('click'") && layout.includes('markRead(n.id)'));
+  assert(routes.includes('LIMIT 50'));
+});
+
+console.log('== v3.1 bug 修复：游标重试 / 额度 hold 不弹通知 / 文件接手误判 / 轮数与去重 ==');
+t('H1：游标只推进到连续成功的最后一条，失败停下次重跑', () => {
+  assert(worker.includes('advancedTo') && worker.includes("metaSet('cursor', advancedTo)"));
+  assert(worker.includes('游标停在') && worker.includes('下次重跑'));
+});
+t('H1：processChat/processQualified 返回成功与否', () => {
+  assert(worker.includes('async function processChat(item)') && worker.includes('return processQualified(item, chat, chatKey, msgId, customerText, hitSensitive)'));
+});
+t('M3：额度/缺素材 hold 不调 notifyHandoff，AI 回复照常发', () => {
+  assert(worker.includes('holdWithReply'));
+  assert(!/今日素材包数量已达上限[\s\S]{0,200}notifyHandoff/.test(worker));
+  assert(!/今日文件发送额度不足[\s\S]{0,200}notifyHandoff/.test(worker));
+  assert(!/materials 中没有报价文件[\s\S]{0,200}notifyHandoff/.test(worker));
+  assert(worker.includes("qualify_hold_reply"));
+});
+t('M5：文件类消息按 sent_log + 时间 proximity 再认机器人，不只认 5 分钟窗口', () => {
+  assert(worker.includes('KIND_LABEL_TEXTS') && worker.includes('isFileLike'));
+  assert(worker.includes("file_count") && worker.includes('30 * 60 * 1000'));
+});
+t('M7：追问轮次只在成功发出后才加 1', () => {
+  assert(worker.includes('UPDATE qualification SET ask_rounds=ask_rounds+1'));
+  assert(worker.includes('回复为空或发送失败不计轮数'));
+});
+t('M8：素材包只有全部文件发成功才置去重 key', () => {
+  assert(worker.includes('sentFiles') && worker.includes('allFilesOk'));
+  assert(worker.includes('未置去重，下次可补发'));
+});
+t('L5：HARD_STOP 日志写实际命中的模式，取不到写“高风险内容”', () => {
+  assert(worker.includes('hardHit') && worker.includes("customerText.match(logic.HARD_STOP_RE)"));
+});
+t('L12：回复与跟进串行跑，不再无 await 并发', () => {
+  assert(worker.includes('tick().then(() => followupTick())'));
+  assert(!worker.includes('tick(); followupTick();'));
+});
+t('L4：qualify 置信度百分制除以 100，不再大于 1 就按 1.0（L10 归一化口径一致）', () => {
+  assert(qualify.includes('if (confidence > 1) confidence = confidence / 100;'));
+  assert(!qualify.includes('confidence > 100 ? confidence / 100 : 1'));
+});
+t('M4：worker 调 decideQualification 时传会话绑定状态', () => {
+  assert(worker.includes("decideQualification(verdict, q, cfg.qualify, { customerBound: !!chat.customer_id })"));
+});
+t('L11：破冰打法转人工节点与 v4 一致，不再写“答了 2 个及以上问题”', () => {
+  assert(!icebreakers.includes('答了 2 个及以上问题'));
+  assert(icebreakers.includes('追问到 6 轮上限仍未给具体需求'));
 });
 
 if (!process.exitCode) console.log('\n全部 ' + pass + ' 项通过 ✓');

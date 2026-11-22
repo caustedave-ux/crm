@@ -53,10 +53,15 @@ function silenceHours(lastTs, nowMs) {
   return h < 0 ? 0 : h;
 }
 
-/** 客户明确拒绝：不感兴趣 / 不需要 / 别再联系等。只用于“14 天内不再跟进”，不删任何记录 */
-const REFUSAL_RE = /不感兴趣|没兴趣|不需要了|别再发|不要再联系|不用了|请勿打扰|not interested|no longer interested|do not contact|don't contact|stop messaging|no thanks/i;
+/** 客户明确拒绝：整条消息就是拒绝 / 明确结束对话才算（只用于“14 天内不再跟进”）。
+ * “这个型号不用了，换另一个”这种带“换/另一个/其他型号”的仍在谈，不算拒接。 */
+const REFUSAL_RE = /^(我|我们)?(不感兴趣|没兴趣|暂时不需要|不需要了|不用了|不想要了|算了|不用麻烦了|别再发(消息)?|不要再联系(我)?|请勿打扰|not interested|no longer interested|do not contact( me)?|don'?t contact( me)?|stop messaging|no thanks|no need|not needed)[，。！!、,.\s]*(谢谢|thanks?|thank you)?[，。！!、,.\s]*$/i;
 function isRefusal(text) {
-  return REFUSAL_RE.test(String(text || ''));
+  const s = String(text || '').trim();
+  if (!s) return false;
+  // 带有继续谈的意思（换型号/换一个）不算拒接
+  if (/换|另一个|其他型号|换一个|another|other model|different model/i.test(s)) return false;
+  return REFUSAL_RE.test(s);
 }
 
 /**
@@ -78,6 +83,10 @@ function followupDue(state, cfg) {
   if (s.closingSent) return { due: false, kind: null, reason: '收尾已发，不再打扰' };
   if (sent >= maxN) {
     if (!(cfg && cfg.sendClosing)) return { due: false, kind: null, reason: '跟进次数已达上限，收尾开关关闭' };
+    // 收尾也要看总静默：停工/重启后静默 30 天的客户不再发收尾
+    const h = s.silenceHours;
+    if (h === null || h === undefined) return { due: false, kind: null, reason: '无客户消息时间，无法发收尾' };
+    if (h < min || h > max) return { due: false, kind: null, reason: '总静默 ' + Math.round(h) + ' 小时不在 ' + min + '–' + max + ' 小时窗口内，不发收尾' };
     const gap = s.silenceSinceFollowupHours;
     if (gap === null || gap === undefined) return { due: false, kind: null, reason: '无上次跟进时间，无法发收尾' };
     if (gap < min) return { due: false, kind: null, reason: '距上次跟进不足 ' + min + ' 小时' };
@@ -93,6 +102,10 @@ function followupDue(state, cfg) {
   const gap = s.silenceSinceFollowupHours;
   if (gap === null || gap === undefined) return { due: false, kind: null, reason: '无上次跟进时间' };
   if (gap < min) return { due: false, kind: null, reason: '距上次跟进不足 ' + min + ' 小时' };
+  // 第 2 次跟进也要看总静默：客户最新消息太久远（>72 小时）的不再跟
+  const h = s.silenceHours;
+  if (h === null || h === undefined) return { due: false, kind: null, reason: '无客户消息时间，无法判断静默' };
+  if (h < min || h > max) return { due: false, kind: null, reason: '总静默 ' + Math.round(h) + ' 小时不在 ' + min + '–' + max + ' 小时窗口内，不跟进' };
   return { due: true, kind: 'followup', reason: '距上次跟进 ' + Math.round(gap) + ' 小时，第 ' + (sent + 1) + ' 次跟进' };
 }
 
@@ -146,6 +159,8 @@ function chooseDecision(ctx) {
 /** 精准度归一化：把 AI 返回的自由文本收敛成三档 high / unknown / low */
 function normalizePrecision(raw) {
   const s = String(raw || '').trim().toLowerCase();
+  // "not qualified" 含 "qualified" 子串，必须最先排除，否则会被判 high
+  if (/not\s+qualified/.test(s)) return 'low';
   // 先排除"不精准"（它同时含"精准"，必须优先判断）
   if (/不精准|不够精准|明显不是|无采购|low|unlikely|unqualified/.test(s)) {
     if (!/未知|unknown|不确定|无法/.test(s)) return 'low';
@@ -215,12 +230,16 @@ function normalizePurpose(raw) {
  *   action: send_material 发素材 | ask 追问 | unqualified 放弃 | hold 转人工
  *   status: qualified 已精准 | pending 待判定 | done 终结
  */
-function decideQualification(verdict, current, cfg) {
+function decideQualification(verdict, current, cfg, opts) {
   let precision = normalizePrecision(verdict.precision);
   const purpose = normalizePurpose(verdict.purpose);
   const confidence = normalizeConfidence(verdict.confidence);
   const riskFlags = normalizeRiskFlags(verdict.riskFlags);
   const signals = verdict.signals || {};
+  // 老客户直发必须交叉核对：只有会话已绑定客户（chat.customer_id 非空）才算老客户，
+  // 光靠 AI 的 signals.existingCustomer 一次误判不能让未绑定新客户跳过“要目录先问后发”。
+  // 未传 opts 时沿用旧口径（只看 AI 信号），worker 调用时必须显式传 customerBound。
+  const customerBound = !opts || opts.customerBound !== false;
   const rounds = Number((current && current.ask_rounds) || 0);
   const maxRounds = Number((cfg && cfg.maxQualifyRounds) || 6);
   const minHigh = Number((cfg && cfg.minHighConfidence) || 0.78);
@@ -248,7 +267,8 @@ function decideQualification(verdict, current, cfg) {
     return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, reason: 'AI 判低精准但缺少明确排除证据或置信度不足，转人工' };
   }
   // 老客户要目录/报价/现货：不走三个问题，直接给资料（unknown 也直接给，不追问；low 已在上面处理）
-  if (signals.existingCustomer && ['catalog', 'quote', 'stock'].includes(purpose)) {
+  // 必须已绑定客户才算老客户直发，未绑定会话即使 AI 说是老客户也仍走追问
+  if (signals.existingCustomer && customerBound && ['catalog', 'quote', 'stock'].includes(purpose)) {
     return { action: 'send_material', status: 'qualified', precision, purpose, confidence, riskFlags, reason: '老客户，直接发素材' };
   }
   // 确认精准 → 直接发素材（但要目录的新客户例外，见下）
@@ -262,16 +282,24 @@ function decideQualification(verdict, current, cfg) {
       if (rounds < maxRounds) {
         return { action: 'ask', status: 'pending', precision, purpose, confidence, riskFlags, ask_rounds: rounds + 1, reason: '要目录的新客户不直接发全套，追问第 ' + (rounds + 1) + ' 轮' };
       }
-      return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, notify: true, reason: '追问 ' + maxRounds + ' 轮，客户已给具体需求，转人工给适配报价｜已挖到：' + summarizeDugUp(verdict) };
+      // 追问到上限才转人工：只有真给过具体需求（至少 2 个强信号，如产品已具体 + 目的国/数量/贸易条款）
+      // 才弹强通知；否则理由如实写“仍未给具体需求”，不弹通知
+      const dugUpSpecific = strongSignalCount(signals) >= 2;
+      return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags,
+        notify: dugUpSpecific ? true : undefined,
+        reason: dugUpSpecific
+          ? '追问 ' + maxRounds + ' 轮，客户已给具体需求，转人工给适配报价｜已挖到：' + summarizeDugUp(verdict)
+          : '追问 ' + maxRounds + ' 轮仍未给具体需求，转人工｜已挖到：' + summarizeDugUp(verdict) };
     }
     return { action: 'send_material', status: 'qualified', precision, purpose, confidence, riskFlags, reason: '高置信度，按目的分发素材' };
   }
   // 信息不足 → 追问，但不超过上限（要目录的新客户同样不直接发全套）
   if (rounds < maxRounds) {
-    if (purpose === 'catalog' && !signals.existingCustomer) {
+    if (purpose === 'catalog' && !(signals.existingCustomer && customerBound)) {
       const handoff = catalogHandoffReason(signals, rounds);
       if (handoff) {
-        return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, reason: handoff };
+        // 与 high 分支同款 hold：给出具体需求（报采购量/要样品）都要带 notify
+        return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, notify: true, reason: handoff };
       }
     }
     return { action: 'ask', status: 'pending', precision, purpose, confidence, riskFlags, ask_rounds: rounds + 1, reason: '信息不足，追问第 ' + (rounds + 1) + ' 轮' };

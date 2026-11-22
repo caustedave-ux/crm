@@ -182,7 +182,8 @@ async function judge(ctx) {
   const riskFlags = Array.isArray(verdict.riskFlags) ? verdict.riskFlags.map(x => String(x || '').trim()).filter(Boolean).slice(0, 20) : [];
   let confidence = Number(verdict.confidence);
   if (!Number.isFinite(confidence)) confidence = 0;
-  if (confidence > 1) confidence = confidence > 100 ? confidence / 100 : 1;
+  // 百分制归一化（与 logic.normalizeConfidence 一致）：82 → 0.82，不能大于 1 就按 1.0 处理
+  if (confidence > 1) confidence = confidence / 100;
   confidence = Math.max(0, Math.min(1, confidence));
   return {
     ok: true,

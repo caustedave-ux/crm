@@ -210,9 +210,13 @@ async function readProductRows(buf) {
     if (!tl || tl.row === null || tl.row === undefined) continue;
     const excelRow = Number(tl.row) + 1; // tl.row 为 0 基
     if (excelRow < 2) continue;
-    let target = null;
-    for (const o of rows) { if (o.__row <= excelRow) target = o; else break; }
-    if (target) target.__images.push({ buffer: mi.buffer, ext: String(mi.extension || 'png').toLowerCase() });
+    // 只挂到图片所在行确实有产品行的那一行（L6）：空行上的图不再错挂到上一个产品
+    const target = rows.find((o) => o.__row === excelRow);
+    if (!target) {
+      console.warn('产品导入：第 ' + excelRow + ' 行图片所在行为空行，未挂到任何产品，已跳过');
+      continue;
+    }
+    target.__images.push({ buffer: mi.buffer, ext: String(mi.extension || 'png').toLowerCase() });
   }
   return rows;
 }

@@ -1062,12 +1062,14 @@ function registerRoutes(app, router) {
 
   router.get('/api/notifications', (ctx) => {
     const unreadOnly = String(ctx.query.unread || '') === '1';
-    const rows = all(`SELECT id,type,title,body,link,chat_key,created_at FROM notifications WHERE user_id=? ${unreadOnly ? 'AND is_read=0' : ''} ORDER BY id DESC LIMIT 20`, ctx.user.id);
+    const rows = all(`SELECT id,type,title,body,link,chat_key,created_at FROM notifications WHERE user_id=? ${unreadOnly ? 'AND is_read=0' : ''} ORDER BY id DESC LIMIT 50`, ctx.user.id);
     const unread = (get('SELECT COUNT(*) c FROM notifications WHERE user_id=? AND is_read=0', ctx.user.id) || {}).c || 0;
     ctx.res.json(200, { ok: true, notifications: rows, unread });
   });
 
   router.post('/api/notifications/:id/read', (ctx) => {
+    const row = get('SELECT id FROM notifications WHERE id=? AND user_id=?', ctx.params.id, ctx.user.id);
+    if (!row) return ctx.res.json(404, { ok: false, error: '通知不存在' });
     run('UPDATE notifications SET is_read=1, read_at=? WHERE id=? AND user_id=?', nowStr(), ctx.params.id, ctx.user.id);
     ctx.res.json(200, { ok: true });
   });
@@ -1391,6 +1393,10 @@ function registerRoutes(app, router) {
 
   // ---------- 产品 ----------
   router.post('/products/new', (ctx) => {
+    const back0 = String(ctx.body.back || '');
+    const dest0 = /^\/(?!\/)/.test(back0) ? back0.replace(/[\r\n]/g, '') : '/products';
+    const verr = validateProductForm(ctx.body);
+    if (verr) return fail(ctx, verr, dest0);
     syncPackStock(ctx.body);
     const id = insertProduct(ctx.body);
     const back = String(ctx.body.back || '');
@@ -1398,6 +1404,12 @@ function registerRoutes(app, router) {
     ok(ctx, '产品创建成功', dest);
   });
   router.post('/products/:id/edit', (ctx) => {
+    const p0 = get('SELECT * FROM products WHERE id=?', ctx.params.id);
+    const back0 = String(ctx.body.back || '');
+    const dest0 = /^\/(?!\/)/.test(back0) ? back0.replace(/[\r\n]/g, '') : '/products';
+    if (!p0) return fail(ctx, '产品不存在', '/products');
+    const verr = validateProductForm(ctx.body);
+    if (verr) return fail(ctx, verr, dest0);
     syncPackStock(ctx.body);
     updateProduct(ctx.params.id, ctx.body);
     const back = String(ctx.body.back || '');
@@ -1440,6 +1452,8 @@ function registerRoutes(app, router) {
     ok(ctx, '进货价已更新：' + p.name, dest);
   });
   router.post('/products/:id/delete', (ctx) => {
+    const p = get('SELECT * FROM products WHERE id=?', ctx.params.id);
+    if (!p) return fail(ctx, '产品不存在', '/products');
     run('DELETE FROM products WHERE id=?', ctx.params.id);
     ok(ctx, '产品已删除', '/products');
   });
@@ -1452,10 +1466,10 @@ function registerRoutes(app, router) {
       const np = copyUpload(p.image);
       if (np) img = np;
     }
-    const r = run('INSERT INTO products(name,name_en,model,color,unit,price,currency,origin,supplier_id,stock,stock_alert,cost_price,pcs_per_ctn,ctn_count,image,notes,category_id,material,finish,moq,moq_unit,lead_time_days,sample_lead_time_days,status,specs,description,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+    const r = run('INSERT INTO products(name,name_en,model,color,unit,price,currency,origin,supplier_id,stock,stock_alert,cost_price,pcs_per_ctn,ctn_count,image,notes,category_id,material,finish,moq,moq_unit,lead_time_days,sample_lead_time_days,status,positioning,specs,description,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       String(p.name || '') + '（副本）', String(p.name_en || '') + (p.name_en ? ' (Copy)' : ''), p.model || '', p.color || '',
       p.unit || 'PCS', Number(p.price) || 0, p.currency || 'USD', p.origin || '', p.supplier_id || null, 0, Number(p.stock_alert) || 0, Number(p.cost_price) || 0, Number(p.pcs_per_ctn) || 0, Number(p.ctn_count) || 0,
-      img, p.notes || '', parseInt(p.category_id, 10) || null, String(p.material || ''), String(p.finish || ''), Number(p.moq) || 0, String(p.moq_unit || 'PCS'), parseInt(p.lead_time_days, 10) || 0, parseInt(p.sample_lead_time_days, 10) || 0, String(p.status || '在售'), normProductSpecs(p.specs), String(p.description || ''), t, t);
+      img, p.notes || '', parseInt(p.category_id, 10) || null, String(p.material || ''), String(p.finish || ''), Number(p.moq) || 0, String(p.moq_unit || 'PCS'), parseInt(p.lead_time_days, 10) || 0, parseInt(p.sample_lead_time_days, 10) || 0, String(p.status || '在售'), normProductPositioning(p.positioning), normProductSpecs(p.specs), String(p.description || ''), t, t);
     const nid = Number(r.lastInsertRowid);
     syncProductToSupplier(nid);
     const back = String(ctx.body.back || '');
@@ -2011,8 +2025,8 @@ function registerRoutes(app, router) {
     const delta = parseFloat(ctx.body.delta);
     if (!isFinite(delta)) return fail(ctx, '数量格式不正确', '/products');
     const now = Math.round((Number(p.stock) + delta) * 10000) / 10000;
-    if (now < 0) { ok(ctx, '已调整（注意：当前库存为负数，V1.01 允许负库存，可在完成发货后自动回补）', '/products'); }
     run('UPDATE products SET stock=? WHERE id=?', now, p.id);
+    if (now < 0) return ok(ctx, '已调整（注意：当前库存为负数，V1.01 允许负库存，可在完成发货后自动回补）', '/products');
     ok(ctx, (delta >= 0 ? '入库' : '出库') + '完成，「' + p.name + '」当前库存 ' + now, '/products');
   });
 
@@ -2150,7 +2164,7 @@ function registerRoutes(app, router) {
 
   // ---------- 产品 Excel 导入模板下载 ----------
   router.get('/api/products/template.xlsx', async (ctx) => {
-    const example = [['china door lock', '不锈钢门锁', 'CDL-100', '银色', 'PCS', 'USD', 2.85, 1.2, '中国 China', 500, 100, 50, 10, 0.012, 0.35, '锁体', '不锈钢', '拉丝', 500, 'PCS', 15, 5, '在售', '高端款', '示例行，导入前请删除', '']];
+    const example = [['不锈钢门锁', 'china door lock', 'CDL-100', '银色', 'PCS', 'USD', 2.85, 1.2, '中国 China', 500, 100, 50, 10, 0.012, 0.35, '锁体', '不锈钢', '拉丝', 500, 'PCS', 15, 5, '在售', '高端款', '示例行，导入前请删除', '']];
     const buf = await excel.buildXlsx([
       { name: '产品导入', headers: PRODUCT_IMPORT_HEADERS, rows: example },
       { name: '填写说明', headers: ['说明'], rows: [
@@ -2160,7 +2174,7 @@ function registerRoutes(app, router) {
         ['分类请填系统里的分类名称（锁体 / 把手 / 锁芯 / 合页 / 其他），填了不存在的名称会进“未分类”，导入后在产品管理里再分；材质、表面处理可自由填写，常用：不锈钢 / 锌合金 / 铜 / 铝合金，拉丝 / 镜面 / 电镀 / 喷涂 / 古铜 / 黑色。'],
         ['MOQ 为最低起订量（数字）；状态只能填 在售 / 下架 / 停产，留空默认为“在售”。'],
         ['定位只能填 高端款 / 高流通款，留空为“未分类”；自动回复挑款只按定位选——高端精品客户只推高端款，大众流通客户只推高流通款，未分类的产品不参与自动挑款。'],
-        ['图片列（最后一列）：两种方式任选——①把产品图片直接“插入”到该行图片列，表格里能看到图即可；②在该列填写图片所在路径或网址，例如 D:\\产品图\\CDL-100.jpg 或 https://xxx.com/a.jpg。'],
+        ['图片列（最后一列）：两种方式任选——①把产品图片直接“插入”到该行图片列，表格里能看到图即可；②在该列填写图片所在路径或网址，例如 uploads/products/CDL-100.jpg（仅允许服务器上 uploads/ 或 auto-reply/materials/ 目录内文件）或 https://xxx.com/a.jpg。'],
         ['图片只在导入时新增或替换：若该行没填图片，系统保留原有图片。整张表所有图片合计请控制在 20MB 以内。'],
       ] },
     ]);
@@ -2245,9 +2259,18 @@ function registerRoutes(app, router) {
           try { const resp = await fetch(p, { signal: ctl.signal }); if (!resp.ok) throw new Error('HTTP ' + resp.status); buf = Buffer.from(await resp.arrayBuffer()); ext = path.extname(new URL(p).pathname) || 'jpg'; }
           finally { clearTimeout(t); }
         } else {
+          // 本地路径只允许服务器上 uploads/ 或 auto-reply/materials/ 目录内的文件（L7）：
+          // 导入是登录用户可触发的操作，直接 readFileSync 任意路径等于让服务端任意读本地文件
+          // （如带图片后缀的敏感文件会被转存到对外可访问的 uploads/ 下），必须收紧
           const fp = String(p).replace(/^["']|["']$/g, '');
-          buf = fs.readFileSync(fp);
-          ext = path.extname(fp);
+          const root = path.join(__dirname, '..');
+          const abs = path.resolve(root, fp);
+          const allowed = [path.join(root, 'uploads'), path.join(root, 'auto-reply', 'materials')];
+          if (!allowed.some(d => abs === d || abs.startsWith(d + path.sep))) {
+            return { error: '第 ' + rowNo + ' 行图片本地路径仅允许 uploads/ 或 auto-reply/materials/ 目录内文件' };
+          }
+          buf = fs.readFileSync(abs);
+          ext = path.extname(abs);
         }
         return saveImgBuffer(buf, ext.replace('.', ''), rowNo);
       } catch (e2) {
@@ -2322,8 +2345,18 @@ function registerRoutes(app, router) {
         if (cell(r, ['MOQ单位', '起订量单位'])) upd.moq_unit = data.moq_unit;
         if (cell(r, ['大货交期(天)', '大货交期', '交期(天)', '交期'])) upd.lead_time_days = data.lead_time_days;
         if (cell(r, ['打样交期(天)', '打样交期'])) upd.sample_lead_time_days = data.sample_lead_time_days;
-        if (cell(r, ['状态'])) upd.status = data.status;
-        if (cell(r, ['定位'])) upd.positioning = data.positioning;
+        // 定位/状态只有单元格值合法才覆盖（M9）：填错的定位（如“高端”）归一化后是空，
+        // 填错的状态归一化后是“在售”，都不能拿去清空/覆盖原值；非法值记一条导入提示
+        if (cell(r, ['状态'])) {
+          const rawStatus = cell(r, ['状态']);
+          if (PRODUCT_STATUSES.includes(rawStatus)) upd.status = rawStatus;
+          else errors.push('第 ' + rowNo + ' 行状态“' + rawStatus + '”无效，保留原状态');
+        }
+        if (cell(r, ['定位'])) {
+          const rawPos = cell(r, ['定位']);
+          if (PRODUCT_POSITIONINGS.includes(rawPos)) upd.positioning = rawPos;
+          else errors.push('第 ' + rowNo + ' 行定位“' + rawPos + '”无效，保留原定位');
+        }
         updateProduct(exist.id, Object.assign({}, exist, upd));
         pid = exist.id;
         updated++;
@@ -2857,7 +2890,18 @@ function syncPackStock(body) {
   const per = parseFloat(body.pcs_per_ctn) || 0;
   const ctn = parseFloat(body.ctn_count) || 0;
     body.stock = String(Math.round(per * ctn * 10000) / 10000);
-}function insertProduct(b) {
+}
+
+/** 产品表单基础校验（M11）：品名必填，价格 / MOQ 不能为负；返回错误文案，无错返回 '' */
+function validateProductForm(b) {
+  if (!String(b.name || '').trim()) return '品名不能为空';
+  const price = parseFloat(b.price);
+  if (b.price !== undefined && b.price !== null && String(b.price).trim() !== '' && (!isFinite(price) || price < 0)) return '价格不能为负';
+  const moq = parseFloat(b.moq);
+  if (b.moq !== undefined && b.moq !== null && String(b.moq).trim() !== '' && (!isFinite(moq) || moq < 0)) return 'MOQ 不能为负';
+  return '';
+}
+function insertProduct(b) {
   const t = nowStr();
   const r = run('INSERT INTO products(name,name_en,model,color,unit,price,currency,origin,supplier_id,stock,stock_alert,cost_price,pcs_per_ctn,ctn_count,volume,weight,notes,category_id,material,finish,moq,moq_unit,lead_time_days,sample_lead_time_days,status,positioning,specs,description,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
     String(b.name || '').trim(), String(b.name_en || '').trim(), String(b.model || '').trim(), String(b.color || '').trim(),

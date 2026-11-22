@@ -865,8 +865,9 @@ function buildCustomerAiSummary(c, acts, docs) {
   const docList = Array.isArray(docs) ? docs : [];
   const today = dateAfter(0);
   const score = Math.round(Number(c.tier_score || 0));
-  const intent = score >= 80 ? '高意向' : (score >= 60 ? '中意向' : '一般意向');
-  const intentCls = score >= 80 ? 'text-bg-success' : (score >= 60 ? 'text-bg-warning' : 'text-bg-light border');
+  // 意向分层与客户分层口径对齐（L3）：A 类门槛 80 分、B 类门槛 35 分（见 src/customerTiers.js RULES.bScore）
+  const intent = score >= 80 ? '高意向' : (score >= 35 ? '中意向' : '一般意向');
+  const intentCls = score >= 80 ? 'text-bg-success' : (score >= 35 ? 'text-bg-warning' : 'text-bg-light border');
   const docTypeName = { quotation: '报价单', pi: '形式发票', so: '销售合同', ci: '商业发票', pl: '装箱单', po: '采购单' };
   // 阶段：与工作台客户分层规则一致（成交 > 样品 > 报价 > 已联系 > 初步接洽）
   let stage = '初步接洽';
@@ -892,8 +893,9 @@ function buildCustomerAiSummary(c, acts, docs) {
   const openIssues = open.length
     ? open.map(a => (String(a.subject || '').trim() || String(a.type || '跟进')) + '（下次 ' + String(a.next_follow_date).slice(0, 10) + '）').join('；')
     : '无待跟进事项';
-  // 最近报价：最新一张单据
-  const latestDoc = docList[0];
+  // 最近报价：按单据日期取最新一张（不是按 id 倒序，后补录的旧日期单据不能冒充最近报价）
+  const latestDoc = [...docList].sort((a, b) =>
+    String(b.issue_date || '').localeCompare(String(a.issue_date || '')) || Number(b.id || 0) - Number(a.id || 0))[0];
   const latestQuote = latestDoc
     ? `${latestDoc.doc_no || ''} · ${docTypeName[latestDoc.doc_type] || latestDoc.doc_type || '单据'} ${latestDoc.currency || 'USD'}${moneyFmt(latestDoc.total_amount)}（${String(latestDoc.issue_date || '').slice(0, 10)}，${latestDoc.status || '-'}）`
     : '暂无报价';
@@ -1451,9 +1453,11 @@ function productsPage(ctx) {
   const statusFilter = String(ctx.query.status || '').trim();
   const posFilter = String(ctx.query.positioning || '').trim();
   const where = ['1=1']; const params = [];
-  if (kw) { where.push('(name LIKE ? OR name_en LIKE ? OR model LIKE ? OR color LIKE ?)'); params.push('%' + kw + '%', '%' + kw + '%', '%' + kw + '%', '%' + kw + '%'); }
+  // LIKE 通配符转义（L8）：搜“%”不能匹配全部产品；ESCAPE '\' 让 \% \_ 按字面匹配
+  const likeEsc = (s) => '%' + String(s).replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_') + '%';
+  if (kw) { where.push('(name LIKE ? ESCAPE \'\\\' OR name_en LIKE ? ESCAPE \'\\\' OR model LIKE ? ESCAPE \'\\\' OR color LIKE ? ESCAPE \'\\\')'); params.push(likeEsc(kw), likeEsc(kw), likeEsc(kw), likeEsc(kw)); }
   if (catFilter) { where.push('category_id=?'); params.push(catFilter); }
-  if (matFilter) { where.push('material LIKE ?'); params.push('%' + matFilter + '%'); }
+  if (matFilter) { where.push('material LIKE ? ESCAPE \'\\\''); params.push(likeEsc(matFilter)); }
   if (statusFilter) { where.push("COALESCE(status,'在售')=?"); params.push(statusFilter); }
   if (posFilter === '__none__') { where.push("COALESCE(positioning,'')=''"); }
   else if (posFilter) { where.push('positioning=?'); params.push(posFilter); }

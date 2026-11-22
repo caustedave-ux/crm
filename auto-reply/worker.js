@@ -295,9 +295,13 @@ function getChat(accountId, jid) {
 }
 
 function getLastMsg(accountId, jid) {
-  return crm.prepare('SELECT from_me, text, id FROM wa_messages WHERE account_id=? AND chat_jid=? ORDER BY id DESC LIMIT 1')
+  return crm.prepare('SELECT from_me, text, kind, ts, id FROM wa_messages WHERE account_id=? AND chat_jid=? ORDER BY id DESC LIMIT 1')
     .get(accountId, jid) || null;
 }
+
+// WhatsApp 文件类消息入库时 text 是种类标签（见 src/wa.js storeMessage：无 caption 时取 KIND_LABEL），
+// 不是空字符串，但同样比对不上 sent_log 里的草稿文本
+const KIND_LABEL_TEXTS = new Set(['[图片]', '[视频]', '[语音]', '[文件]', '[贴纸]', '[位置]', '[名片]']);
 
 /** 该会话最后一条客户消息（from_me=0），跟进轮次据此算静默时长 */
 function getLastCustomerMsg(accountId, jid) {
@@ -309,7 +313,9 @@ function getLastCustomerMsg(accountId, jid) {
  * 人工是否已接手该会话（跟进轮次专用）。
  * 规则：最后一条我方消息是我方自动回复的，不算接手；否则算人工接手，跟进停下。
  * “是我方自动回复”的判断：文本与 sent_log 里该会话的已发草稿能对上，
- * 或消息时间在最近一次自动发送后 5 分钟内（刚同步回来的我方消息）。
+ * 或消息时间在最近一次自动发送后 5 分钟内（刚同步回来的我方消息），
+ * 或是文件类消息（text 只有“[文件]/[图片]”这类种类标签、比对不上草稿），且 sent_log 里
+ * 有机器人在该消息前后 30 分钟内发过文件——机器人自己发的素材包不能算人工接手。
  */
 function humanTookOver(chat, chatKey) {
   const last = getLastMsg(chat.account_id, chat.jid);
@@ -329,6 +335,19 @@ function humanTookOver(chat, chatKey) {
     const t = logic.parseTs(lastAuto);
     const now = Date.now();
     if (t !== null && now - t < 5 * 60 * 1000) return false;
+  }
+  // 文件类消息走不到草稿比对：用 sent_log 的发件记录 + 时间 proximity 再认一次机器人
+  const isFileLike = !text || KIND_LABEL_TEXTS.has(text) || String(last.kind || 'text') !== 'text';
+  if (isFileLike) {
+    try {
+      const sent = state.prepare("SELECT at, file_count FROM sent_log WHERE chat_key=? AND action='sent' ORDER BY id DESC LIMIT 1").get(chatKey);
+      if (sent) {
+        const sentAt = logic.parseTs(sent.at);
+        const msgAt = logic.parseTs(last.ts);
+        const fileOk = String(last.kind || 'text') === 'text' || Number(sent.file_count) > 0;
+        if (fileOk && sentAt !== null && msgAt !== null && Math.abs(msgAt - sentAt) <= 30 * 60 * 1000) return false;
+      }
+    } catch (e) {}
   }
   return true;
 }
@@ -367,8 +386,10 @@ function recordLog(row) {
 
 /**
  * 客户给出具体需求转人工 → 给主系统写一条强弹窗通知（POST /api/notifications）。
- * 只在“客户给出具体需求”这类转人工事件调用（decision.notify 为真，或素材环节的高精准转人工）；
- * 低精准、风险拦截、到上限仍未给具体需求的转人工不弹。尽力而为：失败只记日志，绝不阻塞主流程。
+ * 只在“客户给出具体需求”这类转人工事件调用（decision.notify 为真）；
+ * 低精准、风险拦截、到上限仍未给具体需求的转人工不弹；
+ * 额度/缺素材类 hold 也不弹（否则占 24 小时去重位，真正的转人工通知会被吞掉），只记日志。
+ * 尽力而为：失败只记日志，绝不阻塞主流程。
  * 服务端 24 小时内同一会话同类未读通知只留一条，重复触发不会刷屏。
  */
 async function notifyHandoff(chat, chatKey, reason, evidence) {
@@ -394,6 +415,11 @@ async function notifyHandoff(chat, chatKey, reason, evidence) {
 }
 
 /* ---------------- 单个会话处理 ---------------- */
+/**
+ * 处理一条客户消息。返回值供 tick() 推进游标用：
+ * true = 已处理完（跳过/拦截/已发送/观察模式都算处理完，游标可越过），
+ * false = 瞬时失败（AI 判定失败、发送全部失败），游标不推进，下次重跑。
+ */
 async function processChat(item) {
   const chatKey = item.account_id + ':' + item.chat_jid;
   const msgId = item.last_customer_id;
@@ -405,22 +431,22 @@ async function processChat(item) {
   // 会话不存在 / 属于其他账号 → 跳过
   if (!chat) {
     recordLog({ msgDbId: msgId, chatKey, action: 'skip', reason: '会话不存在' });
-    return;
+    return true;
   }
   // 只处理 session 对应账号名下的会话（避免越权发送）
   if (cookieUserId && !ownsChat(chat)) {
     recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'skip', reason: '会话不属于当前登录账号' });
-    return;
+    return true;
   }
   // 群聊跳过
   if (cfg.skipGroups && Number(chat.is_group) === 1) {
     recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'skip', reason: '群聊不自动回复' });
-    return;
+    return true;
   }
   // 必须绑定客户
   if (cfg.requireCustomerBound && !chat.customer_id) {
     recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'skip', reason: '会话未绑定客户' });
-    return;
+    return true;
   }
 
   const last = getLastMsg(item.account_id, item.chat_jid);
@@ -428,9 +454,11 @@ async function processChat(item) {
   // v2 下普通价格/报价词作为判定信号；投诉、退款、律师、付款争议仍必须人工处理
   const hitSensitive = logic.isSensitive(customerText, cfg.sensitiveWords);
   if (cfg.qualify && cfg.qualify.enabled && logic.HARD_STOP_RE.test(customerText)) {
-    recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'hold', reason: '命中高风险词，转人工：' + hitSensitive.join('、') });
-    log('WARN', (chat.name || item.chat_jid) + ' 命中高风险词，未调用 AI、未发送');
-    return;
+    // HARD_STOP 模式里的词（如 defect/damaged）不一定在 sensitiveWords 里，日志要写实际命中的模式
+    const hardHit = (customerText.match(logic.HARD_STOP_RE) || [])[0] || hitSensitive.join('、') || '高风险内容';
+    recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'hold', reason: '命中高风险词，转人工：' + hardHit });
+    log('WARN', (chat.name || item.chat_jid) + ' 命中高风险词（' + hardHit + '），未调用 AI、未发送');
+    return true;
   }
   const batchQuotaHit = logic.quotaExceeded(sentToday(), cfg.dailyLimit);
   const customerLimit = Number(cfg.dailyUniqueCustomers) || 0;
@@ -450,13 +478,12 @@ async function processChat(item) {
   if (decision.action !== 'send') {
     recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: decision.action, reason: decision.reason });
     log('INFO', '跳过 ' + (chat.name || item.chat_jid) + '：' + decision.reason);
-    return;
+    return true;
   }
 
   // ============ v2 资格判定模式 ============
   if (cfg.qualify && cfg.qualify.enabled) {
-    await processQualified(item, chat, chatKey, msgId, customerText, hitSensitive);
-    return;
+    return processQualified(item, chat, chatKey, msgId, customerText, hitSensitive);
   }
 
   // ============ v1 简单回复模式（保留） ============
@@ -464,19 +491,20 @@ async function processChat(item) {
     const draft = await draftOf(chat.id);
     recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'dry', reason: '观察模式未发送', draft: draft.text || draft.error || '' });
     log('OBSERVE', (chat.name || item.chat_jid) + ' → ' + (draft.text || draft.error || '(无草稿)').slice(0, 120));
-    return;
+    return true;
   }
 
   const draft = await draftOf(chat.id);
   if (!draft.ok) {
     recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'error', reason: '草稿生成失败：' + (draft.error || '') });
     log('ERROR', '草稿生成失败 ' + (chat.name || item.chat_jid) + '：' + (draft.error || ''));
-    return;
+    return false;
   }
-  await deliver(chat, chatKey, msgId, [{ type: 'text', text: draft.text }], draft.text);
+  const delivered = await deliver(chat, chatKey, msgId, [{ type: 'text', text: draft.text }], draft.text);
+  return !!(delivered && (delivered.sent || delivered.dry));
 }
 
-/** v2 核心：资格判定 → 按状态发素材/追问/放弃 */
+/** v2 核心：资格判定 → 按状态发素材/追问/放弃。返回值同 processChat：true=已处理完，false=瞬时失败需重试 */
 async function processQualified(item, chat, chatKey, msgId, customerText, hitSensitive) {
   const name = chat.name || item.chat_jid;
   const q = getQualification(chatKey);
@@ -498,18 +526,19 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
     if (!judge.ok) {
       recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'error', reason: '资格判定失败：' + judge.error });
       log('ERROR', '资格判定失败 ' + name + '：' + judge.error);
-      return;
+      return false;
     }
     verdict = judge.verdict;
-    decision = logic.decideQualification(verdict, q, cfg.qualify);
-    // 保存判定状态
+    // 老客户直发要交叉核对会话是否已绑定客户（M4），只靠 AI 的 existingCustomer 信号不够
+    decision = logic.decideQualification(verdict, q, cfg.qualify, { customerBound: !!chat.customer_id });
+    // 保存判定状态；ask 分支的轮次先不加（M7：回复为空或发送失败不计轮数，成功发出追问后才加 1）
     saveQualification(chatKey, {
       status: decision.status,
       precision: decision.precision,
       purpose: decision.purpose,
       language: verdict.language,
       evidence: verdict.evidence,
-      ask_rounds: decision.ask_rounds !== undefined ? decision.ask_rounds : (q && q.ask_rounds) || 0,
+      ask_rounds: decision.action === 'ask' ? (q && q.ask_rounds) || 0 : (decision.ask_rounds !== undefined ? decision.ask_rounds : (q && q.ask_rounds) || 0),
       confidence: decision.confidence,
       signals: verdict.signals,
       riskFlags: decision.riskFlags || verdict.riskFlags,
@@ -532,46 +561,55 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
   if (decision.action === 'unqualified') {
     recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'unqualified', reason: decision.reason + '｜' + verdict.evidence, draft: verdict.reply });
     log('INFO', name + '：' + decision.reason + '，不发消息');
-    return;
+    return true;
   }
   if (decision.action === 'hold') {
     recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason: decision.reason + '｜' + verdict.evidence, draft: verdict.reply });
     log('WARN', name + '：' + decision.reason);
     // 客户给出具体需求才弹强通知（decision.notify 为真）；低精准/风险/挖满 6 轮仍不明的不弹
     if (decision.notify) await notifyHandoff(chat, chatKey, decision.reason, verdict.evidence);
-    return;
+    return true;
   }
   if (decision.action === 'ask') {
     if (!verdict.reply) {
       recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'error', reason: 'AI 未生成追问文本' });
-      return;
+      return false;
     }
     sends.push({ type: 'text', text: verdict.reply });
-    await deliver(chat, chatKey, msgId, sends, verdict.reply, 'qualify_ask');
-    return;
+    const delivered = await deliver(chat, chatKey, msgId, sends, verdict.reply, 'qualify_ask');
+    // 只有成功发出追问才计轮数（M7）：回复为空、发送失败都不耗轮数
+    if (delivered && delivered.sent) {
+      try {
+        state.prepare('UPDATE qualification SET ask_rounds=ask_rounds+1, updated_at=? WHERE chat_key=?').run(nowStr(), chatKey);
+      } catch (e) { log('WARN', '追问轮次+1 失败 ' + name + '：' + (e && e.message)); }
+    }
+    return !!(delivered && (delivered.sent || delivered.dry));
   }
   // send_material：按目的准备素材
   const material = prepareMaterial(decision.purpose);
+  // 额度/缺素材类 hold 不走“客户给出具体需求”类型的强通知（M3）：不调 notifyHandoff，
+  // 否则会占 24 小时去重位并顶着转人工标题弹窗，之后真正的转人工通知会被服务端去重吞掉；
+  // AI 已生成的回复有就照常发给客户，不丢弃。
+  const holdWithReply = async (reason) => {
+    recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason, draft: verdict.reply });
+    log('WARN', name + '：' + reason);
+    if (verdict.reply) {
+      const d = await deliver(chat, chatKey, msgId, [{ type: 'text', text: verdict.reply }], verdict.reply, 'qualify_hold_reply');
+      return !!(d && (d.sent || d.dry));
+    }
+    return true;
+  };
   if (cfg.qualify.sendMaterialPackage && material.fallback && !material.files.length) {
-    recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason: '客户要报价但 materials 中没有报价文件，转人工补正式报价', draft: verdict.reply });
-    log('WARN', name + '：缺报价文件，未发送');
-    await notifyHandoff(chat, chatKey, '客户要报价但 materials 中没有报价文件，转人工补正式报价', verdict.evidence);
-    return;
+    return holdWithReply('客户要报价但 materials 中没有报价文件，转人工补正式报价');
   }
   const materialLimit = Number(cfg.qualify.dailyMaterialPackages) || 0;
   if (material.files.length && materialLimit > 0 && materialPackagesToday() >= materialLimit) {
-    recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason: '今日素材包数量已达上限 ' + materialLimit + '，转人工处理', draft: verdict.reply });
-    log('WARN', name + '：今日素材包额度已用尽，转人工');
-    await notifyHandoff(chat, chatKey, '今日素材包数量已达上限 ' + materialLimit + '，转人工处理', verdict.evidence);
-    return;
+    return holdWithReply('今日素材包数量已达上限 ' + materialLimit + '，转人工处理');
   }
   const plannedFileCount = cfg.qualify.sendMaterialPackage ? material.files.length : 0;
   const fileLimit = Number(cfg.qualify.dailyFiles) || 0;
   if (plannedFileCount && fileLimit > 0 && filesSentToday() + plannedFileCount > fileLimit) {
-    recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason: '今日文件发送额度不足：计划 ' + plannedFileCount + ' 个，已发 ' + filesSentToday() + '，上限 ' + fileLimit, draft: verdict.reply });
-    log('WARN', name + '：今日文件额度不足，转人工');
-    await notifyHandoff(chat, chatKey, '今日文件发送额度不足，转人工处理', verdict.evidence);
-    return;
+    return holdWithReply('今日文件发送额度不足：计划 ' + plannedFileCount + ' 个，已发 ' + filesSentToday() + '，上限 ' + fileLimit);
   }
   const materialKey = 'material_sent:' + chatKey + ':' + material.kind;
   const resendHours = Math.max(1, Number(cfg.qualify.materialResendHours) || 168);
@@ -586,13 +624,17 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
   const caption = verdict.reply || materialCaption(decision.purpose, material);
   if (caption) sends.push({ type: 'text', text: caption });
   if (!sends.length) {
-    recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason: '判定精准但无可用素材（materials 目录为空），待人工补素材' });
-    log('WARN', name + '：判定精准但 materials 目录没有可用素材，未发送');
-    await notifyHandoff(chat, chatKey, '判定精准但无可用素材（materials 目录为空），待人工补素材', verdict.evidence);
-    return;
+    return holdWithReply('判定精准但无可用素材（materials 目录为空），待人工补素材');
   }
   const delivered = await deliver(chat, chatKey, msgId, sends, caption, 'material:' + material.kind);
-  if (delivered && delivered.sent) metaSet(materialKey, nowStr());
+  // 只有全部文件都发成功才置去重 key（M8）：部分失败不置 key，下次可重试/补发，
+  // 否则 168 小时内同一素材被去重抑制，剩余文件永远发不出去
+  if (delivered && delivered.sent) {
+    const allFilesOk = !plannedFileCount || Number(delivered.sentFiles || 0) >= plannedFileCount;
+    if (allFilesOk) metaSet(materialKey, nowStr());
+    else log('WARN', name + '：素材包部分文件发送失败（成功 ' + Number(delivered.sentFiles || 0) + '/' + plannedFileCount + '），未置去重，下次可补发');
+  }
+  return !!(delivered && (delivered.sent || delivered.dry));
 }
 
 function materialCaption(purpose, material) {
@@ -710,11 +752,11 @@ async function deliver(chat, chatKey, msgId, sends, summary, tag, opts) {
     metaSet('last_reply:' + chatKey, nowStr());
     recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'sent', reason: '成功 ' + sentCount + '/' + sends.length + (tag ? '｜' + tag : ''), draft: summary, messageCount: sentTexts, fileCount: sentFiles });
     log('SENT', (chat.name || chat.jid) + ' → ' + sentCount + ' 条' + (lastErr ? '（部分失败：' + lastErr + '）' : ''));
-    return { sent: true, sentCount, error: lastErr };
+    return { sent: true, sentCount, sentTexts, sentFiles, error: lastErr };
   } else {
     recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'error', reason: '全部发送失败：' + lastErr });
     log('ERROR', '发送失败 ' + (chat.name || chat.jid) + '：' + lastErr);
-    return { sent: false, error: lastErr };
+    return { sent: false, sentCount: 0, sentTexts: 0, sentFiles: 0, error: lastErr };
   }
 }
 
@@ -950,15 +992,25 @@ async function tick() {
     `).all(cursor, maxId);
 
     const textOf = crm.prepare('SELECT text FROM wa_messages WHERE id=?');
+    // 游标只推进到连续处理成功的最后一条（H1）：某条因 AI 判定失败/发送失败没处理完，
+    // 游标停在它之前，下次重跑；成功处理的消息才越过，不会一次网络抖动就永久丢回复。
+    // 失败即停下本轮（不继续处理后面的会话），避免游标越过失败项造成重复发送。
+    let advancedTo = cursor;
     for (const item of rows) {
       if (!running) break;
       const t = textOf.get(item.last_customer_id);
       item.text = t ? String(t.text || '') : '';
-      try { await processChat(item); }
-      catch (e) { log('ERROR', '处理会话异常 ' + item.chat_jid + '：' + (e && e.message)); }
+      let ok = false;
+      try { ok = await processChat(item); }
+      catch (e) { log('ERROR', '处理会话异常 ' + item.chat_jid + '：' + (e && e.message)); ok = false; }
+      if (!ok) {
+        log('WARN', '会话 ' + item.chat_jid + ' 未处理完（id=' + item.last_customer_id + '），游标停在 ' + advancedTo + '，下次重跑');
+        break;
+      }
+      advancedTo = item.last_customer_id;
     }
 
-    metaSet('cursor', maxId);
+    metaSet('cursor', advancedTo);
   } catch (e) {
     log('ERROR', '轮询异常：' + (e && e.stack || e));
   } finally {
@@ -987,7 +1039,12 @@ async function main() {
 
   await tick();
   await followupTick();
-  const timer = setInterval(() => { if (running) { tick(); followupTick(); } }, Math.max(5, Number(cfg.pollSeconds) || 15) * 1000);
+  // 回复与跟进串行跑（L12）：原来 tick() 与 followupTick() 在同一 setInterval 里无 await 地
+  // 并发跑，同一会话可能同时 deliver；现在先跑完回复再跑跟进，避免竞态。
+  const timer = setInterval(() => {
+    if (!running) return;
+    tick().then(() => followupTick()).catch(e => log('ERROR', '轮询异常：' + (e && e.stack || e)));
+  }, Math.max(5, Number(cfg.pollSeconds) || 15) * 1000);
 
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);

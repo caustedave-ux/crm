@@ -246,6 +246,8 @@ function page(opts) {
     go.className = 'btn btn-sm notify-toast-go';
     go.href = n.link || '/whatsapp/session';
     go.textContent = '去跟进';
+    // 点“去跟进”也标已读（L2），否则下个页面又弹出来
+    go.addEventListener('click', function () { markRead(n.id); });
     var ok = document.createElement('button');
     ok.type = 'button';
     ok.className = 'btn btn-sm btn-outline-light notify-toast-ok';
