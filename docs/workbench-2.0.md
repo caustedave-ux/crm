@@ -136,3 +136,14 @@ WhatsApp 页顶部原来有两块可折叠的设置区，占地方又和聊天�
 - **WhatsApp 页顶上现在剩什么**：标题“WhatsApp 收件箱”+副标题，右边只剩三个徽章（N 个会话 / N 条未读 / N 个待绑定），没有按钮了；下面依次是 4 个统计卡、移到设置的提示行、三栏聊天、底部状态条。布局和 2.0 深色紫色不变。
 
 验证：`npm run check` 与 `npm run test:wa`（见下节）。本地再看一遍：打开 WhatsApp 页，右上角没有按钮；打开系统设置，WhatsApp 三张卡都在，拨一下声音提醒开关，再回 WhatsApp 页等一条客户消息，应按开关响铃/静默。
+
+## 取消铺满网页，声音提醒移到系统设置（2026-11-22，在新仓库内容 4406b29 上重做）
+
+背景：上一节那次改动推上 GitHub 后，仓库 main 在 2026-11-22 21:36 被一个单提交“脱敏开源版 2.0”（4406b29）覆盖，旧改动没了；这份新内容里的 WhatsApp 页右上角三个按钮（“连接与自动回复设置”“声音提醒：开”“铺满网页”）都还在。本节是在这份新内容上重新做的同一件事，只改这份代码，不碰备份，不动 githubUpdate.js、systemRestart.js、codexAssistant.js。
+
+- **铺满网页功能整个删掉**：页头“铺满网页”按钮（`#waFullscreenBtn`）、铺满横幅（`.wa-focus-bar` / `.wa-focus-exit` / `#waFullscreenExit`）、`setWaFullscreen`、Esc 退出铺满、点击 `#waFullscreenBtn / #waFullscreenExit` 的委托分支、`localStorage` 的 `crm_wa_fullscreen` 记忆，以及 `static/css/style.css` 里所有 `body.wa-focus-mode` / `.wa-focus-bar` 规则（共三处：基础样式区、深色覆盖区、2.0 三栏布局区）都清了。`tools/test-wa-inbox.js` 第 15 节旧断言改成“不存在”断言，全仓再搜不到 `wa-focus` / `waFullscreen` / `crm_wa_fullscreen` / “铺满网页”（只剩测试里“必须不存在”的断言）。
+- **“连接与自动回复设置”**：WhatsApp 页头那个去设置页的链接拿掉了；设置页里两张卡——“WhatsApp 连接与代理设置”“自动回复总开关”——原样保留，一字未动。
+- **“声音提醒”移到系统设置**：`waSettingsCards` 现在返回三张卡，第三张就叫“声音提醒”，在两张 WhatsApp 卡下方，开关是 Bootstrap 开关样式，拨一下就写 localStorage，不用提交。存储方式没变，还是原来那个按钮的 localStorage：`crm_wa_sound`，`'0'` 为关、缺省/其他值为开，默认开。WhatsApp 页只读这个值决定来新消息时响不响铃，不再渲染按钮；响铃本身（浏览器音频双音提示、只对客户来信触发、未读数照常显示）没变。卡片上写明了只保存在这台浏览器里，换电脑或清浏览器数据后要重新开。
+- **WhatsApp 页顶上现在剩什么**：标题“WhatsApp”+副标题“客户会话 · CRM 档案 · AI 销售助手”，右边只剩三个徽章（N 个会话 / N 条未读 / N 个待绑定），没有按钮了；下面依次是 4 个统计（今日客户消息 / 今日活跃会话 / 待处理跟进 / 近 7 天报价）、三栏聊天。布局和 2.0 深色紫色不变。
+
+验证：`npm run check` 与 `npm run test:wa`（见下节）。本地再看一遍：打开 WhatsApp 页，右上角没有按钮；打开系统设置，WhatsApp 三张卡都在，拨一下声音提醒开关，再回 WhatsApp 页等一条客户消息，应按开关响铃/静默。

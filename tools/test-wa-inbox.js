@@ -391,12 +391,16 @@ eq(unreadChatHtml.includes('loadChat(window.location.href, { push: false, saveDr
 eq(unreadChatHtml.includes("loadChat('/whatsapp/session?chat=' + chatId, { push: false, saveDraft: false })"), false,
   '不再使用会重置筛选的固定会话地址');
 
-console.log('\n=== 15. 三栏网页铺满布局 ===');
+console.log('\n=== 15. 铺满网页功能已取消 ===');
 const fullscreenHtml = sessionPage({ query: { chat: String(chat.id) }, user, flash: () => [] });
 eq(fullscreenHtml.includes('document.documentElement.requestFullscreen'), false, '不再请求浏览器原生全屏');
 eq(fullscreenHtml.includes('fullscreenchange'), false, '不再依赖原生全屏事件');
-eq(fullscreenHtml.includes("document.body.classList.toggle('wa-focus-mode'"), true, '铺满模式只切换网页布局');
-eq(fullscreenHtml.includes("localStorage.getItem('crm_wa_fullscreen')"), true, '网页铺满状态可恢复');
+eq(fullscreenHtml.includes("document.body.classList.toggle('wa-focus-mode'"), false, '不再切换铺满布局');
+eq(fullscreenHtml.includes("localStorage.getItem('crm_wa_fullscreen')"), false, '不再恢复铺满状态');
+eq(fullscreenHtml.includes('waFullscreenBtn'), false, '页头不再有铺满网页按钮');
+eq(fullscreenHtml.includes('铺满网页'), false, '页面上不再出现铺满网页字样');
+eq(cssSource.includes('.wa-focus-bar'), false, '样式里不再有铺满横幅规则');
+eq(cssSource.includes('wa-focus-mode'), false, '样式里不再有铺满模式规则');
 eq(cssSource.includes('@media (min-width:992px)'), true, '桌面宽度下三栏使用铺满布局断点');
 eq(cssSource.includes('.wa-inbox > div:first-child{flex:0 0 clamp(240px,17vw,340px)'), true, '会话栏按屏幕宽度自适应');
 eq(cssSource.includes('.wa-inbox > #waCustomerPanel{flex:0 0 clamp(280px,20vw,380px)'), true, '客户与跟进栏按屏幕宽度自适应');
@@ -442,11 +446,15 @@ eq(get('SELECT unread FROM wa_chats WHERE id=?', chat.id).unread, 0, '打开会�
 eq(readBounceHtml.includes('unread-bounce'), false, '已读后取消会话和顶部跳动');
 eq(readBounceHtml.includes('未读 0'), true, '已读后顶部未读数量同步归零');
 
-console.log('\n=== 19. WhatsApp 新消息声音提醒 ===');
-eq(html.includes('id="waSoundToggle"'), true, '页面提供声音提醒开关');
+console.log('\n=== 19. WhatsApp 新消息声音提醒已移到系统设置 ===');
+eq(html.includes('id="waSoundToggle"'), false, 'WhatsApp 页右上角不再放声音提醒按钮');
 eq(html.includes('window.AudioContext') && html.includes('playWaNotification'), true, '使用浏览器音频生成提示音');
 eq(html.includes('maybeNotifyIncoming') && html.includes('inboxLatestIncomingId'), true, '仅对新的客户来信触发声音');
-eq(html.includes("localStorage.getItem('crm_wa_sound')") && html.includes("localStorage.setItem('crm_wa_sound'"), true, '声音开关状态持久保存');
+eq(html.includes("localStorage.getItem('crm_wa_sound')"), true, 'WhatsApp 页只读声音开关状态');
+eq(html.includes("localStorage.setItem('crm_wa_sound'"), false, 'WhatsApp 页不再写声音开关状态');
+const waSettingsHtml = pagesWa.waSettingsCards({ user, flash: () => [] }).join('');
+eq(waSettingsHtml.includes('id="waSoundSetting"'), true, '系统设置里有声音提醒开关');
+eq(waSettingsHtml.includes("localStorage.setItem('crm_wa_sound'"), true, '系统设置开关拨动即保存');
 eq(routesSource.includes('m.from_me=0') && routesSource.includes('inbox_incoming_changed'), true, '轮询接口区分客户来信和自己发送');
 
 console.log('\n=== 20. 我方消息客户已读回执 ===');

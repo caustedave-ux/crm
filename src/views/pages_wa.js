@@ -235,12 +235,30 @@ function autoReplyBar(ctx, back) {
   </div>`;
 }
 
-// 系统设置页用的 WhatsApp 卡片：连接与代理、自动回复总开关。
+// 系统设置页用的 WhatsApp 卡片：连接与代理、自动回复总开关、声音提醒。
 // 连接卡直接复用 accountCard（自带“我的 WhatsApp”标题）；自动回复条自带标题行，外面只套一层卡壳。
+// 声音提醒开关原来在 WhatsApp 页右上角，现搬到这里：Bootstrap 开关，拨一下就写 localStorage 的 crm_wa_sound（'0' 为关，默认开），不用提交；WhatsApp 页只读同一个 key。
 function waSettingsCards(ctx) {
   return [
     accountCard(ctx, '/settings'),
     card({ body: autoReplyBar(ctx, '/settings') }),
+    card({ title: '声音提醒', body: `<div class="d-flex align-items-center gap-3 flex-wrap">
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="waSoundSetting">
+        <label class="form-check-label fw-semibold" for="waSoundSetting">新消息声音提醒</label>
+      </div>
+      <span class="text-muted small">来新客户消息时播放提示音；只保存在这台浏览器里，换电脑或清除浏览器数据后要重新开。</span>
+    </div>
+    <script>
+      (function () {
+        var sw = document.getElementById('waSoundSetting');
+        if (!sw) return;
+        try { sw.checked = localStorage.getItem('crm_wa_sound') !== '0'; } catch (e) { sw.checked = true; }
+        sw.addEventListener('change', function () {
+          try { localStorage.setItem('crm_wa_sound', sw.checked ? '1' : '0'); } catch (e) {}
+        });
+      })();
+    </script>` }),
   ];
 }
 
@@ -843,17 +861,12 @@ function sessionPage(ctx) {
     </section>
   </aside>`;
   const content = `
-    ${pageHead('WhatsApp', '客户会话 · CRM 档案 · AI 销售助手', `<div class="d-flex gap-2 flex-wrap align-items-center"><a class="btn btn-sm btn-outline-secondary" href="/settings" title="WhatsApp 连接、代理与自动回复设置已移到系统设置"><i class="bi bi-sliders2 me-1"></i>连接与自动回复设置</a><button class="btn btn-sm btn-outline-success" type="button" id="waSoundToggle" aria-pressed="true" title="有新客户消息时播放提示音"><i class="bi bi-volume-up-fill me-1"></i><span>声音提醒：开</span></button><button class="btn btn-sm btn-dark" type="button" id="waFullscreenBtn" aria-pressed="false" title="在当前浏览器窗口内铺满，不进入显示器全屏"><i class="bi bi-arrows-fullscreen me-1"></i><span>铺满网页</span></button></div>`)}
+    ${pageHead('WhatsApp', '客户会话 · CRM 档案 · AI 销售助手', `<div class="d-flex gap-2 flex-wrap align-items-center"><span class="badge text-bg-light">${stats.total || 0} 个会话</span><span class="badge text-bg-danger">${stats.unread_msgs || 0} 条未读</span><span class="badge text-bg-warning">${stats.unbound || 0} 个待绑定</span></div>`)}
     <div class="wa-workbench-metrics">
       <div><i class="bi bi-chat-dots"></i><span><b>${Number(todayMessages) || 0}</b><small>今日客户消息</small></span></div>
       <div><i class="bi bi-people"></i><span><b>${Number(activeConversations) || 0}</b><small>今日活跃会话</small></span></div>
       <div><i class="bi bi-calendar2-check"></i><span><b>${Number(dueFollowups) || 0}</b><small>待处理跟进</small></span></div>
       <div><i class="bi bi-send"></i><span><b>${Number(weekQuotes) || 0}</b><small>近 7 天报价</small></span></div>
-    </div>
-    <div class="wa-focus-bar">
-      <div class="wa-focus-bar-title"><i class="bi bi-whatsapp"></i><span>WhatsApp 铺满网页</span></div>
-      <span class="wa-focus-bar-note">会话、聊天、客户与跟进三栏铺满当前浏览器窗口 · 按 Esc 可退出</span>
-      <button class="wa-focus-exit" type="button" id="waFullscreenExit"><i class="bi bi-fullscreen-exit me-1"></i>退出铺满</button>
     </div>
     <div class="row g-3 wa-inbox wa-3col workbench-2" id="waInbox" data-inbox-last-id="${inboxLastId}">
       <div class="wa-left-column">${card({
@@ -906,20 +919,11 @@ function sessionPage(ctx) {
         var requestSeq = 0;
         var loading = false;
         var deferredPollRefresh = false;
-        var soundBtn = document.getElementById('waSoundToggle');
+        // 声音提醒开关已移到系统设置（localStorage 的 crm_wa_sound，'0' 为关，默认开），这里只读不渲染按钮。
         var soundEnabled = true;
         var waAudioContext = null;
         var lastNotifiedIncomingId = Number(inbox.dataset.inboxLastId || 0);
         try { soundEnabled = localStorage.getItem('crm_wa_sound') !== '0'; } catch (e) {}
-
-        function updateSoundButton() {
-          if (!soundBtn) return;
-          soundBtn.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false');
-          soundBtn.className = 'btn btn-sm ' + (soundEnabled ? 'btn-outline-success' : 'btn-outline-secondary');
-          soundBtn.innerHTML = soundEnabled
-            ? '<i class="bi bi-volume-up-fill me-1"></i><span>声音提醒：开</span>'
-            : '<i class="bi bi-volume-mute-fill me-1"></i><span>声音提醒：关</span>';
-        }
 
         function ensureWaAudioContext() {
           var Ctx = window.AudioContext || window.webkitAudioContext;
@@ -970,37 +974,8 @@ function sessionPage(ctx) {
           playWaNotification();
         }
 
-        updateSoundButton();
-        if (soundBtn) soundBtn.addEventListener('click', function () {
-          soundEnabled = !soundEnabled;
-          try { localStorage.setItem('crm_wa_sound', soundEnabled ? '1' : '0'); } catch (e) {}
-          updateSoundButton();
-          if (soundEnabled) { unlockWaAudio(); playWaNotification(); }
-        });
         document.addEventListener('pointerdown', unlockWaAudio, { passive: true });
         document.addEventListener('keydown', unlockWaAudio);
-
-        var fullscreenBtn = document.getElementById('waFullscreenBtn');
-
-        function setWaFullscreen(on, remember) {
-          document.body.classList.toggle('wa-focus-mode', !!on);
-          if (fullscreenBtn) {
-            fullscreenBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-            fullscreenBtn.innerHTML = on
-              ? '<i class="bi bi-fullscreen-exit me-1"></i><span>退出铺满</span>'
-              : '<i class="bi bi-arrows-fullscreen me-1"></i><span>铺满网页</span>';
-          }
-          if (remember) {
-            try { localStorage.setItem('crm_wa_fullscreen', on ? '1' : '0'); } catch (e) {}
-          }
-          window.setTimeout(function () {
-            var box = document.getElementById('waMsgs');
-            if (on && box) box.scrollTop = box.scrollHeight;
-          }, 80);
-        }
-        try {
-          if (localStorage.getItem('crm_wa_fullscreen') === '1') setWaFullscreen(true, false);
-        } catch (e) {}
 
         function activePanel() { return document.getElementById('waChatPanel'); }
 
@@ -2020,12 +1995,6 @@ function sessionPage(ctx) {
             else if (adCopyText) window.prompt('复制广告 ID', adCopyText);
             return;
           }
-          var focusToggle = e.target.closest ? e.target.closest('#waFullscreenBtn, #waFullscreenExit') : null;
-          if (focusToggle) {
-            e.preventDefault();
-            setWaFullscreen(!document.body.classList.contains('wa-focus-mode'), true);
-            return;
-          }
           var quoteJump = e.target.closest ? e.target.closest('.wa-quote-jump') : null;
           if (quoteJump && inbox.contains(quoteJump)) {
             e.preventDefault();
@@ -2062,11 +2031,6 @@ function sessionPage(ctx) {
           window.setTimeout(function () {
             if (deferredPollRefresh && pollNow) pollNow();
           }, 250);
-        });
-        document.addEventListener('keydown', function (e) {
-          if (e.key === 'Escape' && document.body.classList.contains('wa-focus-mode')) {
-            setWaFullscreen(false, true);
-          }
         });
         initConversation();
       })();
