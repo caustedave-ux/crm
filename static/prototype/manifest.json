@@ -1,0 +1,73 @@
+{
+  "project": {
+    "title": "PRD Product Prototype Generator",
+    "id": "9836361844615305133",
+    "designSystem": "Neo-B2B Trade OS"
+  },
+  "assets": {
+    "logo": "logo/logo.svg",
+    "designSystem": "design-system.md"
+  },
+  "screens": [
+    {
+      "dir": "01-dashboard",
+      "title": "01. 仪表盘经营看板",
+      "screenId": "8deb001265ee499d9fbde8c0b4ad1d9d"
+    },
+    {
+      "dir": "02-customers",
+      "title": "02. 客户管理列表",
+      "screenId": "ddba17abe7e243b5ade7311230e71d76"
+    },
+    {
+      "dir": "03-public-pool",
+      "title": "03. 公共客户池",
+      "screenId": "7c3fa1b7578348b48e3e626f4a4d57cc"
+    },
+    {
+      "dir": "04-followups",
+      "title": "04. 跟进看板与记录",
+      "screenId": "5e3b46e2a0594c8d964625fc587ec074"
+    },
+    {
+      "dir": "05-products",
+      "title": "05. 产品与规格档案",
+      "screenId": "424d51b91c1d4f61b3a9b27737f51093"
+    },
+    {
+      "dir": "06-inventory",
+      "title": "06. 库存管理与变动流水",
+      "screenId": "92891bbb3f2f4224b91be8228c23faf5"
+    },
+    {
+      "dir": "07-pi-editor",
+      "title": "07. 形式发票 PI 编辑制作",
+      "screenId": "99043fff367e44ef994887ab8838cd56"
+    },
+    {
+      "dir": "08-document-center",
+      "title": "08. 单据中心与 PI 打印预览",
+      "screenId": "f7cc7e85df574ac4adc814783241b833"
+    },
+    {
+      "dir": "09-payments",
+      "title": "09. 货款与分笔收款管理",
+      "screenId": "8e657760e79e4d769382e05c872a5105"
+    },
+    {
+      "dir": "10-shipments",
+      "title": "10. 发货与物流履约管理",
+      "screenId": "af0609210bdb47f99e5360db293d7792"
+    },
+    {
+      "dir": "11-suppliers",
+      "title": "11. 供应商与工厂管理",
+      "screenId": "f4a3fd8e69ca4ae6ad9d7e829a19488d"
+    },
+    {
+      "dir": "13-settings",
+      "title": "13. 系统设置与运维中心",
+      "screenId": "31be92d42e2349ab98348a632c4896ed"
+    }
+  ]
+}

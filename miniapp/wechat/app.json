@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/dashboard/dashboard",
+    "pages/customers/customers",
+    "pages/customer-detail/customer-detail",
+    "pages/documents/documents",
+    "pages/products/products",
+    "pages/more/more"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#2f6bff",
+    "navigationBarTitleText": "HQ CRM",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f7fa",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#8a94a6",
+    "selectedColor": "#2f6bff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/dashboard/dashboard", "text": "工作台" },
+      { "pagePath": "pages/customers/customers", "text": "客户" },
+      { "pagePath": "pages/documents/documents", "text": "单据" },
+      { "pagePath": "pages/more/more", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

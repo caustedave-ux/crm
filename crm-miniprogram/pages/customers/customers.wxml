@@ -1,0 +1,62 @@
+<view class="page">
+  <view class="search-bar">
+    <text class="muted">🔍</text>
+    <input
+      value="{{kw}}"
+      placeholder="搜索公司名 / 国家 / 联系人"
+      placeholder-class="muted"
+      bindinput="onSearchInput"
+      bindconfirm="onSearch"
+      confirm-type="search"
+    />
+  </view>
+
+  <view class="filters">
+    <view
+      wx:for="{{statuses}}"
+      wx:key="*this"
+      class="filter-chip {{status === item ? 'active' : ''}}"
+      data-status="{{item}}"
+      bindtap="onStatusTap"
+    >{{item}}</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
+
+  <view wx:if="{{!loading && errMsg}}" class="card">
+    <view class="empty">{{errMsg}}</view>
+    <view class="btn btn-ghost" bindtap="onSearch">重试</view>
+  </view>
+
+  <view wx:if="{{!loading && !errMsg}}" class="card">
+    <view class="card-title">
+      <text>客户列表</text>
+      <text class="more">共 {{total}} 家</text>
+    </view>
+
+    <view wx:if="{{list.length === 0}}" class="empty">没有匹配的客户</view>
+
+    <view wx:for="{{list}}" wx:key="id" class="cust-item" bindtap="goDetail" data-id="{{item.id}}">
+      <view class="avatar">{{item.initial}}</view>
+      <view class="cust-main">
+        <view class="t-main">{{item.company_name}}</view>
+        <view class="t-sub">
+          <text wx:if="{{item.country}}">{{item.country}}</text>
+          <text wx:if="{{item.contact_person}}"> · {{item.contact_person}}</text>
+        </view>
+      </view>
+      <view class="cust-side">
+        <view class="{{item.statusClass}}">{{item.status}}</view>
+        <view
+          wx:if="{{item.phone}}"
+          class="call-btn"
+          catchtap="callPhone"
+          data-phone="{{item.phone}}"
+        >拨打</view>
+      </view>
+    </view>
+
+    <view wx:if="{{loadingMore}}" class="loading">加载更多…</view>
+    <view wx:if="{{!hasMore && list.length > 0}}" class="loading">已全部加载</view>
+  </view>
+</view>

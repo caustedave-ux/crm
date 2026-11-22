@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed": "#ffdad2", "on-error-container": "#93000a", "on-surface-variant": "#46464b", "outline-variant": "#c7c6cb", "surface": "#f8f9fb", "tertiary-fixed": "#fce42e", "on-background": "#191c1e", "surface-container-low": "#f3f4f6", "on-secondary": "#ffffff", "error": "#ba1a1a", "background": "#f8f9fb", "on-primary-fixed-variant": "#46464a", "inverse-primary": "#c7c6ca", "primary": "#000000", "on-primary": "#ffffff", "tertiary-fixed-dim": "#dec800", "error-container": "#ffdad6", "surface-container-highest": "#e1e2e4", "primary-fixed": "#e3e2e6", "outline": "#76777b", "on-surface": "#191c1e", "on-primary-fixed": "#1b1b1f", "surface-container-lowest": "#ffffff", "secondary-fixed-dim": "#ffb4a3", "secondary-container": "#ff5c38", "secondary": "#b52705", "surface-dim": "#d9dadc", "on-tertiary-container": "#484000", "on-error": "#ffffff", "on-secondary-container": "#5b0d00", "surface-variant": "#e1e2e4", "on-secondary-fixed-variant": "#8b1900", "on-primary-container": "#848387", "inverse-surface": "#2e3132", "tertiary": "#6a5f00", "on-tertiary-fixed-variant": "#504700", "on-tertiary": "#ffffff", "primary-fixed-dim": "#c7c6ca", "surface-container": "#edeef0", "tertiary-container": "#c0ad00", "surface-bright": "#f8f9fb", "on-secondary-fixed": "#3d0600", "surface-container-high": "#e7e8ea", "inverse-on-surface": "#f0f1f3", "surface-tint": "#5e5e62", "on-tertiary-fixed": "#201c00", "primary-container": "#1b1b1f" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin": "2rem", "space-sm": "0.625rem", "gutter-mobile": "0.75rem", "space-xs": "0.375rem", "margin-mobile": "1rem", "gutter": "1.25rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "body-sm": [ "Inter" ], "body-lg": [ "Inter" ], "headline-lg": [ "Inter" ], "headline-lg-mobile": [ "Inter" ], "headline-md": [ "Inter" ], "label-sm": [ "Inter" ], "label-md": [ "Inter" ], "display-lg": [ "Inter" ], "body-md": [ "Inter" ], "headline-sm": [ "Inter" ], "numeric-stat": [ "Inter" ] }, "fontSize": { "body-sm": [ "12px", { "lineHeight": "16px", "fontWeight": "400" } ], "body-lg": [ "16px", { "lineHeight": "24px", "fontWeight": "400" } ], "headline-lg": [ "28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "headline-lg-mobile": [ "22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" } ], "headline-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "label-sm": [ "11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" } ], "label-md": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "display-lg": [ "36px", { "lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "body-md": [ "14px", { "lineHeight": "20px", "fontWeight": "400" } ], "headline-sm": [ "16px", { "lineHeight": "24px", "fontWeight": "600" } ], "numeric-stat": [ "32px", { "lineHeight": "38px", "letterSpacing": "-0.03em", "fontWeight": "700" } ] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 z-50 bg-primary text-on-primary h-16 shadow-[0_4px_20px_rgba(0,0,0,0.12)]"><div class="w-full h-16 px-gutter flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-md"><img alt="HQ CRM Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WoWTmGJ8WzTB9EO8tux_06mJrvdqKPFJb0vsLxg9hT-05bxnAlKbsbt14JuOVa6TQUJHE7hFJFmISXkzTAKNwBSCcBkf69XF1aXg-qU0hPau9Lj04bo8FXldcNf83ZXEWfQ591f-Lk3AHbPcmefgyywYXGl1q9U8ubZ2qJiSNUdz9QtZsQkC3B2vC2tZhkUD7dtbCb9uu5Hwtv8yMnITbcrvXFso2e9QPoo_t43RWNewfV-6K2ODmevBw"/><div class="flex items-baseline gap-space-xs"><span class="font-headline-sm text-headline-sm tracking-tight text-on-primary">HQ CRM</span><span class="px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold uppercase tracking-wider">Global Pro</span></div></div><div class="flex-1 max-w-xl mx-auto hidden md:block"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-3 text-outline text-[18px]">search</span><input class="w-full bg-surface-container-highest/20 hover:bg-surface-container-highest/30 focus:bg-surface-container-highest/40 text-on-primary placeholder:text-outline font-body-sm text-body-sm pl-9 pr-12 py-1.5 rounded-lg border-0 transition-all outline-none" placeholder="全局穿透检索：客户名 / 英文品名 / 提单号 / PI单号 / 汇款水单 (Cmd+K)" type="text"/><kbd class="absolute right-3 px-1.5 py-0.5 rounded bg-surface-container-highest/30 text-outline font-label-sm text-label-sm select-none">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><button class="hidden lg:flex items-center gap-1.5 bg-secondary-container hover:bg-secondary text-on-secondary font-label-md text-label-md px-3.5 py-1.5 rounded-full transition-colors shadow-sm" type="button"><span class="material-symbols-outlined text-[18px]">add</span><span>新建业务单据</span></button><button class="relative p-2 rounded-full hover:bg-surface-container-highest/20 text-on-primary transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">warning</span><span class="absolute top-1.5 right-1.5 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-secondary-container"></span></span></button><button class="relative p-2 rounded-full hover:bg-surface-container-highest/20 text-on-primary transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 px-1 min-w-[14px] h-[14px] rounded-full bg-secondary-container text-on-secondary font-label-sm text-[9px] leading-[14px] text-center font-bold">5</span></button><div class="flex items-center gap-space-sm pl-space-xs ml-space-xs"><div class="hidden sm:flex flex-col items-end text-right"><span class="font-label-md text-label-md text-on-primary font-medium">Alex Henderson</span><span class="font-label-sm text-label-sm text-outline">亚太大客户总监</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col justify-between py-space-md shadow-[2px_0_12px_rgba(0,0,0,0.03)] overflow-y-auto"><div class="flex flex-col gap-space-sm px-space-sm"><div class="px-3 py-1 text-outline font-label-sm text-label-sm uppercase tracking-wider font-semibold">核心业务矩阵</div><nav class="flex flex-col gap-1" data-active-classes="bg-primary text-on-primary font-headline-sm shadow-sm"><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="dashboard" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">grid_view</span><span class="font-label-md text-label-md">经营仪表盘</span></div><span class="font-label-sm text-label-sm text-outline">Overview</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="customers" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">badge</span><span class="font-label-md text-label-md">客户档案管理</span></div><span class="px-1.5 py-0.2 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">29天预警</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="public-pool" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">groups_3</span><span class="font-label-md text-label-md">公海线索池</span></div><span class="px-1.5 py-0.2 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold">42</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="follow-ups" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">event_note</span><span class="font-label-md text-label-md">跟进日程看板</span></div><span class="w-2 h-2 rounded-full bg-tertiary-container"></span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="products" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">inventory_2</span><span class="font-label-md text-label-md">外贸产品图库</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="inventory" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">warehouse</span><span class="font-label-md text-label-md">仓储与欠货回补</span></div><span class="px-1.5 py-0.2 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">缺料 3</span></a><a aria-current="page" class="flex items-center justify-between px-3 py-2 rounded-lg transition-colors bg-primary text-on-primary font-headline-sm shadow-sm" data-path="documents" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">description</span><span class="font-label-md text-label-md">单据中心 (PI/SC)</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="payments" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">payments</span><span class="font-label-md text-label-md">定金与外汇货款</span></div><span class="text-tertiary-container font-label-sm text-label-sm font-bold">USD</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="shipments" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">local_shipping</span><span class="font-label-md text-label-md">订舱唛头与发运</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="suppliers-and-settings" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">tune</span><span class="font-label-md text-label-md">工厂供应与设置</span></div></a></nav></div><div class="px-space-md pt-space-sm"><div class="p-3 rounded-xl bg-surface-container-low flex items-center justify-between"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-outline">汇率中间价 (USD/CNY)</span><span class="font-headline-sm text-headline-sm text-on-surface font-bold">7.2384</span></div><span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">实时</span></div></div></aside><div class="pl-64"><main class="relative pt-16 min-h-screen bg-surface"><div class="flex flex-col w-full px-margin py-space-lg gap-space-lg max-w-[1600px] mx-auto">
+<!-- Top Action & Document Flow Summary Bar -->
+<div class="flex flex-wrap items-center justify-between gap-space-md bg-surface-container-lowest p-space-md rounded-xl shadow-sm">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[24px]">description</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-md text-headline-md text-on-surface">单据中心 (Document Flow Engine)</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold uppercase tracking-wider">PRD 3.8 Verified</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">全链路单据无缝结转 · 国际外贸标准 PI 形式发票预览与打印导出中心</span>
+</div>
+</div>
+<!-- Quick Document Status Tracker -->
+<div class="flex items-center gap-space-xs bg-surface-container-low p-1.5 rounded-full">
+<div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-lowest shadow-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold">QUO 报价</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
+<div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-on-primary shadow-sm">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
+<span class="font-label-sm text-label-sm font-bold">PI 形式发票 (当前)</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
+<div class="flex items-center gap-1.5 px-3 py-1 rounded-full text-on-surface-variant">
+<span class="font-label-sm text-label-sm">SC 销售合同</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
+<div class="flex items-center gap-1.5 px-3 py-1 rounded-full text-on-surface-variant">
+<span class="font-label-sm text-label-sm">PO 采购</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
+<div class="flex items-center gap-1.5 px-3 py-1 rounded-full text-on-surface-variant">
+<span class="font-label-sm text-label-sm">CI / PL 出运结算</span>
+</div>
+</div>
+<!-- Global Quick Actions -->
+<div class="flex items-center gap-space-sm">
+<button class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors">
+<span class="material-symbols-outlined text-[18px]">history</span>
+<span>版本快照 (v2.3)</span>
+</button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary-container hover:bg-secondary text-on-secondary font-label-md text-label-md transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">forward_to_inbox</span>
+<span>直接推送客户门户</span>
+</button>
+</div>
+</div>
+<!-- Main 12-Column Responsive Workspace -->
+<div class="grid grid-cols-12 gap-gutter items-start">
+<!-- Left Column (4 Cols): Document Lifecycle List & Status Management -->
+<div class="col-span-12 xl:col-span-4 flex flex-col gap-space-md">
+<!-- Document Pipeline Card -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">全案单据协同池</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm font-bold">6 案单</span>
+</div>
+<button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-outline transition-colors">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+</button>
+</div>
+<!-- Filter Segmented Tabs -->
+<div class="flex p-1 rounded-lg bg-surface-container-low">
+<button class="flex-1 py-1 text-center rounded bg-surface-container-lowest text-on-surface font-label-sm text-label-sm font-bold shadow-xs">全部关联</button>
+<button class="flex-1 py-1 text-center text-outline hover:text-on-surface font-label-sm text-label-sm">外贸出单</button>
+<button class="flex-1 py-1 text-center text-outline hover:text-on-surface font-label-sm text-label-sm">工厂采购</button>
+<button class="flex-1 py-1 text-center text-outline hover:text-on-surface font-label-sm text-label-sm">单证清关</button>
+</div>
+<!-- Document List -->
+<div class="flex flex-col gap-space-xs">
+<!-- Item 1: Active PI -->
+<div class="relative p-space-sm rounded-lg bg-primary text-on-primary shadow-md cursor-pointer transition-all">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold">PI 形式发票</span>
+<span class="font-label-md text-label-md font-bold text-on-primary">PI-2026-092</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary font-label-sm text-label-sm font-bold">定金已收 30%</span>
+</div>
+<div class="mt-2 flex items-center justify-between text-on-primary/70 font-body-sm text-body-sm">
+<span>Apex Horizon Logistics LLC</span>
+<span class="font-numeric-stat text-headline-sm text-on-primary">$42,650.00</span>
+</div>
+<div class="mt-2 flex items-center justify-between font-label-sm text-label-sm text-on-primary/60 border-t border-on-primary/10 pt-1.5">
+<span>生成于: 2026-04-18 10:14</span>
+<span class="flex items-center gap-1 text-tertiary-fixed font-medium">
+<span class="material-symbols-outlined text-[14px]">visibility</span> 正在预览
+              </span>
+</div>
+</div>
+<!-- Item 2: Quotation -->
+<div class="p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer flex flex-col gap-1">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm font-bold">QUO 报价单</span>
+<span class="font-label-md text-label-md font-semibold text-on-surface">QUO-2026-0311</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">已转PI结转</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-outline">
+<span>3 个货号 / 3,600 件</span>
+<span class="font-medium text-on-surface">$44,200.00</span>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-outline">
+<span>业务员: Alex Henderson</span>
+<span>2026-04-12</span>
+</div>
+</div>
+<!-- Item 3: Sales Contract -->
+<div class="p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer flex flex-col gap-1">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm font-bold">SO 销售合同</span>
+<span class="font-label-md text-label-md font-semibold text-on-surface">SO-2026-0089</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-semibold">待买家背书</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-outline">
+<span>外销合同正式条款</span>
+<span class="font-medium text-on-surface">$42,650.00</span>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-outline">
+<span>双签归档中</span>
+<span>2026-04-19</span>
+</div>
+</div>
+<!-- Item 4: Purchase Order -->
+<div class="p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer flex flex-col gap-1">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm font-bold">PO 采购单</span>
+<span class="font-label-md text-label-md font-semibold text-on-surface">PO-FT-7702</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold">已安排生产</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-outline">
+<span>对厂: 浙江精工机电五金制品厂</span>
+<span class="font-medium text-on-surface">¥185,200</span>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-outline">
+<span>交期: 2026-05-20</span>
+<span class="text-secondary font-semibold">付定金 20%</span>
+</div>
+</div>
+<!-- Item 5: Commercial Invoice -->
+<div class="p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer flex flex-col gap-1">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm font-bold">CI 商业发票</span>
+<span class="font-label-md text-label-md font-semibold text-on-surface">CI-2026-0092</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-outline font-label-sm text-label-sm">待发货触发</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-outline">
+<span>清关及退税专用单据</span>
+<span class="font-medium text-on-surface">$42,650.00</span>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-outline">
+<span>草稿自动映射</span>
+<span>-</span>
+</div>
+</div>
+<!-- Item 6: Packing List -->
+<div class="p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer flex flex-col gap-1">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm font-bold">PL 装箱单</span>
+<span class="font-label-md text-label-md font-semibold text-on-surface">PL-2026-0092</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-outline font-label-sm text-label-sm">待排柜填尺</span>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-outline">
+<span>毛重 / 净重 / CBM 预估</span>
+<span class="font-medium text-on-surface">150 CTNS / 18.5 CBM</span>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-outline">
+<span>关联港口: 宁波舟山港</span>
+<span>-</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Document Audit & Exchange Rate Insights -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-sm">
+<span class="font-headline-sm text-headline-sm text-on-surface">合规检查与外汇保值</span>
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-bold text-on-surface">报关品名与HS编码匹配</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-bold">100% 校验通过</span>
+</div>
+<p class="font-body-sm text-body-sm text-outline">HS: 8481.8040 (工业阀门配件) 退税率: 13% 退税预估: ¥38,710</p>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-bold text-on-surface">买家信用及防诈水单核查</span>
+<span class="px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold">中信保覆盖 AA</span>
+</div>
+<p class="font-body-sm text-body-sm text-outline">花旗银行预收电汇 $12,795.00 已核销入账 (附流水: #TX-902381)</p>
+</div>
+</div>
+</div>
+<!-- Right Column (8 Cols): Official Foreign Trade PI Document Sheet (Print & Export Canvas) -->
+<div class="col-span-12 xl:col-span-8 flex flex-col gap-space-md">
+<!-- Action Toolbar Directly Above Document Paper -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm bg-primary text-on-primary p-space-md rounded-xl shadow-md">
+<div class="flex items-center gap-space-sm">
+<span class="px-2.5 py-1 rounded bg-secondary-container text-on-secondary font-label-sm text-label-sm font-bold tracking-wider uppercase">外贸单证打印画卷</span>
+<span class="font-headline-sm text-headline-sm">形式发票预览 (Proforma Invoice)</span>
+</div>
+<!-- Export Actions Toolbar -->
+<div class="flex items-center gap-space-xs">
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container-highest/20 hover:bg-surface-container-highest/30 text-on-primary font-label-md text-label-md transition-colors" onclick="window.print()">
+<span class="material-symbols-outlined text-[18px]">print</span>
+<span>打印单据 (Print)</span>
+</button>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container-highest/20 hover:bg-surface-container-highest/30 text-on-primary font-label-md text-label-md transition-colors">
+<span class="material-symbols-outlined text-[18px]">table_view</span>
+<span>导出 Excel (带图)</span>
+</button>
+<button class="flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-tertiary-fixed text-on-tertiary-fixed font-label-md text-label-md font-bold transition-all shadow-sm hover:opacity-95">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+<span>导出标准 PDF</span>
+</button>
+<button class="flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-secondary-container text-on-secondary font-label-md text-label-md font-bold transition-all shadow-sm hover:opacity-95">
+<span class="material-symbols-outlined text-[18px]">send</span>
+<span>邮件直发客户</span>
+</button>
+</div>
+</div>
+<!-- The Real Foreign Trade Document Canvas (Simulated A4 Professional Sheet) -->
+<div class="bg-surface-container-lowest p-space-xl rounded-xl shadow-lg flex flex-col gap-space-lg text-on-surface">
+<!-- Document Header: Supplier Info & Document Meta -->
+<div class="flex flex-col gap-space-md border-b-2 border-primary pb-space-md">
+<div class="flex flex-wrap justify-between items-start gap-space-md">
+<!-- Seller Profile -->
+<div class="flex flex-col gap-1 max-w-lg">
+<div class="flex items-center gap-space-sm mb-1">
+<div class="w-10 h-10 rounded-lg bg-primary text-on-primary flex items-center justify-center font-headline-md text-headline-md font-bold">T</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg tracking-tight text-primary">TRADEOS GLOBAL CO., LTD.</h1>
+<span class="font-headline-sm text-headline-sm text-outline">全道国际贸易股份有限公司</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                18F, International Trade Center, No.88 Century Boulevard, Pudong, Shanghai, 200120 China<br/>
+                TEL: +86-21-0000-9922 | FAX: +86-21-0000-9933 | E-MAIL: export@example.com<br/>
+                WEBSITE: www.example.com | UNIFIED CODE: 91000000MA00000000
+              </p>
+</div>
+<!-- Invoice Title & Number Block -->
+<div class="flex flex-col items-end text-right">
+<div class="px-3 py-1 rounded bg-primary text-on-primary font-display-lg text-display-lg tracking-wider mb-2">
+                PROFORMA INVOICE
+              </div>
+<div class="flex flex-col gap-1 font-body-sm text-body-sm">
+<div><span class="text-outline">PI NO.:</span> <strong class="text-on-surface font-headline-sm text-headline-sm">PI-2026-092</strong></div>
+<div><span class="text-outline">DATE:</span> <strong class="text-on-surface">APRIL 18, 2026</strong></div>
+<div><span class="text-outline">VALIDITY:</span> <strong class="text-on-surface">30 DAYS (UNTIL MAY 18, 2026)</strong></div>
+<div><span class="text-outline">TRADE TERMS:</span> <strong class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-bold">FOB SHANGHAI, CHINA</strong></div>
+</div>
+</div>
+</div>
+<!-- Parties Box: Buyer Consignee & Shipping Info -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md mt-2 pt-space-sm border-t border-surface-container-highest">
+<!-- Consignee (Bill To) -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-1">
+<span class="font-label-sm text-label-sm font-bold uppercase tracking-wider text-outline">BUYER / CONSIGNEE (BILL TO):</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">APEX HORIZON LOGISTICS LLC</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                4400 East Washington Blvd, Suite 700<br/>
+                Los Angeles, CA 90023, United States<br/>
+                ATTN: Mr. David Miller (VP Procurement)<br/>
+                TEL: +1 (213) 555-0198 | E-MAIL: dmiller@example.com
+              </p>
+</div>
+<!-- Shipment & Payment Terms -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-1">
+<span class="font-label-sm text-label-sm font-bold uppercase tracking-wider text-outline">SHIPPING &amp; SETTLEMENT SPECIFICATIONS:</span>
+<div class="grid grid-cols-2 gap-x-2 gap-y-1 font-body-sm text-body-sm mt-1">
+<div><span class="text-outline">PORT OF LOADING:</span> <strong class="text-on-surface">SHANGHAI PORT</strong></div>
+<div><span class="text-outline">PORT OF DISCHARGE:</span> <strong class="text-on-surface">LOS ANGELES (USLAX)</strong></div>
+<div><span class="text-outline">SHIPMENT DATE:</span> <strong class="text-on-surface">ON/BEFORE JUNE 10, 2026</strong></div>
+<div><span class="text-outline">TRANSSHIPMENT:</span> <strong class="text-on-surface">NOT ALLOWED</strong></div>
+<div class="col-span-2"><span class="text-outline">PAYMENT TERM:</span> <strong class="text-secondary font-bold">30% T/T DEPOSIT, 70% BALANCE AGAINST COPY OF B/L</strong></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Official Clean Items Table -->
+<div class="flex flex-col gap-space-xs">
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm text-body-sm border-collapse">
+<thead>
+<tr class="bg-primary text-on-primary uppercase font-label-sm text-label-sm tracking-wider">
+<th class="p-2.5 text-center w-12">ITEM</th>
+<th class="p-2.5 text-center w-20">PHOTO</th>
+<th class="p-2.5">DESCRIPTION &amp; SPECIFICATIONS</th>
+<th class="p-2.5 text-right w-24">TOTAL CTNS</th>
+<th class="p-2.5 text-right w-24">QTY / CTN</th>
+<th class="p-2.5 text-right w-24">TOTAL QTY</th>
+<th class="p-2.5 text-right w-28">UNIT PRICE (USD)</th>
+<th class="p-2.5 text-right w-32">TOTAL AMOUNT</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-highest">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="p-2.5 text-center font-bold text-outline">1</td>
+<td class="p-2.5 text-center">
+<img class="w-14 h-14 object-cover rounded mx-auto shadow-xs" data-alt="High precision stainless steel hydraulic flow ball valve with high mirror polish on industrial white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJDvgRqspcNyK4qRldLOgLnOnKdIpLwcAeWDpq5zoIRo0ghtznxkOV-oExX6HVXezzmRddGYGwybFyYnWjfwMw4N_DIGml0a-ttU77OmZcfAzii__UMAw5svnT_j0wLoJ2HpEnRRLJCPS0hCmp3tKTXvA13xuUIkQB39qNzgbWVcExBivJgq6pNSPT7Qx1-x0YC0sylZv9rxsEwOTUisoKsm34MkGYVMBA1N8cDF0-y7N7vxXd-x6v"/>
+</td>
+<td class="p-2.5">
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">Industrial Stainless Steel Ball Valve #SS-316</div>
+<div class="text-outline font-body-sm text-body-sm">Size: 2-1/2 Inch, Flanged End Class 150, PTFE Seal, Customized Laser Logo: [APEX]</div>
+<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">HS: 8481.8040</span>
+</td>
+<td class="p-2.5 text-right font-medium text-on-surface">50 CTNS</td>
+<td class="p-2.5 text-right text-outline">20 PCS</td>
+<td class="p-2.5 text-right font-bold text-on-surface">1,000 PCS</td>
+<td class="p-2.5 text-right font-medium text-on-surface">$18.50</td>
+<td class="p-2.5 text-right font-bold text-on-surface">$18,500.00</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors bg-surface-container-low/20">
+<td class="p-2.5 text-center font-bold text-outline">2</td>
+<td class="p-2.5 text-center">
+<img class="w-14 h-14 object-cover rounded mx-auto shadow-xs" data-alt="Precision forged brass check valve for pipeline assembly high gloss chrome plating studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpoAs8BrABheMZQFsFn0UBdNV3MywOqchE-ZOGA1rV5saDXzlWqrpfsedO6cE4yrvQhtrWOt7Pu0g0uDHiA4G_CDpbnK5IL-PfPmcnuZRKcVnd5fJ21yVk_xnhiGjgyaiuXqBBzH0OyAclCKP_HKUmmOqzI7lxRSLBe92o8EiKiOngGoAvx8yWV5tHwWU4V1T_R57qUPsQGl-jifcSpbAu7p9OthZMl1Soxt0DXp70t1RNJtXCn9Vq"/>
+</td>
+<td class="p-2.5">
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">Precision Forged Brass Check Valve #BC-88</div>
+<div class="text-outline font-body-sm text-body-sm">Thread: NPT 1.5 Inch, Heavy Duty Pressure Rating 300 WOG, Individual Polybag &amp; Inner Box</div>
+<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">HS: 8481.3000</span>
+</td>
+<td class="p-2.5 text-right font-medium text-on-surface">60 CTNS</td>
+<td class="p-2.5 text-right text-outline">30 PCS</td>
+<td class="p-2.5 text-right font-bold text-on-surface">1,800 PCS</td>
+<td class="p-2.5 text-right font-medium text-on-surface">$8.75</td>
+<td class="p-2.5 text-right font-bold text-on-surface">$15,750.00</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="p-2.5 text-center font-bold text-outline">3</td>
+<td class="p-2.5 text-center">
+<img class="w-14 h-14 object-cover rounded mx-auto shadow-xs" data-alt="Black electroplated high pressure flexible hydraulic connector hose fittings in neat factory packaging studio shot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCt6MtEGEIQ5B7UyCJJw7hyDaw1MQ-TRZAwk2RLp6Qn9Ss5_3S8CVtk7Cohvv9ixKnjWjfjlc5PZcjOBmtDuaWCzCz0cK3q8xOTfwVHdMSv4mulMcT-RM-wfuQZotvNn7yH977VhSzO8HJ8ei_C_5-lu7sO_7jobA7prWMrYpT1pWOIojlW3HwqOittfUkyLR7qaORp0wsE083C84fgh8tmhQOVqc_XTDEdJzYEBTwtGDlj-53Cnk2P"/>
+</td>
+<td class="p-2.5">
+<div class="font-headline-sm text-headline-sm text-on-surface font-bold">High-Pressure Hydraulic Coupler Fitting Kit #HPC-04</div>
+<div class="text-outline font-body-sm text-body-sm">Carbon Steel Quick Disconnect, Anti-Corrosion Zinc-Nickel Finish, Export Double Corrugated Carton</div>
+<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">HS: 7307.9900</span>
+</td>
+<td class="p-2.5 text-right font-medium text-on-surface">40 CTNS</td>
+<td class="p-2.5 text-right text-outline">20 PCS</td>
+<td class="p-2.5 text-right font-bold text-on-surface">800 PCS</td>
+<td class="p-2.5 text-right font-medium text-on-surface">$10.50</td>
+<td class="p-2.5 text-right font-bold text-on-surface">$8,400.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Total Calculation Summary Banner -->
+<div class="flex flex-wrap items-center justify-between p-space-md rounded-lg bg-surface-container-low mt-2">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline uppercase font-bold tracking-wider">TOTAL IN WORDS (SAY US DOLLARS):</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">
+                SAY US DOLLARS FORTY-TWO THOUSAND SIX HUNDRED FIFTY ONLY
+              </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">
+                Total Measurement: 18.50 CBM | Total Net Weight: 3,450 KGS | Total Gross Weight: 3,720 KGS
+              </span>
+</div>
+<div class="flex items-center gap-space-lg text-right">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase">TOTAL CARTONS</span>
+<span class="font-numeric-stat text-headline-lg text-on-surface">150 <span class="text-headline-sm">CTNS</span></span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase">TOTAL QUANTITY</span>
+<span class="font-numeric-stat text-headline-lg text-on-surface">3,600 <span class="text-headline-sm">PCS</span></span>
+</div>
+<div class="flex flex-col pl-space-md border-l border-outline-variant">
+<span class="font-label-sm text-label-sm text-secondary uppercase font-bold">TOTAL FOB AMOUNT</span>
+<span class="font-numeric-stat text-display-lg text-secondary font-bold">$42,650.00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Packaging Shipping Marks & Remarks Panel -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md pt-space-xs">
+<!-- Shipping Marks (唛头) -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm font-bold text-outline uppercase">SHIPPING MARKS (箱唛与侧唛)</span>
+<span class="material-symbols-outlined text-outline text-[18px]">qr_code_2</span>
+</div>
+<div class="p-space-xs rounded bg-surface-container-lowest font-mono text-[12px] leading-tight text-on-surface border border-outline-variant">
+<div>[SIDE A - MAIN MARK]</div>
+<div>APEX HORIZON</div>
+<div>C/NO. 1 - 150</div>
+<div>PORT: LOS ANGELES</div>
+<div>MADE IN CHINA</div>
+<div class="mt-1">[SIDE B - SIDE MARK]</div>
+<div>ITEM: BALL VALVE / CHECK VALVE</div>
+<div>N.W.: 23.0 KGS</div>
+<div>G.W.: 24.8 KGS</div>
+<div>MEAS: 48 X 32 X 26 CM</div>
+</div>
+</div>
+<!-- Product Sample & Quality Guarantee Attachment -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-2">
+<span class="font-label-sm text-label-sm font-bold text-outline uppercase">ATTACHED PACKAGING STANDARD</span>
+<div class="flex items-center gap-space-xs">
+<img class="w-20 h-20 object-cover rounded shadow-xs" data-alt="Export standard 5-ply corrugated master carton stacked on wooden pallet with blue strapping and shrink film" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCb2TULmVsBLlh0aQe91QJR4ZByRBP_Km99Oz1cqij0_NfDPytfbQ8_QXEMgn1NUwMS4sAw3OYr1e40ElX1x3V3g5pCI1PFVxwnd61A5hLo44H1VTZjIsSeqnWzYspvSlFKzcRxk2sLAWZ978iNF0uPhsiNZwhxz3LcOHPfF2rEMtQCGCgsCkq_Lp8Xf6ajtBAd35u8YI8DqUZfqfg7kkJ8zbqf-yT1zpYnZmyGH63SfZlha9GBG2lI"/>
+<div class="flex flex-col gap-0.5 text-on-surface-variant font-body-sm text-body-sm">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">5-Ply Master Carton</span>
+<span>Fumigated Euro Pallet</span>
+<span>Waterproof Desiccant Included</span>
+<span class="text-tertiary font-medium">AQL 1.5 Inspection Passed</span>
+</div>
+</div>
+</div>
+<!-- Special Commercial Terms & Instructions -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-1">
+<span class="font-label-sm text-label-sm font-bold text-outline uppercase">GENERAL PROVISIONS</span>
+<ul class="list-disc list-inside font-body-sm text-body-sm text-on-surface-variant space-y-1">
+<li>Production Lead Time: 35 days after deposit confirmation.</li>
+<li>Discrepancy claims must be filed within 21 days of cargo arrival.</li>
+<li>Force Majeure conditions governed by ICC rules.</li>
+<li>Governing Law: CIETAC Shanghai Arbitration.</li>
+</ul>
+</div>
+</div>
+<!-- Official Beneficiary Bank Details (外贸收款银行水单标准信息) -->
+<div class="p-space-md rounded-xl bg-surface-container flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">account_balance</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">OFFICIAL BENEFICIARY BANK ACCOUNT DETAILS (汇款路径)</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">
+              PLEASE DOUBLE CHECK SWIFT BEFORE T/T WIRING
+            </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-space-sm mt-1 font-body-sm text-body-sm">
+<div>
+<span class="text-outline block text-label-sm">BENEFICIARY NAME:</span>
+<strong class="text-on-surface select-all">TRADEOS GLOBAL CO., LIMITED</strong>
+</div>
+<div>
+<span class="text-outline block text-label-sm">BENEFICIARY BANK:</span>
+<strong class="text-on-surface select-all">CITIBANK N.A., SHANGHAI BRANCH</strong>
+</div>
+<div>
+<span class="text-outline block text-label-sm">ACCOUNT NUMBER (USD):</span>
+<strong class="text-on-surface select-all font-mono font-bold">9820-0012-4491-082</strong>
+</div>
+<div>
+<span class="text-outline block text-label-sm">SWIFT CODE (BIC):</span>
+<strong class="text-secondary select-all font-mono font-bold text-headline-sm">CITICNSHX</strong>
+</div>
+<div class="col-span-full">
+<span class="text-outline text-label-sm">BANK ADDRESS: </span>
+<span class="text-on-surface-variant">Citigroup Tower, No. 33 Huayuanshiqiao Road, Lujiazui, Pudong New Area, Shanghai 200120, China</span>
+</div>
+</div>
+</div>
+<!-- Signatures & Official Seal Zone (双方签章区) -->
+<div class="grid grid-cols-2 gap-space-xl pt-space-lg mt-space-sm border-t border-surface-container-highest">
+<!-- Seller Signature Block -->
+<div class="flex flex-col gap-space-sm relative">
+<span class="font-label-md text-label-md font-bold uppercase text-on-surface">FOR &amp; ON BEHALF OF SELLER:</span>
+<div class="font-headline-sm text-headline-sm text-primary">TRADEOS GLOBAL CO., LTD.</div>
+<!-- Stamp Overlay Visual -->
+<div class="h-28 relative flex items-end">
+<!-- Decorative Authorized Stamp Graphic -->
+<div class="absolute left-10 top-0 w-28 h-28 rounded-full border-4 border-dashed border-secondary/60 flex flex-col items-center justify-center p-1 transform -rotate-12 pointer-events-none select-none">
+<span class="font-bold text-secondary/70 text-[9px] text-center uppercase tracking-tighter">TRADEOS GLOBAL CO., LTD.</span>
+<span class="material-symbols-outlined text-secondary/70 text-[26px]">verified</span>
+<span class="font-bold text-secondary/70 text-[8px] tracking-widest uppercase">CONTRACT CHOP</span>
+</div>
+<!-- Signature Line -->
+<div class="w-full border-b border-on-surface/40 flex justify-between items-baseline pb-1">
+<span class="font-serif italic text-lg text-primary">Alex Henderson</span>
+<span class="font-label-sm text-label-sm text-outline">Date: 2026-04-18</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-outline">AUTHORIZED SIGNATURE &amp; COMPANY CHOP</span>
+</div>
+<!-- Buyer Signature Block -->
+<div class="flex flex-col gap-space-sm relative">
+<span class="font-label-md text-label-md font-bold uppercase text-on-surface">ACCEPTED &amp; CONFIRMED BY BUYER:</span>
+<div class="font-headline-sm text-headline-sm text-primary">APEX HORIZON LOGISTICS LLC</div>
+<!-- Buyer Placeholder Line -->
+<div class="h-28 relative flex items-end">
+<div class="w-full border-b border-on-surface/40 flex justify-between items-baseline pb-1">
+<span class="text-outline/40 italic font-body-sm text-body-sm">[Sign &amp; Return via Fax/Email]</span>
+<span class="font-label-sm text-label-sm text-outline">Date: ____________</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-outline">AUTHORIZED SIGNATURE &amp; OFFICIAL TITLE</span>
+</div>
+</div>
+<!-- Footer Audit Watermark -->
+<div class="flex items-center justify-between pt-space-md border-t border-surface-container-highest font-label-sm text-label-sm text-outline">
+<span>System Serial: TRD-PI-892019-SECURE | Encrypted PDF Hash: #e8a719cbf042</span>
+<span>Page 1 of 1 (Foreign Trade Standard Compliant)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Simple micro-interaction for active document switching
+  document.addEventListener('DOMContentLoaded', () => {
+    const listItems = document.querySelectorAll('.col-span-12.xl\\:col-span-4 .cursor-pointer');
+    listItems.forEach(item => {
+      item.addEventListener('click', () => {
+        listItems.forEach(el => {
+          if (el.classList.contains('bg-primary')) {
+            el.classList.remove('bg-primary', 'text-on-primary', 'shadow-md');
+            el.classList.add('bg-surface-container-low');
+          }
+        });
+        item.classList.remove('bg-surface-container-low');
+        item.classList.add('bg-primary', 'text-on-primary', 'shadow-md');
+      });
+    });
+  });
+</script></main></div></body></html>

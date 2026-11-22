@@ -1,0 +1,79 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
+
+  <view wx:if="{{!loading && errMsg}}" class="card">
+    <view class="empty">{{errMsg}}</view>
+    <view class="btn btn-ghost" bindtap="load">重试</view>
+  </view>
+
+  <block wx:if="{{!loading && customer}}">
+    <!-- 基本信息 -->
+    <view class="card">
+      <view class="cust-head">
+        <view class="avatar big">{{customer.company_name[0]}}</view>
+        <view class="cust-head-main">
+          <view class="t-main name">{{customer.company_name}}</view>
+          <view class="tags">
+            <view class="{{customer.statusClass}}">{{customer.status}}</view>
+            <view class="tag tag-gray" wx:if="{{customer.level}}">{{customer.level}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="divider"></view>
+
+      <view wx:for="{{fields}}" wx:key="label" class="row">
+        <view class="label">{{item.label}}</view>
+        <view class="value">{{item.value}}</view>
+        <view
+          wx:if="{{item.copyable}}"
+          class="copy-btn"
+          data-value="{{item.value}}"
+          catchtap="copyValue"
+        >复制</view>
+        <view
+          wx:if="{{item.label === '电话' || item.label === '联系电话'}}"
+          class="copy-btn"
+          data-value="{{item.value}}"
+          catchtap="callPhone"
+        >拨打</view>
+      </view>
+    </view>
+
+    <!-- 联系人 -->
+    <view class="card" wx:if="{{contacts.length > 0}}">
+      <view class="card-title">联系人</view>
+      <view wx:for="{{contacts}}" wx:key="id" class="contact-item">
+        <view class="contact-main">
+          <view class="t-main">
+            {{item.name}}
+            <text wx:if="{{item.is_primary}}" class="tag tag-green">主要</text>
+          </view>
+          <view class="t-sub" wx:if="{{item.position}}">{{item.position}}</view>
+          <view class="t-sub" wx:if="{{item.phone}}">电话 {{item.phone}}</view>
+          <view class="t-sub" wx:if="{{item.mobile}}">手机 {{item.mobile}}</view>
+          <view class="t-sub" wx:if="{{item.email}}">邮箱 {{item.email}}</view>
+        </view>
+        <view class="contact-side">
+          <view wx:if="{{item.phone || item.mobile}}" class="copy-btn" data-value="{{item.phone || item.mobile}}" catchtap="callPhone">拨打</view>
+          <view wx:if="{{item.email}}" class="copy-btn" data-value="{{item.email}}" catchtap="copyValue">复制邮箱</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 跟进记录 -->
+    <view class="card">
+      <view class="card-title">跟进记录</view>
+      <view wx:if="{{activities.length === 0}}" class="empty">暂无跟进记录</view>
+      <view wx:for="{{activities}}" wx:key="id" class="act-item">
+        <view class="act-head">
+          <view class="tag">{{item.type || '跟进'}}</view>
+          <view class="t-sub">{{item.dateText}}</view>
+        </view>
+        <view class="t-main" wx:if="{{item.subject}}">{{item.subject}}</view>
+        <view class="t-sub content" wx:if="{{item.content}}">{{item.content}}</view>
+        <view class="t-sub" wx:if="{{item.nextText}}">下次跟进：{{item.nextText}}</view>
+      </view>
+    </view>
+  </block>
+</view>

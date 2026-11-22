@@ -1,0 +1,37 @@
+.cust-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0f2f5;
+}
+
+.cust-item:last-of-type {
+  border-bottom: none;
+}
+
+.cust-main {
+  flex: 1;
+  min-width: 0;
+  margin: 0 20rpx;
+}
+
+.cust-main .t-main,
+.cust-main .t-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cust-side {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.call-btn {
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  color: #2f6bff;
+  border: 1rpx solid #cddcff;
+  border-radius: 24rpx;
+  padding: 4rpx 18rpx;
+}

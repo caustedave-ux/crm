@@ -1,0 +1,68 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
+
+  <view wx:if="{{!loading && errMsg}}" class="card">
+    <view class="empty">{{errMsg}}</view>
+    <view class="btn btn-ghost" bindtap="load">重试</view>
+  </view>
+
+  <block wx:if="{{!loading && doc}}">
+    <view class="card">
+      <view class="doc-head">
+        <view>
+          <view class="t-main big">{{doc.doc_no}}</view>
+          <view class="t-sub">{{doc.issueText}}</view>
+        </view>
+        <view class="tag {{doc.status === '已作废' ? 'tag-red' : ''}}">{{doc.status}}</view>
+      </view>
+
+      <view class="amount-row">
+        <view class="stat-label">单据金额</view>
+        <view class="amount">{{doc.currency}} {{totalText}}</view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">单据信息</view>
+      <view wx:for="{{fields}}" wx:key="label" class="row">
+        <view class="label">{{item.label}}</view>
+        <view class="value">{{item.value}}</view>
+      </view>
+      <view class="btn btn-ghost" bindtap="goCustomer">查看客户资料</view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">
+        <text>商品明细</text>
+        <text class="more">{{items.length}} 项</text>
+      </view>
+      <view wx:if="{{items.length === 0}}" class="empty">暂无明细</view>
+      <view wx:for="{{items}}" wx:key="seq" class="item-row">
+        <view class="item-main">
+          <view class="t-main">{{item.name}}</view>
+          <view class="t-sub" wx:if="{{item.name_en}}">{{item.name_en}}</view>
+          <view class="t-sub" wx:if="{{item.model || item.color}}">
+            <text wx:if="{{item.model}}">型号 {{item.model}}</text>
+            <text wx:if="{{item.color}}"> · {{item.color}}</text>
+          </view>
+        </view>
+        <view class="item-side">
+          <view class="t-main">{{item.qtyText}}</view>
+          <view class="t-sub">{{item.priceText}} × {{item.qty}}</view>
+          <view class="t-strong">{{item.amountText}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card" wx:if="{{subtotalText !== '0.00'}}">
+      <view class="row">
+        <view class="label">小计</view>
+        <view class="value">{{doc.currency}} {{subtotalText}}</view>
+      </view>
+      <view class="row">
+        <view class="label">单据总额</view>
+        <view class="value">{{doc.currency}} {{totalText}}</view>
+      </view>
+    </view>
+  </block>
+</view>

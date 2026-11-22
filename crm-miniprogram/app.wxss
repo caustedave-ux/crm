@@ -1,0 +1,243 @@
+page {
+  background: #f5f7fa;
+  font-size: 28rpx;
+  color: #1f2733;
+}
+
+view,
+text,
+input,
+scroll-view {
+  box-sizing: border-box;
+}
+
+.page {
+  padding: 24rpx 24rpx 40rpx;
+}
+
+/* ---------- 卡片 ---------- */
+.card {
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(31, 39, 51, 0.06);
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1f2733;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title .more {
+  font-size: 24rpx;
+  font-weight: 400;
+  color: #8a94a6;
+}
+
+/* ---------- 文本 ---------- */
+.t-main {
+  font-size: 30rpx;
+  color: #1f2733;
+  font-weight: 500;
+}
+
+.t-sub {
+  font-size: 25rpx;
+  color: #8a94a6;
+}
+
+.t-strong {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1f2733;
+}
+
+.muted {
+  color: #8a94a6;
+}
+
+/* ---------- 标签 ---------- */
+.tag {
+  display: inline-block;
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  line-height: 1.6;
+  background: #eef3ff;
+  color: #2f6bff;
+}
+
+.tag-gray {
+  background: #f0f2f5;
+  color: #6b7688;
+}
+
+.tag-green {
+  background: #e8f8ee;
+  color: #22a35a;
+}
+
+.tag-orange {
+  background: #fff3e6;
+  color: #e08b1f;
+}
+
+.tag-red {
+  background: #ffeded;
+  color: #e0483d;
+}
+
+/* ---------- 列表项 ---------- */
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0f2f5;
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+.avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 12rpx;
+  background: #2f6bff;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ---------- 搜索栏 ---------- */
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.search-bar input {
+  flex: 1;
+  font-size: 28rpx;
+  margin-left: 12rpx;
+}
+
+/* ---------- 筛选 ---------- */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 20rpx;
+}
+
+.filter-chip {
+  padding: 10rpx 24rpx;
+  border-radius: 30rpx;
+  background: #ffffff;
+  color: #6b7688;
+  font-size: 25rpx;
+  margin: 0 16rpx 16rpx 0;
+}
+
+.filter-chip.active {
+  background: #2f6bff;
+  color: #ffffff;
+}
+
+/* ---------- 按钮 ---------- */
+.btn {
+  background: #2f6bff;
+  color: #ffffff;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  text-align: center;
+  padding: 22rpx 0;
+  margin-top: 32rpx;
+}
+
+.btn-ghost {
+  background: #ffffff;
+  color: #2f6bff;
+  border: 1rpx solid #cddcff;
+}
+
+.btn-disabled {
+  background: #c3d0f0;
+  color: #ffffff;
+}
+
+/* ---------- 空状态 / 加载 ---------- */
+.empty {
+  text-align: center;
+  padding: 80rpx 0;
+  color: #8a94a6;
+  font-size: 27rpx;
+}
+
+.loading {
+  text-align: center;
+  padding: 60rpx 0;
+  color: #8a94a6;
+  font-size: 26rpx;
+}
+
+/* ---------- 统计格 ---------- */
+.stat-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.stat-cell {
+  width: 50%;
+  padding: 18rpx 0;
+}
+
+.stat-num {
+  font-size: 42rpx;
+  font-weight: 700;
+  color: #1f2733;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #8a94a6;
+  margin-top: 6rpx;
+}
+
+/* ---------- 详情行 ---------- */
+.row {
+  display: flex;
+  padding: 16rpx 0;
+  font-size: 27rpx;
+}
+
+.row .label {
+  width: 180rpx;
+  color: #8a94a6;
+  flex-shrink: 0;
+}
+
+.row .value {
+  flex: 1;
+  color: #1f2733;
+  word-break: break-all;
+}
+
+.divider {
+  height: 1rpx;
+  background: #f0f2f5;
+  margin: 20rpx 0;
+}

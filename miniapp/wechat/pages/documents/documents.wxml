@@ -1,0 +1,35 @@
+<view class="search-bar">
+  <input class="search-input" placeholder="搜索单号 / 客户" value="{{kw}}" bindinput="onSearch" bindconfirm="onSearchConfirm" confirm-type="search" />
+  <view class="search-btn" bindtap="onSearchConfirm">搜索</view>
+</view>
+
+<scroll-view class="filter-bar" scroll-x>
+  <view
+    wx:for="{{filters}}"
+    wx:key="key"
+    class="filter-chip {{activeType === item.key ? 'chip-active' : ''}}"
+    data-key="{{item.key}}"
+    bindtap="onFilter"
+  >{{item.name}}</view>
+</scroll-view>
+
+<view class="count-line">共 {{total}} 张单据</view>
+
+<view wx:if="{{error}}" class="card error-box">{{error}}</view>
+
+<view wx:for="{{list}}" wx:key="id" class="card doc-card">
+  <view class="doc-top">
+    <view class="doc-no">{{item.doc_no}}</view>
+    <view class="tag {{item.statusClass}}">{{item.status}}</view>
+  </view>
+  <view class="doc-type">{{item.type}}</view>
+  <view class="doc-company">{{item.company}}</view>
+  <view class="doc-bottom">
+    <text class="doc-amount {{item.void ? 'amount-void' : ''}}">{{item.amount}}</text>
+    <text class="doc-date">{{item.date}}</text>
+  </view>
+</view>
+
+<view wx:if="{{!list.length && !loading && !error}}" class="empty">没有找到单据</view>
+<view wx:if="{{hasMore}}" class="loading-more">上拉加载更多…</view>
+<view wx:elif="{{list.length}}" class="loading-more">— 没有更多了 —</view>

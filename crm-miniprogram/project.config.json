@@ -1,0 +1,26 @@
+{
+  "miniprogramRoot": "./",
+  "compileType": "miniprogram",
+  "appid": "touristappid",
+  "projectname": "crm-miniprogram",
+  "description": "HQ CRM 小程序（云端版）",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "packNpmManually": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "libVersion": "3.4.10",
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

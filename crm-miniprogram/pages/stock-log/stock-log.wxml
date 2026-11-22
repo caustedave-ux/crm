@@ -1,0 +1,32 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
+
+  <view wx:if="{{!loading && errMsg}}" class="card">
+    <view class="empty">{{errMsg}}</view>
+    <view class="btn btn-ghost" bindtap="load" data-reset="1">重试</view>
+  </view>
+
+  <view wx:if="{{!loading && !errMsg}}" class="card">
+    <view class="card-title">
+      <text>库存变动记录</text>
+      <text class="more">共 {{total}} 条</text>
+    </view>
+
+    <view wx:if="{{list.length === 0}}" class="empty">还没有库存变动记录</view>
+
+    <view wx:for="{{list}}" wx:key="id" class="list-item">
+      <view class="mv-left">
+        <view class="t-main">{{item.product_name || '已删除产品'}}</view>
+        <view class="t-sub">{{item.remark || '无备注'}} · {{item.created_by || '系统'}}</view>
+        <view class="t-sub">{{item.timeText}}</view>
+      </view>
+      <view class="mv-right">
+        <view class="mv-change {{item.inOut === 'in' ? 'up' : 'down'}}">{{item.changeText}}</view>
+        <view class="t-sub">结存 {{item.balanceText}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{loadingMore}}" class="loading">加载更多…</view>
+    <view wx:if="{{!hasMore && list.length > 0}}" class="loading">已全部加载</view>
+  </view>
+</view>

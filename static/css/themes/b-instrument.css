@@ -1,0 +1,121 @@
+/* =========================================================
+   方向 B · 仪表仪器（Instrument Panel）
+   —— 出发点：这是一台每天要盯很久的"仪表"，不是海报。
+      冷白底 + 深海军蓝墨色 + 单一靛蓝强调；4~6px 小圆角、全是 1px 线、
+      零阴影；数字用等宽字形（tabular），行高收紧，信息密度优先。
+   ========================================================= */
+:root{
+  --neo-ink:#0e1a2b;
+  --neo-ink-2:#22303f;
+  --neo-coral:#1f4fd8;          /* 强调色：靛蓝（信号色，只用在可交互与关键数字） */
+  --neo-coral-dark:#1739a4;
+  --neo-yellow:#e8edf5;
+  --neo-green:#0f8a5f;
+  --neo-bg:#f2f5f9;
+  --neo-surface:#ffffff;
+  --neo-surface-2:#f7f9fc;
+  --neo-line:#e1e7ef;
+  --neo-line-strong:#cdd6e2;
+  --neo-muted:#5d6b7d;
+  --neo-muted-2:#8b98a9;
+  --neo-radius:6px;
+  --neo-shadow:none;
+  --neo-shadow-lg:0 14px 34px rgba(14,26,43,.14);
+}
+body{background:var(--neo-bg);color:var(--neo-ink);font-size:14px;font-variant-numeric:tabular-nums;}
+a{color:var(--neo-ink);}
+a:hover{color:var(--neo-coral);}
+
+/* 顶栏：白底、底部 1px 线、不再有渐变光晕 */
+.topbar{
+  height:60px;color:var(--neo-ink);background:var(--neo-surface);
+  border-bottom:1px solid var(--neo-line);box-shadow:none;
+}
+.topbar-product,.user-name{color:var(--neo-ink);letter-spacing:-.01em;}
+.topbar-context,.user-role{color:var(--neo-muted-2);}
+.pro-pill{background:var(--neo-coral);color:#fff;border-radius:3px;letter-spacing:.12em;font-size:8.5px;}
+.global-search input{border-color:var(--neo-line);color:var(--neo-ink);background:var(--neo-surface-2);border-radius:6px;height:34px;}
+.global-search input::placeholder{color:var(--neo-muted-2);}
+.global-search input:focus{border-color:var(--neo-coral);background:#fff;box-shadow:0 0 0 3px rgba(31,79,216,.10);}
+.global-search i{color:var(--neo-muted-2);}
+.topbar-new{background:var(--neo-coral);border-radius:6px;box-shadow:none;font-size:11.5px;padding:7px 12px;}
+.topbar-new:hover{background:var(--neo-coral-dark);transform:none;}
+.topbar-icon-btn{color:var(--neo-muted);border-radius:6px;width:34px;height:34px;}
+.topbar-icon-btn:hover,.topbar-icon-btn.show{background:var(--neo-surface-2);color:var(--neo-ink);}
+.topbar-count{background:var(--neo-coral);border-color:var(--neo-surface);}
+.user-avatar{background:var(--neo-ink);color:#fff;border-radius:6px;}
+.user-trigger:hover,.user-trigger.show{background:var(--neo-surface-2);color:var(--neo-ink);}
+
+/* 侧栏：贴边、小圆角、选中项用左侧 2px 信号条 */
+.sidebar{background:var(--neo-surface);border-right:1px solid var(--neo-line);box-shadow:none;color:var(--neo-muted);}
+.sidebar-section-label{color:var(--neo-muted-2);font-size:9.5px;letter-spacing:.16em;}
+.sidebar-nav .nav-link{color:#42505f;border-radius:4px;min-height:36px;padding:7px 10px;font-size:12.5px;}
+.sidebar-nav .nav-link:hover{background:var(--neo-surface-2);color:var(--neo-ink);transform:none;}
+.sidebar-nav .nav-link.active{
+  background:#eef2fb;color:var(--neo-coral);box-shadow:inset 2px 0 0 var(--neo-coral);font-weight:700;
+}
+.sidebar-nav .nav-link.active .nav-icon{color:var(--neo-coral);}
+.nav-icon{color:#8b98a9;font-size:15px;}
+
+/* 页头：左对齐、行标签、无装饰 */
+.page-eyebrow{color:var(--neo-muted-2);font-size:9.5px;letter-spacing:.18em;}
+.page-title{font-size:24px;font-weight:700;letter-spacing:-.02em;}
+.page-subtitle{color:var(--neo-muted);font-size:12.5px;}
+.page-dashboard .page-heading{
+  min-height:0;padding:22px 24px;border:1px solid var(--neo-line);border-radius:8px;
+  color:var(--neo-ink);background:var(--neo-surface);box-shadow:none;
+}
+.page-dashboard .page-heading::after{display:none;}
+.page-dashboard .page-title{color:var(--neo-ink);font-size:26px;}
+.page-dashboard .page-subtitle{color:var(--neo-muted);}
+.page-dashboard .page-eyebrow{color:var(--neo-coral);}
+
+/* 卡片：1px 线 + 极浅底，不加投影 */
+.card,.neo-card{border:1px solid var(--neo-line);border-radius:6px;box-shadow:none;background:var(--neo-surface);}
+.card-header{background:var(--neo-surface-2) !important;border-bottom:1px solid var(--neo-line);padding:11px 16px;}
+.card-heading{font-size:12.5px;font-weight:700;letter-spacing:.02em;text-transform:none;}
+.card-body{padding:16px;}
+.stat-card{border:1px solid var(--neo-line);border-radius:6px;box-shadow:none;min-height:96px;padding:16px;background:var(--neo-surface);}
+.stat-card::after{display:none;}
+.stat-card:hover{border-color:var(--neo-line-strong);box-shadow:none;transform:none;}
+.stat-icon{border:1px solid var(--neo-line);border-radius:5px;background:var(--neo-surface-2) !important;color:var(--neo-coral) !important;width:44px;height:44px;flex:0 0 44px;font-size:18px;}
+.stat-num{font-size:22px;font-weight:700;letter-spacing:-.01em;}
+.stat-label{font-size:11.5px;font-weight:600;color:var(--neo-muted);}
+.stat-sub{font-size:10.5px;}
+.page-dashboard .row:first-of-type .col-6:nth-child(n) .stat-icon{color:var(--neo-coral) !important;background:var(--neo-surface-2) !important;}
+
+/* 表格：紧凑、表头浅底、行高 34px */
+.table{color:var(--neo-ink);}
+.table thead th{
+  color:var(--neo-muted);background:var(--neo-surface-2) !important;font-size:10.5px;
+  font-weight:700;letter-spacing:.09em;border-bottom:1px solid var(--neo-line);
+}
+.table > :not(caption) > * > *{padding:9px 10px;border-bottom-color:#eef2f7;}
+.table-sm > :not(caption) > * > *{padding:7px 9px;}
+.table-hover > tbody > tr:hover > *{--bs-table-accent-bg:#f4f7fb;color:var(--neo-ink);}
+.list-item{border-bottom:1px solid #eef2f7;border-radius:0;padding:11px 6px;}
+.list-item:hover{background:var(--neo-surface-2);}
+
+/* 徽标：直角化、低饱和，状态靠色相区分 */
+.badge{border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.02em;}
+.text-bg-primary{background:var(--neo-coral) !important;}
+.text-bg-secondary{background:#eef2f7 !important;color:#54637a !important;}
+.text-bg-success{background:#e6f5ef !important;color:#0f7a55 !important;}
+.text-bg-danger{background:#fdeaea !important;color:#b2312c !important;}
+.text-bg-warning{background:#fff4dc !important;color:#8a5a00 !important;}
+.text-bg-info{background:#e7f0fe !important;color:#1b47b0 !important;}
+.text-bg-light{background:var(--neo-surface-2) !important;color:var(--neo-muted) !important;}
+.text-bg-dark{background:#22303f !important;}
+.btn{border-radius:5px;font-size:12px;font-weight:600;letter-spacing:.01em;}
+.btn:hover{transform:none;}
+.btn-sm{border-radius:4px;font-size:11px;}
+.btn-primary{border-color:var(--neo-coral);background:var(--neo-coral);}
+.btn-primary:hover{border-color:var(--neo-coral-dark);background:var(--neo-coral-dark);}
+.btn-secondary{border-color:var(--neo-line);background:var(--neo-surface-2);color:var(--neo-ink);}
+.btn-outline-primary{border-color:var(--neo-line-strong);color:var(--neo-ink);background:#fff;}
+.btn-outline-primary:hover{border-color:var(--neo-coral);color:var(--neo-coral);background:#f2f6ff;}
+.btn-outline-secondary{border-color:var(--neo-line);color:var(--neo-muted);background:#fff;}
+.btn-outline-secondary:hover{border-color:var(--neo-line-strong);color:var(--neo-ink);background:var(--neo-surface-2);}
+.form-control,.form-select{border-color:var(--neo-line-strong);border-radius:5px;font-size:13px;}
+.form-control:focus,.form-select:focus{border-color:var(--neo-coral);box-shadow:0 0 0 3px rgba(31,79,216,.10);}
+.form-label{font-size:12px;font-weight:600;color:var(--neo-muted);}

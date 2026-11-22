@@ -1,0 +1,14 @@
+/* 打印预览样式（按宽度适配，内容自然分页，不重复） */
+body.print-body { background:#e9edf2; margin:0; }
+.print-toolbar { position:sticky; top:0; z-index:50; background:#fff; border-bottom:1px solid #dee3ea; padding:10px 16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.paper { width:210mm; box-sizing:border-box; background:#fff; margin:18px auto; padding:12mm 10mm; box-shadow:0 4px 20px rgba(0,0,0,.14); transform-origin:top left; }
+.paper .doc-box table.doc-items { width:100%; max-width:100%; }
+.paper tr, .paper td, .paper th { break-inside:avoid; page-break-inside:avoid; }
+@media print {
+  .no-print { display:none !important; }
+  body.print-body { background:#fff; margin:0; padding:0; }
+  .paper { width:auto; margin:0; padding:0; box-shadow:none; }
+  @page { size:A4 portrait; margin:8mm; }
+  thead { display:table-row-group; }
+  tr { break-inside:avoid; page-break-inside:avoid; }
+}

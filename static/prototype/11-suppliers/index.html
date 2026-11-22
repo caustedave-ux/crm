@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed": "#ffdad2", "on-error-container": "#93000a", "on-surface-variant": "#46464b", "outline-variant": "#c7c6cb", "surface": "#f8f9fb", "tertiary-fixed": "#fce42e", "on-background": "#191c1e", "surface-container-low": "#f3f4f6", "on-secondary": "#ffffff", "error": "#ba1a1a", "background": "#f8f9fb", "on-primary-fixed-variant": "#46464a", "inverse-primary": "#c7c6ca", "primary": "#000000", "on-primary": "#ffffff", "tertiary-fixed-dim": "#dec800", "error-container": "#ffdad6", "surface-container-highest": "#e1e2e4", "primary-fixed": "#e3e2e6", "outline": "#76777b", "on-surface": "#191c1e", "on-primary-fixed": "#1b1b1f", "surface-container-lowest": "#ffffff", "secondary-fixed-dim": "#ffb4a3", "secondary-container": "#ff5c38", "secondary": "#b52705", "surface-dim": "#d9dadc", "on-tertiary-container": "#484000", "on-error": "#ffffff", "on-secondary-container": "#5b0d00", "surface-variant": "#e1e2e4", "on-secondary-fixed-variant": "#8b1900", "on-primary-container": "#848387", "inverse-surface": "#2e3132", "tertiary": "#6a5f00", "on-tertiary-fixed-variant": "#504700", "on-tertiary": "#ffffff", "primary-fixed-dim": "#c7c6ca", "surface-container": "#edeef0", "tertiary-container": "#c0ad00", "surface-bright": "#f8f9fb", "on-secondary-fixed": "#3d0600", "surface-container-high": "#e7e8ea", "inverse-on-surface": "#f0f1f3", "surface-tint": "#5e5e62", "on-tertiary-fixed": "#201c00", "primary-container": "#1b1b1f" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin": "2rem", "space-sm": "0.625rem", "gutter-mobile": "0.75rem", "space-xs": "0.375rem", "margin-mobile": "1rem", "gutter": "1.25rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "body-sm": [ "Inter" ], "body-lg": [ "Inter" ], "headline-lg": [ "Inter" ], "headline-lg-mobile": [ "Inter" ], "headline-md": [ "Inter" ], "label-sm": [ "Inter" ], "label-md": [ "Inter" ], "display-lg": [ "Inter" ], "body-md": [ "Inter" ], "headline-sm": [ "Inter" ], "numeric-stat": [ "Inter" ] }, "fontSize": { "body-sm": [ "12px", { "lineHeight": "16px", "fontWeight": "400" } ], "body-lg": [ "16px", { "lineHeight": "24px", "fontWeight": "400" } ], "headline-lg": [ "28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "headline-lg-mobile": [ "22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" } ], "headline-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "label-sm": [ "11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" } ], "label-md": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "display-lg": [ "36px", { "lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "body-md": [ "14px", { "lineHeight": "20px", "fontWeight": "400" } ], "headline-sm": [ "16px", { "lineHeight": "24px", "fontWeight": "600" } ], "numeric-stat": [ "32px", { "lineHeight": "38px", "letterSpacing": "-0.03em", "fontWeight": "700" } ] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 z-50 bg-primary text-on-primary h-16 shadow-[0_4px_20px_rgba(0,0,0,0.12)]"><div class="w-full h-16 px-gutter flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-md"><img alt="HQ CRM Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WoWTmGJ8WzTB9EO8tux_06mJrvdqKPFJb0vsLxg9hT-05bxnAlKbsbt14JuOVa6TQUJHE7hFJFmISXkzTAKNwBSCcBkf69XF1aXg-qU0hPau9Lj04bo8FXldcNf83ZXEWfQ591f-Lk3AHbPcmefgyywYXGl1q9U8ubZ2qJiSNUdz9QtZsQkC3B2vC2tZhkUD7dtbCb9uu5Hwtv8yMnITbcrvXFso2e9QPoo_t43RWNewfV-6K2ODmevBw"/><div class="flex items-baseline gap-space-xs"><span class="font-headline-sm text-headline-sm tracking-tight text-on-primary">HQ CRM</span><span class="px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold uppercase tracking-wider">Global Pro</span></div></div><div class="flex-1 max-w-xl mx-auto hidden md:block"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-3 text-outline text-[18px]">search</span><input class="w-full bg-surface-container-highest/20 hover:bg-surface-container-highest/30 focus:bg-surface-container-highest/40 text-on-primary placeholder:text-outline font-body-sm text-body-sm pl-9 pr-12 py-1.5 rounded-lg border-0 transition-all outline-none" placeholder="全局穿透检索：客户名 / 英文品名 / 提单号 / PI单号 / 汇款水单 (Cmd+K)" type="text"/><kbd class="absolute right-3 px-1.5 py-0.5 rounded bg-surface-container-highest/30 text-outline font-label-sm text-label-sm select-none">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><button class="hidden lg:flex items-center gap-1.5 bg-secondary-container hover:bg-secondary text-on-secondary font-label-md text-label-md px-3.5 py-1.5 rounded-full transition-colors shadow-sm" type="button"><span class="material-symbols-outlined text-[18px]">add</span><span>新建业务单据</span></button><button class="relative p-2 rounded-full hover:bg-surface-container-highest/20 text-on-primary transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">warning</span><span class="absolute top-1.5 right-1.5 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-secondary-container"></span></span></button><button class="relative p-2 rounded-full hover:bg-surface-container-highest/20 text-on-primary transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 px-1 min-w-[14px] h-[14px] rounded-full bg-secondary-container text-on-secondary font-label-sm text-[9px] leading-[14px] text-center font-bold">5</span></button><div class="flex items-center gap-space-sm pl-space-xs ml-space-xs"><div class="hidden sm:flex flex-col items-end text-right"><span class="font-label-md text-label-md text-on-primary font-medium">Alex Henderson</span><span class="font-label-sm text-label-sm text-outline">亚太大客户总监</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col justify-between py-space-md shadow-[2px_0_12px_rgba(0,0,0,0.03)] overflow-y-auto"><div class="flex flex-col gap-space-sm px-space-sm"><div class="px-3 py-1 text-outline font-label-sm text-label-sm uppercase tracking-wider font-semibold">核心业务矩阵</div><nav class="flex flex-col gap-1" data-active-classes="bg-primary text-on-primary font-headline-sm shadow-sm"><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="dashboard" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">grid_view</span><span class="font-label-md text-label-md">经营仪表盘</span></div><span class="font-label-sm text-label-sm text-outline">Overview</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="customers" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">badge</span><span class="font-label-md text-label-md">客户档案管理</span></div><span class="px-1.5 py-0.2 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">29天预警</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="public-pool" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">groups_3</span><span class="font-label-md text-label-md">公海线索池</span></div><span class="px-1.5 py-0.2 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold">42</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="follow-ups" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">event_note</span><span class="font-label-md text-label-md">跟进日程看板</span></div><span class="w-2 h-2 rounded-full bg-tertiary-container"></span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="products" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">inventory_2</span><span class="font-label-md text-label-md">外贸产品图库</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="inventory" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">warehouse</span><span class="font-label-md text-label-md">仓储与欠货回补</span></div><span class="px-1.5 py-0.2 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">缺料 3</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="documents" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">description</span><span class="font-label-md text-label-md">单据中心 (PI/SC)</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="payments" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">payments</span><span class="font-label-md text-label-md">定金与外汇货款</span></div><span class="text-tertiary-container font-label-sm text-label-sm font-bold">USD</span></a><a aria-current="page" class="flex items-center justify-between px-3 py-2 rounded-lg transition-colors bg-primary text-on-primary font-headline-sm shadow-sm" data-path="shipments" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">local_shipping</span><span class="font-label-md text-label-md">订舱唛头与发运</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="suppliers-and-settings" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">tune</span><span class="font-label-md text-label-md">工厂供应与设置</span></div></a></nav></div><div class="px-space-md pt-space-sm"><div class="p-3 rounded-xl bg-surface-container-low flex items-center justify-between"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-outline">汇率中间价 (USD/CNY)</span><span class="font-headline-sm text-headline-sm text-on-surface font-bold">7.2384</span></div><span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">实时</span></div></div></aside><div class="pl-64"><main class="relative pt-16 min-h-screen bg-surface"><div class="flex flex-col w-full">
+<!-- Content Canvas Area -->
+<div class="p-margin-mobile lg:p-margin flex flex-col gap-space-xl max-w-[1600px] mx-auto w-full">
+<!-- Page Executive Header & Meta Breadcrumb -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs text-outline font-label-sm text-label-sm">
+<span>SUPPLY CHAIN INTELLIGENCE</span>
+<span>/</span>
+<span class="text-on-surface">PRD 3.11 VENDOR NETWORK</span>
+<span class="px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-bold text-[10px] tracking-wide">ISO 9001 VERIFIED</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight flex items-center gap-space-sm">
+          供应商与工厂管理
+          <span class="font-label-md text-label-md px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-medium">Sourcing OS</span>
+</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+          工厂档案数字化沉淀、专属供应产品阶梯报价联动、一键向实体工厂下达采购单 (PO) 并无缝衔接质检与入库批次追踪。
+        </p>
+</div>
+<!-- Header CTAs -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<button class="flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container font-label-md text-label-md shadow-sm transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">file_upload</span>
+<span>从采购单导入</span>
+</button>
+<button class="flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container font-label-md text-label-md shadow-sm transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">ios_share</span>
+<span>导出名录 (Excel)</span>
+</button>
+<button class="flex items-center gap-1.5 px-space-lg py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-md hover:shadow-lg transition-all" id="btnCreateSupplier" type="button">
+<span class="material-symbols-outlined text-[18px] text-tertiary-fixed">add_circle</span>
+<span>新建供应商档案</span>
+</button>
+</div>
+</div>
+<!-- Top Metric & KPI Strip -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Card 1: Obsidian Inverted Master KPI -->
+<div class="relative overflow-hidden rounded-xl bg-primary text-on-primary p-space-lg flex flex-col justify-between shadow-xl min-h-[160px]">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline-variant uppercase tracking-wider font-semibold">COOPERATING SUPPLIERS</span>
+<span class="font-body-sm text-body-sm text-primary-fixed">合作中供应商总数</span>
+</div>
+<div class="w-9 h-9 rounded-full bg-surface-container-highest/20 flex items-center justify-center text-tertiary-fixed">
+<span class="material-symbols-outlined text-[20px]">factory</span>
+</div>
+</div>
+<div class="flex items-baseline justify-between mt-space-md">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-numeric-stat text-numeric-stat text-on-primary tracking-tight">38</span>
+<span class="font-label-sm text-label-sm text-outline-variant">家在线</span>
+</div>
+<div class="flex flex-col text-right font-label-sm text-label-sm">
+<span class="text-tertiary-fixed font-bold">国内源头厂 32 家</span>
+<span class="text-outline-variant">外协精加工 6 家</span>
+</div>
+</div>
+<div class="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-surface-container-highest/5 pointer-events-none"></div>
+</div>
+<!-- Card 2: Active PO & Capital Outflow -->
+<div class="rounded-xl bg-surface-container-lowest p-space-lg flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow min-h-[160px]">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">ACTIVE PURCHASE ORDERS</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">本月在途采购单 (PO)</span>
+</div>
+<div class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[20px]">receipt_long</span>
+</div>
+</div>
+<div class="flex items-end justify-between mt-space-md">
+<div class="flex flex-col">
+<span class="font-numeric-stat text-numeric-stat text-on-surface tracking-tight">14 <span class="font-headline-sm text-headline-sm font-normal text-outline">笔</span></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">货款 ¥1,420,000</span>
+</div>
+<div class="flex items-center gap-1 text-secondary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[16px]">sync_alt</span>
+<span>排产率 84%</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Urgent Delivery Alert (Coral Highlight) -->
+<div class="rounded-xl bg-surface-container-lowest p-space-lg flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow min-h-[160px]">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider font-bold">DELIVERY BOTTLENECK ALERT</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">待交货 / 临期交付预警</span>
+</div>
+<div class="w-9 h-9 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[20px]">running_with_errors</span>
+</div>
+</div>
+<div class="flex items-end justify-between mt-space-md">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-numeric-stat text-numeric-stat text-secondary tracking-tight">03</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">家需紧急跟进</span>
+</div>
+<button class="px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary font-label-sm text-label-sm font-bold shadow-sm hover:bg-secondary transition-colors" type="button">
+            立即催货
+          </button>
+</div>
+</div>
+<!-- Card 4: Quality & On-time Delivery Score -->
+<div class="rounded-xl bg-surface-container-lowest p-space-lg flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow min-h-[160px]">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">FULFILLMENT ACCURACY</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">综合评分与准时履约率</span>
+</div>
+<div class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+</div>
+</div>
+<div class="flex items-end justify-between mt-space-md">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-numeric-stat text-numeric-stat text-on-surface tracking-tight">97.2<span class="font-headline-sm text-headline-sm font-normal">%</span></span>
+<span class="font-label-sm text-label-sm text-outline">Q3 均值</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+<span>A级供应商占比 89%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Filter Toolbar & Category Pill Matrix -->
+<div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md p-space-sm bg-surface-container-lowest rounded-xl shadow-sm">
+<!-- Search Input -->
+<div class="relative flex-1 max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">search</span>
+<input class="w-full pl-9 pr-space-md py-2 bg-surface-container-low focus:bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-sm text-body-sm rounded-lg outline-none transition-colors" id="supplierSearchInput" placeholder="输入工厂全称、联系人、供应品类或产品内部货号..." type="text"/>
+</div>
+<!-- Segmented Industry Categories -->
+<div class="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
+<button class="category-pill active px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-label-md transition-all" type="button">
+          全部类目 (38)
+        </button>
+<button class="category-pill px-3.5 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-label-md text-label-md transition-all" type="button">
+          五金精密铸造 (14)
+        </button>
+<button class="category-pill px-3.5 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-label-md text-label-md transition-all" type="button">
+          铝合金型材 (9)
+        </button>
+<button class="category-pill px-3.5 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-label-md text-label-md transition-all" type="button">
+          电子智能锁具 (8)
+        </button>
+<button class="category-pill px-3.5 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-label-md text-label-md transition-all" type="button">
+          包装印刷辅料 (7)
+        </button>
+</div>
+<div class="hidden lg:flex items-center gap-space-xs text-outline font-label-sm text-label-sm pl-space-sm">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+<span>按履约评分排序</span>
+</div>
+</div>
+<!-- Main Workspace: Asymmetric 12-Column Layout (List 7 cols / Drawer Panel 5 cols) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+<!-- LEFT: Supplier Directory & Card List (7 Columns) -->
+<div class="lg:col-span-7 flex flex-col gap-space-md">
+<!-- Header status summary in list -->
+<div class="flex items-center justify-between px-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">合作名录清单</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">展示 3 / 38 家</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">点击卡片联动查看工厂专属物料与报价</span>
+</div>
+<!-- Supplier Item 1: 浙江精工五金 (ACTIVE SELECTED STATE) -->
+<div class="supplier-card group relative p-space-lg rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all cursor-pointer ring-2 ring-primary" id="supplier-card-1" onclick="selectSupplier(1)">
+<div class="flex flex-col gap-space-md">
+<!-- Top Card Badges & Rating -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface font-bold font-headline-md text-headline-md">
+                  精
+                </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">浙江精工五金制品厂</span>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">military_tech</span>
+<span>金牌核心</span>
+</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">五金精密铸造</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">Zhejiang Precision Hardware Mfg Co., Ltd. · 统一代码: 91000000MA00000001</span>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-low px-2.5 py-1 rounded-full">
+<span class="material-symbols-outlined text-tertiary text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">4.9</span>
+<span class="text-outline font-label-sm text-label-sm">/ 5.0</span>
+</div>
+</div>
+<!-- Meta details grid -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">主营品类</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium truncate">不锈钢把手 / 阻尼合页</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">驻厂联系人</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">张建国 (厂长)</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">约定结算条件</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">30%定金+出厂付清</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">绑定我方产品</span>
+<span class="font-body-sm text-body-sm text-secondary font-bold">12 款出口专供</span>
+</div>
+</div>
+<!-- Footer indicator and quick PO button -->
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1 text-tertiary"><span class="material-symbols-outlined text-[16px]">verified_user</span>准时率 99.4%</span>
+<span>·</span>
+<span>平均交期 18 天</span>
+<span>·</span>
+<span class="text-outline">最近开单: 2天前</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="px-3 py-1 rounded bg-surface-container text-on-surface hover:bg-surface-container-high font-label-sm text-label-sm font-semibold transition-colors" type="button">
+                  历史对账
+                </button>
+<button class="px-3 py-1 rounded bg-secondary-container text-on-secondary hover:bg-secondary font-label-sm text-label-sm font-bold transition-colors flex items-center gap-1 shadow-sm" onclick="event.stopPropagation(); triggerCreatePO('浙江精工五金制品厂')" type="button">
+<span class="material-symbols-outlined text-[14px]">shopping_cart_checkout</span>
+<span>快速下单</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Supplier Item 2: 佛山联胜智能五金 -->
+<div class="supplier-card group relative p-space-lg rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all cursor-pointer ring-0" id="supplier-card-2" onclick="selectSupplier(2)">
+<div class="flex flex-col gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface font-bold font-headline-md text-headline-md">
+                  联
+                </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">佛山联胜智能五金实业有限公司</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm font-semibold">战略协作</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">电子智能锁具</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">Foshan Liansheng Smart Hardware Co., Ltd. · 统一代码: 91000000MA00000002</span>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-low px-2.5 py-1 rounded-full">
+<span class="material-symbols-outlined text-tertiary text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">4.8</span>
+<span class="text-outline font-label-sm text-label-sm">/ 5.0</span>
+</div>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">主营品类</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium truncate">智能门锁 / 欧标防盗锁体</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">商务联系人</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">陈国栋 (运营总监)</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">约定结算条件</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">月结 30 天 (OA30)</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">绑定我方产品</span>
+<span class="font-body-sm text-body-sm text-on-surface font-bold">8 款智能门控</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1 text-tertiary"><span class="material-symbols-outlined text-[16px]">verified_user</span>准时率 96.8%</span>
+<span>·</span>
+<span>平均交期 25 天</span>
+<span>·</span>
+<span class="px-1.5 py-0.2 rounded bg-tertiary-fixed/40 text-on-tertiary-container font-semibold">CE / FCC 认证齐备</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="px-3 py-1 rounded bg-surface-container text-on-surface hover:bg-surface-container-high font-label-sm text-label-sm font-semibold transition-colors" type="button">
+                  历史对账
+                </button>
+<button class="px-3 py-1 rounded bg-surface-container-high text-on-surface hover:bg-primary hover:text-on-primary font-label-sm text-label-sm font-semibold transition-colors flex items-center gap-1" onclick="event.stopPropagation(); triggerCreatePO('佛山联胜智能五金实业')" type="button">
+<span class="material-symbols-outlined text-[14px]">shopping_cart</span>
+<span>下采购单</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Supplier Item 3: 温州瑞达冲压件实业 (ALERT WARNING TAG) -->
+<div class="supplier-card group relative p-space-lg rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all cursor-pointer ring-0" id="supplier-card-3" onclick="selectSupplier(3)">
+<div class="flex flex-col gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface font-bold font-headline-md text-headline-md">
+                  瑞
+                </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">温州瑞达冲压件实业厂</span>
+<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span>交期预警需跟催</span>
+</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">五金精密铸造</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">Wenzhou Ruida Stamping Hardware Works · 统一代码: 91000000MA00000003</span>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-low px-2.5 py-1 rounded-full">
+<span class="material-symbols-outlined text-tertiary text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">4.6</span>
+<span class="text-outline font-label-sm text-label-sm">/ 5.0</span>
+</div>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">主营品类</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium truncate">滴水焊合页 / 建筑插销</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">跟单业务</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">李明 (销售经理)</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">约定结算条件</span>
+<span class="font-body-sm text-body-sm text-on-surface font-medium">现款提货 (Ex-work)</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">绑定我方产品</span>
+<span class="font-body-sm text-body-sm text-on-surface font-bold">5 款重型构件</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm text-secondary font-medium">
+<span class="material-symbols-outlined text-[16px]">error</span>
+<span>在制订单 PO-202410-09 逾期已达 3 天 (电镀批次延误)</span>
+</div>
+<button class="px-3 py-1 rounded bg-secondary text-on-secondary hover:bg-secondary-container font-label-sm text-label-sm font-bold transition-colors" type="button">
+                发催单公函
+              </button>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT: Deep Factory Detail & Sourcing Product Quotation Matrix (5 Columns) -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<!-- Interactive Drawer Container -->
+<div class="rounded-xl bg-surface-container-lowest p-space-lg shadow-sm flex flex-col gap-space-lg sticky top-20">
+<!-- Drawer Header & Profile Card -->
+<div class="flex flex-col gap-space-sm pb-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">FACTORY PROFILE &amp; DOSSIER</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-label-sm text-label-sm font-mono">SUPP-ID: VEND-3302</span>
+</div>
+<div class="flex items-start justify-between gap-space-sm">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold" id="panelSupplierTitle">浙江精工五金制品厂</h3>
+<p class="font-body-sm text-body-sm text-outline" id="panelSupplierEn">Zhejiang Precision Hardware Mfg Co., Ltd.</p>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold">深度验厂 A级</span>
+</div>
+</div>
+<!-- Supplier Essential Data Bento -->
+<div class="flex flex-col gap-space-xs p-space-md rounded-xl bg-surface-container-low font-body-sm text-body-sm">
+<div class="flex justify-between py-1">
+<span class="text-outline">生产基地厂址</span>
+<span class="text-on-surface font-medium text-right max-w-[240px] truncate">浙江省温州市乐清经济开发区经九路18号</span>
+</div>
+<div class="flex justify-between py-1">
+<span class="text-outline">厂长直达专线</span>
+<span class="text-on-surface font-mono font-medium">+86 138-5772-8819 (张建国)</span>
+</div>
+<div class="flex justify-between py-1">
+<span class="text-outline">业务对接邮箱</span>
+<span class="text-on-surface font-mono">contact@example.com</span>
+</div>
+<div class="flex justify-between py-1">
+<span class="text-outline">结算银行账户</span>
+<span class="text-on-surface font-mono text-right truncate">建行乐清支行 3305 0162 **** 8891</span>
+</div>
+</div>
+<!-- Associated Products & Tiered Quotations -->
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">专属供应产品与进货报价</span>
+<span class="font-label-sm text-label-sm text-outline">(共 12 款在售)</span>
+</div>
+<button class="text-secondary font-label-sm text-label-sm font-semibold hover:underline" type="button">
+                批量调价记录
+              </button>
+</div>
+<!-- Product Row 1 -->
+<div class="flex items-center gap-space-sm p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors">
+<img class="w-14 h-14 rounded-lg object-cover bg-surface-container-high shrink-0" data-alt="A clean industrial studio macro shot of an ergonomic brushed matte black stainless steel door handle on a pure white background with subtle ambient shadows and high contrast" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxlD12h2npd4pUXdYudJpmzUHBOOGygg-PNcpeesr83WtX5EFEnPXVW20u1nquWg5YAH9EmHIbdcQOqZX_IqMj-Q-TmesG-nt3E313LQ26TtOZV5pwP8rN0DVYHeLePrwW5TxWP_JoMGbWBTzhEilqIYUsqTwLPnZMI3okELT4uMHZIxh7c1Z-_xDv7Kx63qRV51GFwLxbpMrOJvgEoU_xwQjQP3HTngCVuxPu_3CCdQOf-OQ1SAsm"/>
+<div class="flex-1 min-w-0 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-[13px] leading-tight text-on-surface font-bold truncate">SUS304 现代哑黑分体把手</span>
+<span class="font-label-md text-label-md text-on-surface font-bold font-mono">¥ 28.50 <span class="text-outline text-xs font-normal">/EXW</span></span>
+</div>
+<div class="flex items-center justify-between mt-1 text-outline font-label-sm text-label-sm">
+<span class="font-mono text-on-surface-variant">我方货号: HD-8022-MB</span>
+<span>工厂型号: JG-H204</span>
+</div>
+<div class="flex items-center gap-space-sm mt-1 text-outline font-label-sm text-[11px]">
+<span>MOQ: 500 套</span>
+<span>·</span>
+<span class="text-on-surface font-medium">交期: 15 天</span>
+<span>·</span>
+<span class="text-tertiary font-medium">已质检合格</span>
+</div>
+</div>
+</div>
+<!-- Product Row 2 -->
+<div class="flex items-center gap-space-sm p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors">
+<img class="w-14 h-14 rounded-lg object-cover bg-surface-container-high shrink-0" data-alt="Close up architectural hardware product shot of heavy duty ball bearing stainless steel door hinge in brushed nickel finish with clean reflective metal highlights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBF9NlB920GdPsPEFqkK4YDvJgKaX0DU3-ce2swqRw4pHeKiqoex6k35wV_GcPDz2eT79NzsJC6s26ox7F0HqExXPol0oKkbmZes8eeakMszcnBXDdqqcnEB6CPBPNd1YnLA5b1a7mswkwD4b2yj_OgbzHDhp9nePNh9ypYjJ98Jcvnli6Uq-V-tgOi3XQGbDC2QQ93m5WRapKA2JOGQvAS7OH4os5SRysVyd6crJZLeTq8KAM1eA76"/>
+<div class="flex-1 min-w-0 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-[13px] leading-tight text-on-surface font-bold truncate">4x3x3.0mm 滚珠静音承重合页</span>
+<span class="font-label-md text-label-md text-on-surface font-bold font-mono">¥ 11.20 <span class="text-outline text-xs font-normal">/EXW</span></span>
+</div>
+<div class="flex items-center justify-between mt-1 text-outline font-label-sm text-label-sm">
+<span class="font-mono text-on-surface-variant">我方货号: HG-4030-SS</span>
+<span>工厂型号: JG-BB-09</span>
+</div>
+<div class="flex items-center gap-space-sm mt-1 text-outline font-label-sm text-[11px]">
+<span>MOQ: 1,000 片</span>
+<span>·</span>
+<span class="text-on-surface font-medium">交期: 12 天</span>
+<span>·</span>
+<span class="text-on-surface-variant">近期出货 24,000 片</span>
+</div>
+</div>
+</div>
+<!-- Product Row 3 -->
+<div class="flex items-center gap-space-sm p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors">
+<img class="w-14 h-14 rounded-lg object-cover bg-surface-container-high shrink-0" data-alt="High precision CNC machined solid brass architectural mortise flush bolt hardware product photo with golden luster on minimalist clean presentation pedestal" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOcnNw4NXjCnEvCBBXf6Eps9Mz18k_FL5kbSvbqCpg75d-uoSzwFx8X9rC6N28uTblxsnD-TTRFmrHdiYkZNGz4MVtTud1k7YGxvAX_225RpuOwJWHzTofjeAcFtqDErt1td86zIKsaD_KDdVZUR1VPoBXou13xtgNfLejdkyTUTojDP7uJsSvM2trxNAARMfNuDEM2ntDec6cXcnAYubNKaFYsPLQ53kIebfSIyIaPiCYxcsSu6tv"/>
+<div class="flex-1 min-w-0 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-[13px] leading-tight text-on-surface font-bold truncate">6寸 黄铜暗装天地隐形插销</span>
+<span class="font-label-md text-label-md text-on-surface font-bold font-mono">¥ 16.80 <span class="text-outline text-xs font-normal">/EXW</span></span>
+</div>
+<div class="flex items-center justify-between mt-1 text-outline font-label-sm text-label-sm">
+<span class="font-mono text-on-surface-variant">我方货号: FB-0600-PB</span>
+<span>工厂型号: JG-FB-6A</span>
+</div>
+<div class="flex items-center gap-space-sm mt-1 text-outline font-label-sm text-[11px]">
+<span>MOQ: 300 支</span>
+<span>·</span>
+<span class="text-on-surface font-medium">交期: 18 天</span>
+<span>·</span>
+<span class="text-tertiary font-medium">模具专有保密</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Action Suite -->
+<div class="flex flex-col gap-space-xs pt-space-xs">
+<button class="w-full py-3 rounded-lg bg-secondary-container hover:bg-secondary text-on-secondary font-headline-sm text-headline-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2" onclick="triggerCreatePO('浙江精工五金制品厂')" type="button">
+<span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+<span>一键向该工厂开采购单 (Create PO)</span>
+</button>
+<div class="grid grid-cols-2 gap-space-xs">
+<button class="py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">price_change</span>
+<span>批量更新报价</span>
+</button>
+<button class="py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">edit_note</span>
+<span>编辑工厂档案</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Create Supplier Modal Dialog (Simulated Micro-interaction) -->
+<div class="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm hidden items-center justify-center p-4" id="supplierModal">
+<div class="bg-surface-container-lowest rounded-xl max-w-2xl w-full p-space-lg shadow-2xl flex flex-col gap-space-md animate-in fade-in zoom-in-95">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-outline uppercase font-semibold">NEW VENDOR PROFILE</span>
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold">新建供应商与源头工厂档案</h3>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface" onclick="closeModal()" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline">工厂/公司全称 (中文) *</label>
+<input class="px-3 py-2 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm outline-none" placeholder="例如：广东强固精密压铸实业" type="text"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline">英文名称 (用于出口报关/CI/PL)</label>
+<input class="px-3 py-2 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm outline-none" placeholder="Guangdong Qianggu Precision Co." type="text"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline">供应核心类目 *</label>
+<select class="px-3 py-2 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm outline-none">
+<option>五金精密铸造</option>
+<option>铝合金型材</option>
+<option>电子智能锁具</option>
+<option>包装印刷辅料</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline">约定结算条件 (Payment Terms) *</label>
+<select class="px-3 py-2 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm outline-none">
+<option>30% 定金 + 70% 出厂前结清</option>
+<option>现款提货 (Ex-Works 100%)</option>
+<option>月结 30 天 (OA 30 Days)</option>
+<option>货到验收后 15 天付清</option>
+</select>
+</div>
+<div class="flex flex-col gap-1 md:col-span-2">
+<label class="font-label-sm text-label-sm text-outline">工厂真实生产基地地址 *</label>
+<input class="px-3 py-2 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm outline-none" placeholder="省、市、工业园区、厂房栋号（用于安排第三方验厂上门）" type="text"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline">关键跟单人姓名与职务</label>
+<input class="px-3 py-2 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm outline-none" placeholder="王工 (技术厂长)" type="text"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline">联系人电话 / 微信</label>
+<input class="px-3 py-2 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm outline-none" placeholder="+86 139..." type="text"/>
+</div>
+</div>
+<div class="flex items-center justify-end gap-space-sm pt-space-sm">
+<button class="px-4 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md" onclick="closeModal()" type="button">
+          取消
+        </button>
+<button class="px-5 py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-md" onclick="saveSupplierMock()" type="button">
+          保存并关联第一批供应产品
+        </button>
+</div>
+</div>
+</div>
+<!-- PO Confirmation Notification Toast Placeholder -->
+<div class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none" id="toastNotification">
+<div class="px-4 py-3 rounded-xl bg-primary text-on-primary shadow-2xl flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary-fixed text-[20px]">check_circle</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-bold" id="toastTitle">采购协同通知</span>
+<span class="font-body-sm text-body-sm text-primary-fixed" id="toastMsg">采购单已成功生成并推送到排产看板。</span>
+</div>
+</div>
+</div>
+<script>
+    // Supplier Mock Interaction Logic
+    const supplierData = {
+      1: {
+        title: "浙江精工五金制品厂",
+        en: "Zhejiang Precision Hardware Mfg Co., Ltd.",
+        level: "金牌核心",
+        code: "SUPP-ID: VEND-3302"
+      },
+      2: {
+        title: "佛山联胜智能五金实业有限公司",
+        en: "Foshan Liansheng Smart Hardware Co., Ltd.",
+        level: "战略协作",
+        code: "SUPP-ID: VEND-4401"
+      },
+      3: {
+        title: "温州瑞达冲压件实业厂",
+        en: "Wenzhou Ruida Stamping Hardware Works",
+        level: "临期监控",
+        code: "SUPP-ID: VEND-3319"
+      }
+    };
+
+    function selectSupplier(id) {
+      // Toggle card selection rings
+      [1, 2, 3].forEach(i => {
+        const el = document.getElementById('supplier-card-' + i);
+        if (el) {
+          if (i === id) {
+            el.classList.add('ring-2', 'ring-primary');
+          } else {
+            el.classList.remove('ring-2', 'ring-primary');
+          }
+        }
+      });
+
+      // Update right panel header
+      const data = supplierData[id];
+      if (data) {
+        document.getElementById('panelSupplierTitle').innerText = data.title;
+        document.getElementById('panelSupplierEn').innerText = data.en;
+      }
+    }
+
+    function triggerCreatePO(factoryName) {
+      showToast('开采购单就绪', `已针对【${factoryName}】开启新PO单草稿，已自动带出当前约定EXW阶梯底价。`);
+    }
+
+    function showToast(title, msg) {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastTitle').innerText = title;
+      document.getElementById('toastMsg').innerText = msg;
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 3500);
+    }
+
+    // Modal Handlers
+    const modal = document.getElementById('supplierModal');
+    document.getElementById('btnCreateSupplier').addEventListener('click', () => {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    });
+
+    function closeModal() {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveSupplierMock() {
+      closeModal();
+      showToast('档案保存成功', '新供应商档案已同步至外贸ERP总线，可直接进行货品询价与下达PO。');
+    }
+
+    // Category Pill Active Toggle
+    document.querySelectorAll('.category-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('.category-pill').forEach(p => {
+          p.classList.remove('bg-primary', 'text-on-primary');
+          p.classList.add('bg-surface-container-low', 'text-on-surface-variant');
+        });
+        this.classList.remove('bg-surface-container-low', 'text-on-surface-variant');
+        this.classList.add('bg-primary', 'text-on-primary');
+      });
+    });
+  </script>
+</div></main></div></body></html>

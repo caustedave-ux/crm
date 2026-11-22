@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed": "#ffdad2", "on-error-container": "#93000a", "on-surface-variant": "#46464b", "outline-variant": "#c7c6cb", "surface": "#f8f9fb", "tertiary-fixed": "#fce42e", "on-background": "#191c1e", "surface-container-low": "#f3f4f6", "on-secondary": "#ffffff", "error": "#ba1a1a", "background": "#f8f9fb", "on-primary-fixed-variant": "#46464a", "inverse-primary": "#c7c6ca", "primary": "#000000", "on-primary": "#ffffff", "tertiary-fixed-dim": "#dec800", "error-container": "#ffdad6", "surface-container-highest": "#e1e2e4", "primary-fixed": "#e3e2e6", "outline": "#76777b", "on-surface": "#191c1e", "on-primary-fixed": "#1b1b1f", "surface-container-lowest": "#ffffff", "secondary-fixed-dim": "#ffb4a3", "secondary-container": "#ff5c38", "secondary": "#b52705", "surface-dim": "#d9dadc", "on-tertiary-container": "#484000", "on-error": "#ffffff", "on-secondary-container": "#5b0d00", "surface-variant": "#e1e2e4", "on-secondary-fixed-variant": "#8b1900", "on-primary-container": "#848387", "inverse-surface": "#2e3132", "tertiary": "#6a5f00", "on-tertiary-fixed-variant": "#504700", "on-tertiary": "#ffffff", "primary-fixed-dim": "#c7c6ca", "surface-container": "#edeef0", "tertiary-container": "#c0ad00", "surface-bright": "#f8f9fb", "on-secondary-fixed": "#3d0600", "surface-container-high": "#e7e8ea", "inverse-on-surface": "#f0f1f3", "surface-tint": "#5e5e62", "on-tertiary-fixed": "#201c00", "primary-container": "#1b1b1f" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin": "2rem", "space-sm": "0.625rem", "gutter-mobile": "0.75rem", "space-xs": "0.375rem", "margin-mobile": "1rem", "gutter": "1.25rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "body-sm": [ "Inter" ], "body-lg": [ "Inter" ], "headline-lg": [ "Inter" ], "headline-lg-mobile": [ "Inter" ], "headline-md": [ "Inter" ], "label-sm": [ "Inter" ], "label-md": [ "Inter" ], "display-lg": [ "Inter" ], "body-md": [ "Inter" ], "headline-sm": [ "Inter" ], "numeric-stat": [ "Inter" ] }, "fontSize": { "body-sm": [ "12px", { "lineHeight": "16px", "fontWeight": "400" } ], "body-lg": [ "16px", { "lineHeight": "24px", "fontWeight": "400" } ], "headline-lg": [ "28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "headline-lg-mobile": [ "22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" } ], "headline-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "label-sm": [ "11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" } ], "label-md": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "display-lg": [ "36px", { "lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "body-md": [ "14px", { "lineHeight": "20px", "fontWeight": "400" } ], "headline-sm": [ "16px", { "lineHeight": "24px", "fontWeight": "600" } ], "numeric-stat": [ "32px", { "lineHeight": "38px", "letterSpacing": "-0.03em", "fontWeight": "700" } ] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 z-50 bg-primary text-on-primary h-16 shadow-[0_4px_20px_rgba(0,0,0,0.12)]"><div class="w-full h-16 px-gutter flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-md"><img alt="HQ CRM Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WoWTmGJ8WzTB9EO8tux_06mJrvdqKPFJb0vsLxg9hT-05bxnAlKbsbt14JuOVa6TQUJHE7hFJFmISXkzTAKNwBSCcBkf69XF1aXg-qU0hPau9Lj04bo8FXldcNf83ZXEWfQ591f-Lk3AHbPcmefgyywYXGl1q9U8ubZ2qJiSNUdz9QtZsQkC3B2vC2tZhkUD7dtbCb9uu5Hwtv8yMnITbcrvXFso2e9QPoo_t43RWNewfV-6K2ODmevBw"/><div class="flex items-baseline gap-space-xs"><span class="font-headline-sm text-headline-sm tracking-tight text-on-primary">HQ CRM</span><span class="px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold uppercase tracking-wider">Global Pro</span></div></div><div class="flex-1 max-w-xl mx-auto hidden md:block"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-3 text-outline text-[18px]">search</span><input class="w-full bg-surface-container-highest/20 hover:bg-surface-container-highest/30 focus:bg-surface-container-highest/40 text-on-primary placeholder:text-outline font-body-sm text-body-sm pl-9 pr-12 py-1.5 rounded-lg border-0 transition-all outline-none" placeholder="全局穿透检索：客户名 / 英文品名 / 提单号 / PI单号 / 汇款水单 (Cmd+K)" type="text"/><kbd class="absolute right-3 px-1.5 py-0.5 rounded bg-surface-container-highest/30 text-outline font-label-sm text-label-sm select-none">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><button class="hidden lg:flex items-center gap-1.5 bg-secondary-container hover:bg-secondary text-on-secondary font-label-md text-label-md px-3.5 py-1.5 rounded-full transition-colors shadow-sm" type="button"><span class="material-symbols-outlined text-[18px]">add</span><span>新建业务单据</span></button><button class="relative p-2 rounded-full hover:bg-surface-container-highest/20 text-on-primary transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">warning</span><span class="absolute top-1.5 right-1.5 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-secondary-container"></span></span></button><button class="relative p-2 rounded-full hover:bg-surface-container-highest/20 text-on-primary transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 px-1 min-w-[14px] h-[14px] rounded-full bg-secondary-container text-on-secondary font-label-sm text-[9px] leading-[14px] text-center font-bold">5</span></button><div class="flex items-center gap-space-sm pl-space-xs ml-space-xs"><div class="hidden sm:flex flex-col items-end text-right"><span class="font-label-md text-label-md text-on-primary font-medium">Alex Henderson</span><span class="font-label-sm text-label-sm text-outline">亚太大客户总监</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col justify-between py-space-md shadow-[2px_0_12px_rgba(0,0,0,0.03)] overflow-y-auto"><div class="flex flex-col gap-space-sm px-space-sm"><div class="px-3 py-1 text-outline font-label-sm text-label-sm uppercase tracking-wider font-semibold">核心业务矩阵</div><nav class="flex flex-col gap-1" data-active-classes="bg-primary text-on-primary font-headline-sm shadow-sm"><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="dashboard" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">grid_view</span><span class="font-label-md text-label-md">经营仪表盘</span></div><span class="font-label-sm text-label-sm text-outline">Overview</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="customers" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">badge</span><span class="font-label-md text-label-md">客户档案管理</span></div><span class="px-1.5 py-0.2 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">29天预警</span></a><a aria-current="page" class="flex items-center justify-between px-3 py-2 rounded-lg transition-colors bg-primary text-on-primary font-headline-sm shadow-sm" data-path="public-pool" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">groups_3</span><span class="font-label-md text-label-md">公海线索池</span></div><span class="px-1.5 py-0.2 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold">42</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="follow-ups" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">event_note</span><span class="font-label-md text-label-md">跟进日程看板</span></div><span class="w-2 h-2 rounded-full bg-tertiary-container"></span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="products" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">inventory_2</span><span class="font-label-md text-label-md">外贸产品图库</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="inventory" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">warehouse</span><span class="font-label-md text-label-md">仓储与欠货回补</span></div><span class="px-1.5 py-0.2 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">缺料 3</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="documents" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">description</span><span class="font-label-md text-label-md">单据中心 (PI/SC)</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="payments" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">payments</span><span class="font-label-md text-label-md">定金与外汇货款</span></div><span class="text-tertiary-container font-label-sm text-label-sm font-bold">USD</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="shipments" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">local_shipping</span><span class="font-label-md text-label-md">订舱唛头与发运</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="suppliers-and-settings" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">tune</span><span class="font-label-md text-label-md">工厂供应与设置</span></div></a></nav></div><div class="px-space-md pt-space-sm"><div class="p-3 rounded-xl bg-surface-container-low flex items-center justify-between"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-outline">汇率中间价 (USD/CNY)</span><span class="font-headline-sm text-headline-sm text-on-surface font-bold">7.2384</span></div><span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">实时</span></div></div></aside><div class="pl-64"><main class="relative pt-16 min-h-screen bg-surface"><div class="flex flex-col w-full">
+<div class="p-margin-mobile lg:p-margin flex flex-col gap-space-lg max-w-[1600px] mx-auto w-full">
+<!-- Top Header & Live Telemetry Summary -->
+<div class="flex flex-col xl:flex-row xl:items-end justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold uppercase tracking-wider">Public Resource Engine</span>
+<span class="text-outline font-label-sm text-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container animate-pulse"></span>
+            自动回收机制运行中
+          </span>
+</div>
+<h1 class="font-display-lg text-display-lg tracking-tight text-on-surface">公共客户池 <span class="text-outline font-headline-md text-headline-md font-normal tracking-normal">(Public Pool)</span></h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">全员共享资源池，所有外贸账号公开可见；超期30天未实质跟进或业务员手动放弃的沉睡线索自动流转至此，支持一键认领激活。</p>
+</div>
+<!-- Top KPI Capsules -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<div class="flex items-center gap-space-sm px-space-md py- space-sm py-2.5 rounded-xl bg-surface-container-lowest shadow-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[20px]">group_work</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">当前池内客户</span>
+<div class="flex items-baseline gap-1.5">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">142</span>
+<span class="font-label-sm text-label-sm text-outline">家</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm px-space-md py-2.5 rounded-xl bg-surface-container-lowest shadow-sm">
+<div class="w-9 h-9 rounded-lg bg-secondary-fixed flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[20px]">system_update_alt</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">今日新增入池</span>
+<div class="flex items-baseline gap-1.5">
+<span class="font-headline-md text-headline-md font-bold text-secondary">+8</span>
+<span class="font-label-sm text-label-sm text-outline">家</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm px-space-md py-2.5 rounded-xl bg-primary text-on-primary shadow-sm">
+<div class="w-9 h-9 rounded-lg bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-bold">
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-primary-fixed-dim uppercase tracking-wider">本月激活认领</span>
+<div class="flex items-baseline gap-1.5">
+<span class="font-headline-md text-headline-md font-bold text-tertiary-fixed">23</span>
+<span class="font-label-sm text-label-sm text-primary-fixed">家转为私海</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Filter Toolbar -->
+<div class="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md">
+<!-- Search Input -->
+<div class="flex-1 max-w-xl relative">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-md text-body-md pl-11 pr-24 py-2 rounded-lg transition-all outline-none" id="pool-search-input" placeholder="多维穿透检索：公司名 / 英文品名 / 目标国家 / 原最后跟进摘要..." type="text"/>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded bg-surface-container-high text-outline font-label-sm text-label-sm">回车筛选</span>
+</div>
+<!-- Segmented Tags & Dropdown Filter -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<div class="inline-flex p-1 bg-surface-container-low rounded-lg">
+<button class="px-3 py-1.5 rounded-md font-label-md text-label-md bg-surface-container-lowest text-on-surface shadow-sm font-semibold transition-all" type="button">全部原因 (142)</button>
+<button class="px-3 py-1.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all" type="button">满30天未跟进 (89)</button>
+<button class="px-3 py-1.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all" type="button">主动放弃释放 (38)</button>
+<button class="px-3 py-1.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all" type="button">开发失败线索 (15)</button>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="flex items-center gap-1.5 px-3.5 py-2 bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md rounded-lg transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">public</span>
+<span>国家/区域</span>
+<span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
+</button>
+<button class="flex items-center gap-1.5 px-3.5 py-2 bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md rounded-lg transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+<span>高级筛选</span>
+</button>
+<button class="flex items-center gap-1.5 px-4 py-2 bg-surface-container-highest text-outline font-label-md text-label-md rounded-lg transition-all cursor-not-allowed" disabled="" id="batch-claim-btn" type="button">
+<span class="material-symbols-outlined text-[18px]">task_alt</span>
+<span>批量认领 (<span id="selected-count">0</span>)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Data Table Container with Subtle Grid Rhythm -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-md text-body-md">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-3.5 pl-space-md pr-2 w-12 text-center" scope="col">
+<input class="w-4 h-4 rounded accent-primary cursor-pointer" id="select-all" type="checkbox"/>
+</th>
+<th class="py-3.5 px-space-sm min-w-[240px]" scope="col">客户公司与英文主体</th>
+<th class="py-3.5 px-space-sm min-w-[130px]" scope="col">所属国家 / 港口</th>
+<th class="py-3.5 px-space-sm min-w-[140px]" scope="col">行业与意向品类</th>
+<th class="py-3.5 px-space-sm min-w-[110px]" scope="col">原跟进人</th>
+<th class="py-3.5 px-space-sm min-w-[160px]" scope="col">入池时间</th>
+<th class="py-3.5 px-space-sm min-w-[180px]" scope="col">入池原因判定</th>
+<th class="py-3.5 px-space-sm min-w-[220px]" scope="col">历史最后跟进摘要</th>
+<th class="py-3.5 pr-space-md pl-space-sm min-w-[170px] text-right" scope="col">池内操作</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 text-on-surface">
+<!-- Row 1: Focus item matching drawer -->
+<tr class="hover:bg-surface-container-low/60 transition-colors group bg-surface-container-low/30">
+<td class="py-4 pl-space-md pr-2 text-center">
+<input class="row-checkbox w-4 h-4 rounded accent-primary cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm font-bold text-on-surface">
+                    A
+                  </div>
+<div class="flex flex-col min-w-0">
+<button class="text-left font-headline-sm text-headline-sm text-on-surface hover:text-secondary truncate cursor-pointer transition-colors" onclick="openDrawer('Apex Modular Logistics BV')" type="button">Apex Modular Logistics BV</button>
+<span class="font-body-sm text-body-sm text-outline truncate">荷兰阿姆斯特丹 · VAT: NL8823901B01</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+<span class="font-label-md text-label-md text-on-surface">荷兰 (NL)</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">Rotterdam Port</span>
+</td>
+<td class="py-4 px-space-sm">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">重型工业储能柜</span>
+<div class="font-body-sm text-body-sm text-outline mt-0.5">OEM定制外壳</div>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-6 h-6 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-sm text-label-sm font-semibold">LC</span>
+<span class="font-body-sm text-body-sm text-on-surface">Liam Chen</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">外贸三部</span>
+</td>
+<td class="py-4 px-space-sm">
+<div class="font-label-md text-label-md text-on-surface">2026-09-14 14:20</div>
+<span class="font-body-sm text-body-sm text-outline">已在池 4 小时</span>
+</td>
+<td class="py-4 px-space-sm">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                  满30天未跟进自动回收
+                </span>
+</td>
+<td class="py-4 px-space-sm">
+<div class="text-on-surface-variant font-body-sm text-body-sm line-clamp-2 max-w-[210px]">
+                  寄送200Ah高压电芯模具样件，收件后未回复邮件。原定8月25日洽谈CE认证周期，无人响应。
+                </div>
+</td>
+<td class="py-4 pr-space-md pl-space-sm text-right">
+<div class="inline-flex items-center gap-1.5">
+<button class="px-3 py-1.5 rounded-lg bg-tertiary-fixed hover:bg-tertiary-fixed-dim text-on-tertiary-fixed font-label-md text-label-md font-bold flex items-center gap-1 shadow-sm transition-all transform active:scale-95" onclick="claimCustomer('Apex Modular Logistics BV')" type="button">
+<span class="material-symbols-outlined text-[16px]">how_to_reg</span>
+<span>一键领取</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" onclick="openDrawer('Apex Modular Logistics BV')" title="查看全景档案" type="button">
+<span class="material-symbols-outlined text-[20px]">dock_to_left</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors group">
+<td class="py-4 pl-space-md pr-2 text-center">
+<input class="row-checkbox w-4 h-4 rounded accent-primary cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm font-bold text-on-surface">
+                    N
+                  </div>
+<div class="flex flex-col min-w-0">
+<button class="text-left font-headline-sm text-headline-sm text-on-surface hover:text-secondary truncate cursor-pointer transition-colors" onclick="openDrawer('Nordic Solar Solutions Oy')" type="button">Nordic Solar Solutions Oy</button>
+<span class="font-body-sm text-body-sm text-outline truncate">芬兰赫尔辛基 · FI77410294</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-surface-tint"></span>
+<span class="font-label-md text-label-md text-on-surface">芬兰 (FI)</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">Helsinki Seaport</span>
+</td>
+<td class="py-4 px-space-sm">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">光伏逆变器支架</span>
+<div class="font-body-sm text-body-sm text-outline mt-0.5">年采购量约40HQ</div>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-6 h-6 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-sm text-label-sm font-semibold">SZ</span>
+<span class="font-body-sm text-body-sm text-on-surface">Sophia Zhao</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">欧非拓展组</span>
+</td>
+<td class="py-4 px-space-sm">
+<div class="font-label-md text-label-md text-on-surface">2026-09-14 09:15</div>
+<span class="font-body-sm text-body-sm text-outline">已在池 9 小时</span>
+</td>
+<td class="py-4 px-space-sm">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">cancel</span>
+                  业务员主动释放：需求暂缓
+                </span>
+</td>
+<td class="py-4 px-space-sm">
+<div class="text-on-surface-variant font-body-sm text-body-sm line-clamp-2 max-w-[210px]">
+                  买家反馈欧盟补贴政策微调，Q4项目暂缓立项，业务员主动释放公海以便其他部门跟进常规铝型材采购。
+                </div>
+</td>
+<td class="py-4 pr-space-md pl-space-sm text-right">
+<div class="inline-flex items-center gap-1.5">
+<button class="px-3 py-1.5 rounded-lg bg-tertiary-fixed hover:bg-tertiary-fixed-dim text-on-tertiary-fixed font-label-md text-label-md font-bold flex items-center gap-1 shadow-sm transition-all transform active:scale-95" onclick="claimCustomer('Nordic Solar Solutions Oy')" type="button">
+<span class="material-symbols-outlined text-[16px]">how_to_reg</span>
+<span>一键领取</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" onclick="openDrawer('Nordic Solar Solutions Oy')" type="button">
+<span class="material-symbols-outlined text-[20px]">dock_to_left</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors group">
+<td class="py-4 pl-space-md pr-2 text-center">
+<input class="row-checkbox w-4 h-4 rounded accent-primary cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm font-bold text-on-surface">
+                    V
+                  </div>
+<div class="flex flex-col min-w-0">
+<button class="text-left font-headline-sm text-headline-sm text-on-surface hover:text-secondary truncate cursor-pointer transition-colors" onclick="openDrawer('Vanguard Industrial Supply')" type="button">Vanguard Industrial Supply Inc.</button>
+<span class="font-body-sm text-body-sm text-outline truncate">美国德克萨斯 · EIN: 74-1928371</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+<span class="font-label-md text-label-md text-on-surface">美国 (US)</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">Houston Harbor</span>
+</td>
+<td class="py-4 px-space-sm">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">高强度紧固件/法兰</span>
+<div class="font-body-sm text-body-sm text-outline mt-0.5">石化管件配套</div>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-6 h-6 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-sm text-label-sm font-semibold">KW</span>
+<span class="font-body-sm text-body-sm text-on-surface">Kevin Wang</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">美加销售一部</span>
+</td>
+<td class="py-4 px-space-sm">
+<div class="font-label-md text-label-md text-on-surface">2026-09-13 18:40</div>
+<span class="font-body-sm text-body-sm text-outline">已在池 20 小时</span>
+</td>
+<td class="py-4 px-space-sm">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                  满30天未跟进自动回收
+                </span>
+</td>
+<td class="py-4 px-space-sm">
+<div class="text-on-surface-variant font-body-sm text-body-sm line-clamp-2 max-w-[210px]">
+                  发送FOB上海报价单（PI-2026-8801），对方已读未回。跟进电话转接采购主管未果，超系统阈值自动释放。
+                </div>
+</td>
+<td class="py-4 pr-space-md pl-space-sm text-right">
+<div class="inline-flex items-center gap-1.5">
+<button class="px-3 py-1.5 rounded-lg bg-tertiary-fixed hover:bg-tertiary-fixed-dim text-on-tertiary-fixed font-label-md text-label-md font-bold flex items-center gap-1 shadow-sm transition-all transform active:scale-95" onclick="claimCustomer('Vanguard Industrial Supply Inc.')" type="button">
+<span class="material-symbols-outlined text-[16px]">how_to_reg</span>
+<span>一键领取</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" onclick="openDrawer('Vanguard Industrial Supply Inc.')" type="button">
+<span class="material-symbols-outlined text-[20px]">dock_to_left</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors group">
+<td class="py-4 pl-space-md pr-2 text-center">
+<input class="row-checkbox w-4 h-4 rounded accent-primary cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm font-bold text-on-surface">
+                    Q
+                  </div>
+<div class="flex flex-col min-w-0">
+<button class="text-left font-headline-sm text-headline-sm text-on-surface hover:text-secondary truncate cursor-pointer transition-colors" onclick="openDrawer('Qatar Gulf Electro-Mech LLC')" type="button">Qatar Gulf Electro-Mech LLC</button>
+<span class="font-body-sm text-body-sm text-outline truncate">卡塔尔多哈 · CR: 9811200</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+<span class="font-label-md text-label-md text-on-surface">卡塔尔 (QA)</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">Hamad Port</span>
+</td>
+<td class="py-4 px-space-sm">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">低压成套配电柜</span>
+<div class="font-body-sm text-body-sm text-outline mt-0.5">政府市政基建标段</div>
+</td>
+<td class="py-4 px-space-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-6 h-6 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-sm text-label-sm font-semibold">MR</span>
+<span class="font-body-sm text-body-sm text-on-surface">Mark Ray</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">中东区域组</span>
+</td>
+<td class="py-4 px-space-sm">
+<div class="font-label-md text-label-md text-on-surface">2026-09-12 11:30</div>
+<span class="font-body-sm text-body-sm text-outline">已在池 2 天</span>
+</td>
+<td class="py-4 px-space-sm">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">flag</span>
+                  开发失败线索转入
+                </span>
+</td>
+<td class="py-4 px-space-sm">
+<div class="text-on-surface-variant font-body-sm text-body-sm line-clamp-2 max-w-[210px]">
+                  价格目标差距18%，要求90天OA信用证账期，前期业务评估风控不符。现可由有中信保授信额度的团队尝试二次重启。
+                </div>
+</td>
+<td class="py-4 pr-space-md pl-space-sm text-right">
+<div class="inline-flex items-center gap-1.5">
+<button class="px-3 py-1.5 rounded-lg bg-tertiary-fixed hover:bg-tertiary-fixed-dim text-on-tertiary-fixed font-label-md text-label-md font-bold flex items-center gap-1 shadow-sm transition-all transform active:scale-95" onclick="claimCustomer('Qatar Gulf Electro-Mech LLC')" type="button">
+<span class="material-symbols-outlined text-[16px]">how_to_reg</span>
+<span>一键领取</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" onclick="openDrawer('Qatar Gulf Electro-Mech LLC')" type="button">
+<span class="material-symbols-outlined text-[20px]">dock_to_left</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination & Action Status Bar -->
+<div class="px-space-md py-3.5 bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-space-sm text-on-surface-variant">
+<div class="flex items-center gap-space-sm font-body-sm text-body-sm">
+<span>共 <strong class="text-on-surface font-semibold">142</strong> 个公共资源</span>
+<span class="text-outline">·</span>
+<span>每页显示 25 条</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded bg-surface-container-highest/60 hover:bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-medium transition-colors" type="button">首页</button>
+<button class="px-2.5 py-1 rounded bg-surface-container-highest/60 hover:bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-medium transition-colors" type="button">上一页</button>
+<span class="px-3 py-1 rounded bg-primary text-on-primary font-label-sm text-label-sm font-bold">1</span>
+<button class="px-2.5 py-1 rounded bg-surface-container-highest/60 hover:bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-medium transition-colors" type="button">2</button>
+<button class="px-2.5 py-1 rounded bg-surface-container-highest/60 hover:bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-medium transition-colors" type="button">3</button>
+<button class="px-2.5 py-1 rounded bg-surface-container-highest/60 hover:bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-medium transition-colors" type="button">下一页</button>
+</div>
+</div>
+</div>
+<!-- Claim Success Toast Notification Container (Dynamic) -->
+<div class="fixed bottom-8 right-8 z-50 transform translate-y-32 opacity-0 transition-all duration-300 pointer-events-none" id="toast">
+<div class="bg-primary text-on-primary px-5 py-3.5 rounded-xl shadow-xl flex items-center gap-3">
+<span class="w-7 h-7 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] font-bold">check</span>
+</span>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-semibold text-on-primary" id="toast-title">客户认领成功</span>
+<span class="font-body-sm text-body-sm text-primary-fixed-dim" id="toast-desc">已自动划归至您的私海，并新增第一条跟进记录。</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Slide-over Customer Profile Drawer (Default Opened State for Prototype Clarity) -->
+<div class="fixed inset-0 z-50 overflow-hidden flex justify-end" id="customer-drawer">
+<!-- Dim Backdrop with click-to-close -->
+<div class="absolute inset-0 bg-primary/40 backdrop-blur-sm transition-opacity" onclick="closeDrawer()"></div>
+<!-- Drawer Panel Canvas -->
+<aside class="relative w-full max-w-2xl bg-surface-container-lowest h-full shadow-[0_0_50px_rgba(0,0,0,0.18)] flex flex-col justify-between z-10">
+<!-- Drawer Top Bar -->
+<div class="p-space-md lg:px-space-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="px-2.5 py-0.5 rounded-md bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold uppercase tracking-wider">公海客户全景透视</span>
+<span class="text-outline font-body-sm text-body-sm">ID: CUST-EU-202604</span>
+</div>
+<button class="p-1.5 rounded-full hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface transition-colors" onclick="closeDrawer()" type="button">
+<span class="material-symbols-outlined text-[22px]">close</span>
+</button>
+</div>
+<!-- Drawer Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto p-space-md lg:p-space-lg flex flex-col gap-space-lg">
+<!-- Header Profile Card -->
+<div class="p-space-md bg-surface-container-low rounded-xl flex flex-col gap-space-sm">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex flex-col">
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-bold" id="drawer-company-title">Apex Modular Logistics BV</h2>
+<span class="font-body-md text-body-md text-outline">阿姆斯特丹欧洲总仓 · 成立8年 · 跨境B2B一级分销商</span>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold shrink-0">
+              满30天未跟进回收
+            </span>
+</div>
+<div class="grid grid-cols-3 gap-space-sm pt-space-xs">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">所属国家/港口</span>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface mt-0.5">荷兰 · Rotterdam</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">原责任业务员</span>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface mt-0.5">Liam Chen (三部)</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">进入公海时间</span>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface mt-0.5">09-14 14:20</span>
+</div>
+</div>
+</div>
+<!-- Product Inquiry Section with Visual Context -->
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">原询盘产品与意向采购需求</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-label-sm text-label-sm font-semibold">首单预估: $185,000</span>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col sm:flex-row gap-space-md items-center">
+<img class="w-24 h-24 sm:w-28 sm:h-28 rounded-lg object-cover bg-surface-container-highest shrink-0" data-alt="High-contrast modern industrial lithium energy storage cabinet with sleek geometric matte dark casing, modular battery racks, yellow safety accents, crisp studio lighting on pure light gray background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnOSbvCbcYMPuDhDl7FwR7B0auzudrJtdzfxgvwZMTmYN50pysr1gR-kbG8K2yQQd5dGHsG0_4Oy7R26jqPiFQ34zUN-Gc19RuI1r729PDKoac3BDChjoS-f0cAxjSjyYvOCZKe9vNRAnqTC5S-z46IN2Tg7yOHDfemp-YVpP5U5ZO22PD_eY6FzPau-gQ5ZFaYjuXkZ181Bt3C_1TjnSZs4RMRgU9pVNzuAHDoVhVvBV7cqWr90bS"/>
+<div class="flex flex-col gap-1 w-full">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">200Ah 工业储能模块 (IP67户外机柜)</span>
+<span class="text-secondary font-label-md text-label-md font-bold">FOB 宁波</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">需配套EN 62619欧洲认证及UN38.3海运危险品报告；买方要求定制丝印与私模前面板，年用量约15-20个集装箱。</p>
+<div class="flex flex-wrap items-center gap-1.5 mt-1">
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-outline font-label-sm text-label-sm">MOQ: 50套</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-outline font-label-sm text-label-sm">账期预设: 30% TT + 70% BL</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-lowest text-outline font-label-sm text-label-sm">打样已完成</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Historical Follow-up Timeline -->
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">历史流转与最后跟进日志</span>
+<span class="font-label-sm text-label-sm text-outline">共 3 条历程</span>
+</div>
+<div class="relative pl-6 flex flex-col gap-space-md before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-surface-container-highest">
+<!-- Item 1: Auto Recycling -->
+<div class="relative flex flex-col gap-1">
+<span class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-on-secondary"></span>
+</span>
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-secondary font-semibold">系统自动回收流转至公共客户池</span>
+<span class="font-label-sm text-label-sm text-outline">今日 14:20</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">根据《海外业务部公海流转准则》第3.3条，该客户自2026年8月15日后无任何外呼、邮件或单据生成记录，达30天超期阈值，所有权释放。</p>
+</div>
+<!-- Item 2: Last Sales Activity -->
+<div class="relative flex flex-col gap-1">
+<span class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+</span>
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-semibold">样件寄送跟进 · Liam Chen</span>
+<span class="font-label-sm text-label-sm text-outline">2026-08-15 16:45</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">DHL单号: 0000000000 已妥投阿姆斯特丹收发室。电话跟进客户总监Markus，对方在休夏季年假，留言转交助理。</p>
+</div>
+<!-- Item 3: RFQ Creation -->
+<div class="relative flex flex-col gap-1">
+<span class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+</span>
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-semibold">官网独立站询盘分配 · 智能路由</span>
+<span class="font-label-sm text-label-sm text-outline">2026-07-28 09:12</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">客户官网提交储能机柜规格表，系统初评为【A级优质工程采买商】并分配至外贸三部。</p>
+</div>
+</div>
+</div>
+<!-- Contact Key Person Card -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">原始联系人档案（认领后可解锁直拨）</span>
+<div class="flex items-center justify-between mt-1">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center font-bold text-on-surface">
+                MB
+              </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Markus van den Berg</span>
+<span class="font-body-sm text-body-sm text-outline">Head of Global Sourcing &amp; Supply</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="px-2.5 py-1 rounded bg-surface-container-lowest font-body-sm text-body-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">mail</span>
+                m****@apexmodular.nl
+              </span>
+<span class="px-2.5 py-1 rounded bg-surface-container-lowest font-body-sm text-body-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">call</span>
+                +31 20 **** 882
+              </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Drawer Bottom Action Panel -->
+<div class="p-space-md lg:p-space-lg bg-surface-container-low flex flex-col gap-space-xs shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
+<div class="flex items-center gap-space-sm">
+<button class="flex-1 py-3 px-space-md rounded-lg bg-tertiary-fixed hover:bg-tertiary-fixed-dim text-on-tertiary-fixed font-headline-sm text-headline-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98]" onclick="claimCurrentFromDrawer()" type="button">
+<span class="material-symbols-outlined text-[20px]">how_to_reg</span>
+<span>立即领取到我的私海客户</span>
+</button>
+<button class="py-3 px-4 rounded-lg bg-surface-container-highest hover:bg-surface-dim text-on-surface font-label-md text-label-md transition-colors" onclick="closeDrawer()" type="button">
+            稍后再看
+          </button>
+</div>
+<p class="font-body-sm text-body-sm text-outline text-center flex items-center justify-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]">info</span>
+          领取后将自动生成一条【从公共客户池领取客户】跟进记录并归属本人，30天内若无实质跟进将再次回流。
+        </p>
+</div>
+</aside>
+</div>
+<!-- Micro-interaction Script -->
+<script>
+    let currentDrawerCustomer = 'Apex Modular Logistics BV';
+
+    function openDrawer(companyName) {
+      currentDrawerCustomer = companyName;
+      const titleEl = document.getElementById('drawer-company-title');
+      if (titleEl) titleEl.innerText = companyName;
+      const drawer = document.getElementById('customer-drawer');
+      if (drawer) {
+        drawer.classList.remove('hidden');
+        drawer.classList.add('flex');
+      }
+    }
+
+    function closeDrawer() {
+      const drawer = document.getElementById('customer-drawer');
+      if (drawer) {
+        drawer.classList.add('hidden');
+        drawer.classList.remove('flex');
+      }
+    }
+
+    function triggerToast(title, desc) {
+      const toast = document.getElementById('toast');
+      const titleEl = document.getElementById('toast-title');
+      const descEl = document.getElementById('toast-desc');
+      if (!toast) return;
+
+      if (titleEl) titleEl.innerText = title;
+      if (descEl) descEl.innerText = desc;
+
+      toast.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 3500);
+    }
+
+    function claimCustomer(name) {
+      triggerToast('客户认领成功！', `已成功将「${name}」收入您的私海档案，系统已创建认领追踪记录。`);
+    }
+
+    function claimCurrentFromDrawer() {
+      claimCustomer(currentDrawerCustomer);
+      closeDrawer();
+    }
+
+    // Checkbox and multi-selection logic
+    document.addEventListener('DOMContentLoaded', () => {
+      const selectAll = document.getElementById('select-all');
+      const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+      const selectedCountSpan = document.getElementById('selected-count');
+      const batchBtn = document.getElementById('batch-claim-btn');
+
+      function updateBatchState() {
+        const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+        const count = checkedBoxes.length;
+        if (selectedCountSpan) selectedCountSpan.innerText = count;
+
+        if (batchBtn) {
+          if (count > 0) {
+            batchBtn.classList.remove('bg-surface-container-highest', 'text-outline', 'cursor-not-allowed');
+            batchBtn.classList.add('bg-primary', 'text-on-primary', 'shadow-sm', 'cursor-pointer');
+            batchBtn.removeAttribute('disabled');
+          } else {
+            batchBtn.classList.add('bg-surface-container-highest', 'text-outline', 'cursor-not-allowed');
+            batchBtn.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm', 'cursor-pointer');
+            batchBtn.setAttribute('disabled', 'true');
+          }
+        }
+      }
+
+      if (selectAll) {
+        selectAll.addEventListener('change', (e) => {
+          rowCheckboxes.forEach(cb => {
+            cb.checked = e.target.checked;
+          });
+          updateBatchState();
+        });
+      }
+
+      rowCheckboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+          updateBatchState();
+          if (selectAll) {
+            selectAll.checked = Array.from(rowCheckboxes).every(c => c.checked);
+          }
+        });
+      });
+
+      if (batchBtn) {
+        batchBtn.addEventListener('click', () => {
+          const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+          if (checkedCount > 0) {
+            triggerToast('批量认领成功！', `已成功批量划转 ${checkedCount} 家目标外贸企业至您的私海线索池。`);
+            rowCheckboxes.forEach(c => c.checked = false);
+            if (selectAll) selectAll.checked = false;
+            updateBatchState();
+          }
+        });
+      }
+    });
+  </script>
+</div></main></div></body></html>

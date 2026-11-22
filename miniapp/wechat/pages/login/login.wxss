@@ -1,0 +1,45 @@
+.login-wrap {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #2f6bff 0%, #2f6bff 320rpx, #f5f7fa 320rpx);
+  padding-bottom: 40rpx;
+}
+.login-logo {
+  text-align: center;
+  color: #ffffff;
+  padding: 100rpx 0 60rpx;
+}
+.logo-mark {
+  width: 120rpx;
+  height: 120rpx;
+  margin: 0 auto 24rpx;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2rpx solid rgba(255, 255, 255, 0.5);
+  border-radius: 28rpx;
+  line-height: 120rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+}
+.login-title { font-size: 44rpx; font-weight: 700; }
+.login-sub { font-size: 26rpx; opacity: 0.85; margin-top: 10rpx; }
+
+.login-card { margin-top: 0; }
+.input-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1rpx solid #eef0f4;
+  padding: 26rpx 4rpx;
+}
+.input-label { width: 130rpx; color: #8a94a6; font-size: 28rpx; }
+.input { flex: 1; font-size: 30rpx; }
+.login-error {
+  color: #e5484d;
+  font-size: 26rpx;
+  padding: 16rpx 4rpx 4rpx;
+}
+.login-card .btn-primary { margin-top: 40rpx; }
+.login-hint {
+  text-align: center;
+  color: #8a94a6;
+  font-size: 24rpx;
+  margin-top: 26rpx;
+}

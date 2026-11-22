@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed": "#ffdad2", "on-error-container": "#93000a", "on-surface-variant": "#46464b", "outline-variant": "#c7c6cb", "surface": "#f8f9fb", "tertiary-fixed": "#fce42e", "on-background": "#191c1e", "surface-container-low": "#f3f4f6", "on-secondary": "#ffffff", "error": "#ba1a1a", "background": "#f8f9fb", "on-primary-fixed-variant": "#46464a", "inverse-primary": "#c7c6ca", "primary": "#000000", "on-primary": "#ffffff", "tertiary-fixed-dim": "#dec800", "error-container": "#ffdad6", "surface-container-highest": "#e1e2e4", "primary-fixed": "#e3e2e6", "outline": "#76777b", "on-surface": "#191c1e", "on-primary-fixed": "#1b1b1f", "surface-container-lowest": "#ffffff", "secondary-fixed-dim": "#ffb4a3", "secondary-container": "#ff5c38", "secondary": "#b52705", "surface-dim": "#d9dadc", "on-tertiary-container": "#484000", "on-error": "#ffffff", "on-secondary-container": "#5b0d00", "surface-variant": "#e1e2e4", "on-secondary-fixed-variant": "#8b1900", "on-primary-container": "#848387", "inverse-surface": "#2e3132", "tertiary": "#6a5f00", "on-tertiary-fixed-variant": "#504700", "on-tertiary": "#ffffff", "primary-fixed-dim": "#c7c6ca", "surface-container": "#edeef0", "tertiary-container": "#c0ad00", "surface-bright": "#f8f9fb", "on-secondary-fixed": "#3d0600", "surface-container-high": "#e7e8ea", "inverse-on-surface": "#f0f1f3", "surface-tint": "#5e5e62", "on-tertiary-fixed": "#201c00", "primary-container": "#1b1b1f" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin": "2rem", "space-sm": "0.625rem", "gutter-mobile": "0.75rem", "space-xs": "0.375rem", "margin-mobile": "1rem", "gutter": "1.25rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "body-sm": [ "Inter" ], "body-lg": [ "Inter" ], "headline-lg": [ "Inter" ], "headline-lg-mobile": [ "Inter" ], "headline-md": [ "Inter" ], "label-sm": [ "Inter" ], "label-md": [ "Inter" ], "display-lg": [ "Inter" ], "body-md": [ "Inter" ], "headline-sm": [ "Inter" ], "numeric-stat": [ "Inter" ] }, "fontSize": { "body-sm": [ "12px", { "lineHeight": "16px", "fontWeight": "400" } ], "body-lg": [ "16px", { "lineHeight": "24px", "fontWeight": "400" } ], "headline-lg": [ "28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "headline-lg-mobile": [ "22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" } ], "headline-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "label-sm": [ "11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" } ], "label-md": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "display-lg": [ "36px", { "lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "body-md": [ "14px", { "lineHeight": "20px", "fontWeight": "400" } ], "headline-sm": [ "16px", { "lineHeight": "24px", "fontWeight": "600" } ], "numeric-stat": [ "32px", { "lineHeight": "38px", "letterSpacing": "-0.03em", "fontWeight": "700" } ] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 z-50 bg-primary text-on-primary h-16 shadow-[0_4px_20px_rgba(0,0,0,0.12)]"><div class="w-full h-16 px-gutter flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-md"><img alt="HQ CRM Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WoWTmGJ8WzTB9EO8tux_06mJrvdqKPFJb0vsLxg9hT-05bxnAlKbsbt14JuOVa6TQUJHE7hFJFmISXkzTAKNwBSCcBkf69XF1aXg-qU0hPau9Lj04bo8FXldcNf83ZXEWfQ591f-Lk3AHbPcmefgyywYXGl1q9U8ubZ2qJiSNUdz9QtZsQkC3B2vC2tZhkUD7dtbCb9uu5Hwtv8yMnITbcrvXFso2e9QPoo_t43RWNewfV-6K2ODmevBw"/><div class="flex items-baseline gap-space-xs"><span class="font-headline-sm text-headline-sm tracking-tight text-on-primary">HQ CRM</span><span class="px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold uppercase tracking-wider">Global Pro</span></div></div><div class="flex-1 max-w-xl mx-auto hidden md:block"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-3 text-outline text-[18px]">search</span><input class="w-full bg-surface-container-highest/20 hover:bg-surface-container-highest/30 focus:bg-surface-container-highest/40 text-on-primary placeholder:text-outline font-body-sm text-body-sm pl-9 pr-12 py-1.5 rounded-lg border-0 transition-all outline-none" placeholder="全局穿透检索：客户名 / 英文品名 / 提单号 / PI单号 / 汇款水单 (Cmd+K)" type="text"/><kbd class="absolute right-3 px-1.5 py-0.5 rounded bg-surface-container-highest/30 text-outline font-label-sm text-label-sm select-none">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><button class="hidden lg:flex items-center gap-1.5 bg-secondary-container hover:bg-secondary text-on-secondary font-label-md text-label-md px-3.5 py-1.5 rounded-full transition-colors shadow-sm" type="button"><span class="material-symbols-outlined text-[18px]">add</span><span>新建业务单据</span></button><button class="relative p-2 rounded-full hover:bg-surface-container-highest/20 text-on-primary transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">warning</span><span class="absolute top-1.5 right-1.5 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-secondary-container"></span></span></button><button class="relative p-2 rounded-full hover:bg-surface-container-highest/20 text-on-primary transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 px-1 min-w-[14px] h-[14px] rounded-full bg-secondary-container text-on-secondary font-label-sm text-[9px] leading-[14px] text-center font-bold">5</span></button><div class="flex items-center gap-space-sm pl-space-xs ml-space-xs"><div class="hidden sm:flex flex-col items-end text-right"><span class="font-label-md text-label-md text-on-primary font-medium">Alex Henderson</span><span class="font-label-sm text-label-sm text-outline">亚太大客户总监</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col justify-between py-space-md shadow-[2px_0_12px_rgba(0,0,0,0.03)] overflow-y-auto"><div class="flex flex-col gap-space-sm px-space-sm"><div class="px-3 py-1 text-outline font-label-sm text-label-sm uppercase tracking-wider font-semibold">核心业务矩阵</div><nav class="flex flex-col gap-1" data-active-classes="bg-primary text-on-primary font-headline-sm shadow-sm"><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="dashboard" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">grid_view</span><span class="font-label-md text-label-md">经营仪表盘</span></div><span class="font-label-sm text-label-sm text-outline">Overview</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="customers" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">badge</span><span class="font-label-md text-label-md">客户档案管理</span></div><span class="px-1.5 py-0.2 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">29天预警</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="public-pool" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">groups_3</span><span class="font-label-md text-label-md">公海线索池</span></div><span class="px-1.5 py-0.2 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold">42</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="follow-ups" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">event_note</span><span class="font-label-md text-label-md">跟进日程看板</span></div><span class="w-2 h-2 rounded-full bg-tertiary-container"></span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="products" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">inventory_2</span><span class="font-label-md text-label-md">外贸产品图库</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="inventory" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">warehouse</span><span class="font-label-md text-label-md">仓储与欠货回补</span></div><span class="px-1.5 py-0.2 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">缺料 3</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="documents" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">description</span><span class="font-label-md text-label-md">单据中心 (PI/SC)</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="payments" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">payments</span><span class="font-label-md text-label-md">定金与外汇货款</span></div><span class="text-tertiary-container font-label-sm text-label-sm font-bold">USD</span></a><a aria-current="page" class="flex items-center justify-between px-3 py-2 rounded-lg transition-colors bg-primary text-on-primary font-headline-sm shadow-sm" data-path="shipments" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">local_shipping</span><span class="font-label-md text-label-md">订舱唛头与发运</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="suppliers-and-settings" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">tune</span><span class="font-label-md text-label-md">工厂供应与设置</span></div></a></nav></div><div class="px-space-md pt-space-sm"><div class="p-3 rounded-xl bg-surface-container-low flex items-center justify-between"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-outline">汇率中间价 (USD/CNY)</span><span class="font-headline-sm text-headline-sm text-on-surface font-bold">7.2384</span></div><span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">实时</span></div></div></aside><div class="pl-64"><main class="relative pt-16 min-h-screen bg-surface"><div class="flex flex-col w-full">
+<div class="px-margin py-space-xl flex flex-col gap-space-lg max-w-[1600px] mx-auto w-full">
+<!-- Top Action Bar & Page Header -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md pb-space-sm">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-sm">
+<span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold tracking-wider uppercase">System Architecture</span>
+<span class="text-outline font-label-sm text-label-sm">Build 2025.04.18 • Production Host</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">系统配置与企业资料</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">外贸抬头资料、单据外汇与银行账户、账号角色权限、DeepSeek AI 助理配置与数据自动备份全域中枢。</p>
+</div>
+<div class="flex items-center gap-space-sm shrink-0">
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">history</span>
+<span>审计变更日志</span>
+</button>
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-semibold shadow-md transition-all active:scale-[0.98]" id="saveGlobalBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">cloud_done</span>
+<span>保存全部生效配置</span>
+</button>
+</div>
+</div>
+<!-- Sub Navigation Tabs (Segmented Control Track) -->
+<div class="bg-surface-container-low p-1.5 rounded-xl flex items-center gap-1 overflow-x-auto shadow-sm">
+<button class="nav-tab active flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-lowest text-on-surface font-label-md text-label-md font-semibold shadow-sm transition-all whitespace-nowrap" data-tab="profile" type="button">
+<span class="material-symbols-outlined text-[18px]">domain</span>
+<span>公司资料与单据Header</span>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container"></span>
+</button>
+<button class="nav-tab flex items-center gap-2 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface font-label-md text-label-md font-medium transition-all whitespace-nowrap" data-tab="accounts" type="button">
+<span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+<span>多账号与权限隔离</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-[10px]">8活跃</span>
+</button>
+<button class="nav-tab flex items-center gap-2 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface font-label-md text-label-md font-medium transition-all whitespace-nowrap" data-tab="deepseek" type="button">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+<span>AI 助理与外部工具 (DeepSeek)</span>
+<span class="px-1.5 py-0.2 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-[10px] font-bold">V3 已连接</span>
+</button>
+<button class="nav-tab flex items-center gap-2 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface font-label-md text-label-md font-medium transition-all whitespace-nowrap" data-tab="backup" type="button">
+<span class="material-symbols-outlined text-[18px]">database</span>
+<span>系统备份与数据运维</span>
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+</button>
+<button class="nav-tab flex items-center gap-2 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface font-label-md text-label-md font-medium transition-all whitespace-nowrap" data-tab="markets" type="button">
+<span class="material-symbols-outlined text-[18px]">public</span>
+<span>外贸全球市场分布 (World Map)</span>
+</button>
+</div>
+<!-- Main Content Dual-Column Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg">
+<!-- LEFT COLUMN: Module 1 & Module 2 (7 cols) -->
+<div class="xl:col-span-7 flex flex-col gap-space-lg">
+<!-- Module 1: Enterprise Export Header & Print Template -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">corporate_fare</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">企业出口抬头与单据打印模板配置</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">用于全自动生成 Proforma Invoice (PI)、Commercial Invoice (CI) 及装箱单标头</span>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded bg-surface-container-low text-on-surface font-label-sm text-label-sm font-semibold">外综服备案有效</span>
+</div>
+<!-- Form Fields Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md pt-space-xs">
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium flex items-center gap-1">
+<span>外贸企业英文全称</span>
+<span class="text-secondary font-bold">*</span>
+</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest text-on-surface font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none transition-all placeholder:text-outline" type="text" value="TradeOS Global Co., Ltd."/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium flex items-center gap-1">
+<span>境内公司中文全称</span>
+<span class="text-secondary font-bold">*</span>
+</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest text-on-surface font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none transition-all placeholder:text-outline" type="text" value="拓道仕全球供应链（宁波）进出口有限公司"/>
+</div>
+<div class="flex flex-col gap-1.5 md:col-span-2">
+<label class="font-label-md text-label-md text-on-surface font-medium">英文商业注册地址 (Bill From / Shipper Address)</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest text-on-surface font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none transition-all placeholder:text-outline" type="text" value="Floor 18-20, Fortune Trade Tower, No. 888 Century Avenue, Ningbo Pilot FTZ, China"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">出口退税海关企业代码 (10位)</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none transition-all tracking-wider" type="text" value="0000000000"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">统一社会信用代码 (USCI)</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none transition-all tracking-wider" type="text" value="91000000MA00000004"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">单据统一联系电话 / 传真</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none transition-all" type="text" value="+86 (574) 8799-3120"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">外贸单据官方网址 (Web)</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none transition-all" type="text" value="https://example.com"/>
+</div>
+</div>
+<!-- Official Seals & Stamp Upload Zone -->
+<div class="pt-space-xs flex flex-col gap-2">
+<span class="font-label-md text-label-md text-on-surface font-medium">外贸中英文双语公章 / 发票章 / 授权电子签字 (PNG透明底)</span>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="bg-surface-container-low rounded-xl p-3 flex items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center p-1.5 shadow-sm">
+<img class="w-full h-full object-contain" data-alt="Official round red corporate export stamp with bilingual Chinese and English company name and five pointed star seal, sharp transparent crisp edge" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6aNcpK4hxxYEiiJTbECJQ1tibvo_mZbCkVbs1e0ecCwCqEycyDJCCMzSAPmNIDXAQ76trAKkvYxI0v2OTX33aRMejxk7O_pvsVO_GtZgTV6joVKvqs-ITKwfyom_3L_xrKdr-Oh41_GfL7pk9MAAgmoKeQ0tQL-FrjAfYoUusKNdr2X1WucsljzmnKg1oHawzay9ltvCdY5rb6F5hrSnKfYz2gCe6qbxfgChq2FFtDAUEMTt3K0Ue"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">外贸专用业务章.png</span>
+<span class="font-body-sm text-body-sm text-outline">240 x 240 px • 48 KB</span>
+<span class="font-label-sm text-label-sm text-secondary font-medium">已加密防伪水印</span>
+</div>
+</div>
+<div class="flex flex-col gap-1 shrink-0">
+<button class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="重新上传" type="button">
+<span class="material-symbols-outlined text-[18px]">upload</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="预览打印" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-3 flex items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center p-1.5 shadow-sm">
+<img class="w-full h-full object-contain" data-alt="Handwritten executive signature in blue fountain pen ink on white textured clean paper for international bill signing" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAD5V6ZDZZVKwuOIi5gnOu-OBEHDE4X0AyyD54zERhii9M5nwXOKoqOZpcShhLJCJvWW-iMO_gBCiOmr4Q-jMU73swcYKbjxe_PSjNHLV3ue1y2_g8BEUrVnWIwfZedG2TagE_ZddmD_8wL8-pZP3jlWxVeomuGuS9RYQDbTP9J1Al-CZNEVBqdRabHc_Jm9K0ao96qSBeMJZTZr3xSYTyn8SK6d06Gte-PbYm9euXnTwt5Ac4Ld9co"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">法定代表人签字.png</span>
+<span class="font-body-sm text-body-sm text-outline">320 x 120 px • 29 KB</span>
+<span class="font-label-sm text-label-sm text-outline">Authorized Sign</span>
+</div>
+</div>
+<div class="flex flex-col gap-1 shrink-0">
+<button class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="重新上传" type="button">
+<span class="material-symbols-outlined text-[18px]">upload</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="预览打印" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Module 2: Foreign Remittance & Offshore SWIFT Accounts -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">account_balance</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">收汇银行与 SWIFT 账户配置</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">外汇货款结算专户，将自动匹配打印至出口合同及 PI 尾部汇款路径</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold">DEFAULT PRIMARY</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1.5 md:col-span-2">
+<label class="font-label-md text-label-md text-on-surface font-medium flex items-center justify-between">
+<span>受益人全称 (Beneficiary Name)</span>
+<span class="font-label-sm text-label-sm text-outline">需与香港/离岸公司执照一致</span>
+</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none font-semibold transition-all" type="text" value="TRADEOS GLOBAL ENTERPRISES CO., LIMITED"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">开户银行名称 (Beneficiary Bank)</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none transition-all" type="text" value="CITIBANK N.A., HONG KONG BRANCH"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium flex items-center gap-1">
+<span>银行国际代码 (SWIFT / BIC Code)</span>
+<span class="text-secondary font-bold">*</span>
+</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none font-mono font-bold tracking-widest text-primary transition-all" type="text" value="CITIHKHX"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">美金结算账号 (USD Account No.)</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none font-mono font-bold tracking-wider transition-all" type="text" value="006-8829-4109-8231"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">清算行号 / 联行号 (CHIPS / ABA)</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none transition-all" type="text" value="CP0239184"/>
+</div>
+<div class="flex flex-col gap-1.5 md:col-span-2">
+<label class="font-label-md text-label-md text-on-surface font-medium">开户行英文详细地址 (Bank Address)</label>
+<input class="w-full bg-surface-container-low focus:bg-surface-container-lowest font-body-md text-body-md px-3.5 py-2 rounded-lg outline-none transition-all" type="text" value="50/F, Champion Tower, 3 Garden Road, Central, Hong Kong"/>
+</div>
+</div>
+<!-- Secondary Bank Toggle Bar -->
+<div class="p-3 rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-outline text-[20px]">currency_exchange</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-medium">跨境电商收结汇通道 (PingPong / 连连支付 / 义乌个体户)</span>
+<span class="font-body-sm text-body-sm text-outline">已配置 2 个备选收汇子通道，支持买家本地原币种快速T/T电汇</span>
+</div>
+</div>
+<button class="px-3 py-1.5 rounded-md bg-surface-container-highest hover:bg-surface-container text-on-surface font-label-sm text-label-sm font-semibold transition-colors" type="button">
+              管理多币种子账户
+            </button>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Module 3, Module 4 & Module 5 (5 cols) -->
+<div class="xl:col-span-5 flex flex-col gap-space-lg">
+<!-- Module 3: DeepSeek AI Assistant Config (Dark Feature Tier Card) -->
+<div class="bg-primary text-on-primary rounded-xl p-space-lg shadow-xl flex flex-col gap-space-md relative overflow-hidden">
+<div class="flex items-start justify-between relative z-10">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-bold shadow-md">
+<span class="material-symbols-outlined text-[24px]">smart_toy</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-primary font-bold">DeepSeek AI 智能助理引擎</span>
+<span class="px-1.5 py-0.2 rounded bg-secondary-container text-on-secondary font-label-sm text-[10px] font-bold">PRD 3.12</span>
+</div>
+<span class="font-body-sm text-body-sm text-inverse-primary">根据客户历史来往邮件一键起草报价、地道英文客诉修饰与智能改写</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-space-sm relative z-10">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-primary font-medium">DeepSeek API Key (密钥令牌)</label>
+<span class="font-label-sm text-label-sm text-inverse-primary cursor-pointer hover:underline">申请商用密钥 →</span>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-inverse-primary text-[18px]">key</span>
+<input class="w-full bg-primary-container text-on-primary font-mono font-body-sm text-body-sm pl-9 pr-24 py-2 rounded-lg outline-none transition-all placeholder:text-outline" id="apiKeyInput" type="password" value="sk-dsk-7a91209fbca48210398bbec9930"/>
+<button class="absolute right-2 px-2 py-1 rounded bg-surface-container-highest/20 hover:bg-surface-container-highest/30 text-on-primary font-label-sm text-label-sm" id="toggleKeyBtn" type="button">
+                  显示明文
+                </button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-primary font-medium">选择底座模型</label>
+<select class="w-full bg-primary-container text-on-primary font-body-sm text-body-sm px-3 py-2 rounded-lg outline-none">
+<option selected="" value="deepseek-chat">deepseek-chat (外贸邮件改写推荐)</option>
+<option value="deepseek-coder">deepseek-coder (报表与数据抽取)</option>
+<option value="deepseek-v3">deepseek-v3 (高并发超低延迟)</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-primary font-medium">上下文记忆轮次</label>
+<select class="w-full bg-primary-container text-on-primary font-body-sm text-body-sm px-3 py-2 rounded-lg outline-none">
+<option>保留近 15 封往来邮件</option>
+<option selected="">保留近 30 封往来邮件</option>
+<option>全周期客户档案贯穿</option>
+</select>
+</div>
+</div>
+<!-- DeepSeek AI Prompt Modules -->
+<div class="p-3 rounded-lg bg-primary-container flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-primary font-medium">自动化助理开关</span>
+<span class="font-label-sm text-label-sm text-tertiary-fixed font-semibold">健康连通度 99.8%</span>
+</div>
+<div class="flex items-center justify-between py-1">
+<span class="font-body-sm text-body-sm text-inverse-primary">客户跟进记录自动提炼并建议下一轮推品策略</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-highest/40 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-tertiary-fixed"></div>
+</label>
+</div>
+<div class="flex items-center justify-between py-1">
+<span class="font-body-sm text-body-sm text-inverse-primary">PI 单据备注中英条款合规自动校对 (Incoterms 2020)</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-highest/40 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-tertiary-fixed"></div>
+</label>
+</div>
+</div>
+<!-- Ping Action Trigger -->
+<div class="flex items-center justify-between pt-1">
+<span class="font-body-sm text-body-sm text-tertiary-fixed flex items-center gap-1.5" id="testStatusText">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed animate-pulse"></span>
+<span>连通延时: 134ms (Hong Kong Edge Point)</span>
+</span>
+<button class="px-3.5 py-1.5 rounded-lg bg-surface-container-highest/20 hover:bg-surface-container-highest/30 text-on-primary font-label-md text-label-md font-semibold transition-colors flex items-center gap-1.5" id="testAiPingBtn" type="button">
+<span class="material-symbols-outlined text-[16px]">network_ping</span>
+<span>一键测试连通性</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Module 4: Database Security & Automated SQLite Snapshot -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">backup</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">系统数据备份与安全运维</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container-highest text-on-surface font-label-sm text-[10px]">PRD 3.13</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">SQLite 离线容灾，全量业务客户、PI 单据与汇款记录自动归档</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-label-sm text-label-sm font-semibold">自动化轮转</span>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[20px]">folder_zip</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">备份根目录路径</span>
+</div>
+<code class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface font-mono text-body-sm">/data/backups/tradeos_core.db</code>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-outline text-[20px]">schedule</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">自动定时快照策略</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant font-medium">每日凌晨 03:00 GMT+8 (保留30天)</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-tertiary text-[20px]">verified</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">最近一次成功镜像</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface font-bold">今日 03:00:14 (42.8 MB)</span>
+</div>
+<!-- Storage capacity bar -->
+<div class="flex flex-col gap-1 pt-1">
+<div class="flex justify-between font-label-sm text-label-sm text-outline">
+<span>云盘归档空间已用 3.8 GB / 100 GB</span>
+<span>3.8%</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 3.8%;"></div>
+</div>
+</div>
+</div>
+<!-- Backup Actions Buttons -->
+<div class="grid grid-cols-2 gap-space-sm">
+<button class="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md font-semibold transition-all" id="instantBackupBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">play_circle</span>
+<span>一键立即备份整库</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-semibold transition-all shadow-sm" id="downloadBackupBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>下载最近备份包 (SQL)</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Module 5: Multi-Account Management & Data Isolation (Full Width Table Bento) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">manage_accounts</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">账号体系与跟进数据隔离状态</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold">RBAC 矩阵生效中</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">外贸业务员之间客户私池绝对物理隔离；业务主管及管理员享有穿透监管与公海打捞权限</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary-container hover:bg-secondary text-on-secondary font-label-md text-label-md font-semibold transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">person_add</span>
+<span>添加外贸业务员</span>
+</button>
+</div>
+</div>
+<!-- Account Table -->
+<div class="overflow-x-auto rounded-lg">
+<table class="w-full text-left font-body-md text-body-md border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-md text-label-md">
+<th class="py-3 px-4 rounded-l-lg">姓名 / 员工工号</th>
+<th class="py-3 px-4">登录邮箱 / 业务通讯</th>
+<th class="py-3 px-4">组织角色</th>
+<th class="py-3 px-4">私海客户上限</th>
+<th class="py-3 px-4">数据隔离等级</th>
+<th class="py-3 px-4">账号状态</th>
+<th class="py-3 px-4 rounded-r-lg text-right">操作</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-transparent">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-xs">AH</div>
+<div class="flex flex-col">
+<span>Alex Henderson</span>
+<span class="font-label-sm text-label-sm text-outline">EMP-001 (当前账号)</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-on-surface font-mono text-body-sm">alex.h@example.com</td>
+<td class="py-3.5 px-4">
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-label-sm text-label-sm font-semibold">超级管理员 / 总监</span>
+</td>
+<td class="py-3.5 px-4 text-on-surface font-semibold">不设限 (无约束)</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-tertiary">visibility</span>
+<span class="font-label-sm text-label-sm font-medium">全公司跨部门穿透</span>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  正常激活
+                </span>
+</td>
+<td class="py-3.5 px-4 text-right">
+<button class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md px-2 py-1" type="button">管理秘钥</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center font-bold text-xs">SL</div>
+<div class="flex flex-col">
+<span>Sarah Lin (林舒雅)</span>
+<span class="font-label-sm text-label-sm text-outline">EMP-014</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-on-surface font-mono text-body-sm">sarah.lin@example.com</td>
+<td class="py-3.5 px-4">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-label-sm text-label-sm font-semibold">欧洲区外贸业务主管</span>
+</td>
+<td class="py-3.5 px-4 text-on-surface">300 家 (已用 184)</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-outline">supervisor_account</span>
+<span class="font-label-sm text-label-sm font-medium">查看欧洲组 4 人客户</span>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  正常激活
+                </span>
+</td>
+<td class="py-3.5 px-4 text-right">
+<button class="text-secondary hover:underline font-label-md text-label-md px-2 py-1" type="button">配置角色</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center font-bold text-xs">MK</div>
+<div class="flex flex-col">
+<span>Marcus Koenig</span>
+<span class="font-label-sm text-label-sm text-outline">EMP-022</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-on-surface font-mono text-body-sm">marcus.k@example.com</td>
+<td class="py-3.5 px-4">
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface font-label-sm text-label-sm">海外业务代表</span>
+</td>
+<td class="py-3.5 px-4 text-on-surface">150 家 (已用 142)</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-outline">lock</span>
+<span class="font-label-sm text-label-sm font-medium">仅自身私海不可见他人</span>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  正常激活
+                </span>
+</td>
+<td class="py-3.5 px-4 text-right">
+<button class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md px-2 py-1" type="button">权限变更</button>
+</td>
+</tr>
+<!-- Row 4 (Warning / Approaching Pool Limit) -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center font-bold text-xs">EC</div>
+<div class="flex flex-col">
+<span>Elena Chen (陈雪)</span>
+<span class="font-label-sm text-label-sm text-outline">EMP-029</span>
+</div>
+</td>
+<td class="py-3.5 px-4 text-on-surface font-mono text-body-sm">elena.c@example.com</td>
+<td class="py-3.5 px-4">
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface font-label-sm text-label-sm">北美跟单主管</span>
+</td>
+<td class="py-3.5 px-4 text-on-surface">
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">满额 (150/150)</span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-outline">lock</span>
+<span class="font-label-sm text-label-sm font-medium">仅自身私海不可见他人</span>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  正常激活
+                </span>
+</td>
+<td class="py-3.5 px-4 text-right">
+<button class="text-secondary hover:underline font-label-md text-label-md px-2 py-1" type="button">扩容额度</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Global Map & Export Market Hub Preview (PRD 3.12 Reference) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">hub</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">外贸出海市场覆盖与节点网络 (Global Logistics Nodes)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">北美美西、欧洲汉堡港与中东迪拜多仓实时数据路由与服务器解析状态</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-label-sm text-label-sm font-medium">32 个目标港口</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-label-sm text-label-sm font-medium">18 家签约国际货代</span>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
+<!-- Port 1 -->
+<div class="rounded-xl bg-surface-container-low p-space-md flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-bold">美西基础港 (LA / Long Beach)</span>
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">主供渠道：沃尔玛特规货运与亚马逊 FBA 美西直送枢纽仓</p>
+<div class="pt-2 flex items-center justify-between text-outline font-label-sm text-label-sm">
+<span>平均海运航程: 14 天</span>
+<span class="font-mono text-on-surface font-semibold">USD 2,450 / 40HQ</span>
+</div>
+</div>
+<!-- Port 2 -->
+<div class="rounded-xl bg-surface-container-low p-space-md flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-bold">欧洲基本港 (Hamburg &amp; Rotterdam)</span>
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed"></span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">主供渠道：欧盟 CE 认证机械电气及环保标准件分销总库</p>
+<div class="pt-2 flex items-center justify-between text-outline font-label-sm text-label-sm">
+<span>绕行好望角: 34 天</span>
+<span class="font-mono text-on-surface font-semibold">USD 3,820 / 40HQ</span>
+</div>
+</div>
+<!-- Port 3 -->
+<div class="rounded-xl bg-surface-container-low p-space-md flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-bold">中东集散港 (Jebel Ali, Dubai)</span>
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">主供渠道：GCC 海湾六国重型五金与建材快速清关通道</p>
+<div class="pt-2 flex items-center justify-between text-outline font-label-sm text-label-sm">
+<span>平均航程: 18 天</span>
+<span class="font-mono text-on-surface font-semibold">USD 1,980 / 40HQ</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+    (function() {
+      // Toggle API Key Visibility
+      const toggleBtn = document.getElementById('toggleKeyBtn');
+      const apiKeyInput = document.getElementById('apiKeyInput');
+      if (toggleBtn && apiKeyInput) {
+        toggleBtn.addEventListener('click', function() {
+          if (apiKeyInput.type === 'password') {
+            apiKeyInput.type = 'text';
+            toggleBtn.textContent = '隐藏密文';
+          } else {
+            apiKeyInput.type = 'password';
+            toggleBtn.textContent = '显示明文';
+          }
+        });
+      }
+
+      // Ping AI Latency Test
+      const pingBtn = document.getElementById('testAiPingBtn');
+      const statusText = document.getElementById('testStatusText');
+      if (pingBtn && statusText) {
+        pingBtn.addEventListener('click', function() {
+          statusText.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span><span>正在探测 DeepSeek API 终端...</span>';
+          setTimeout(function() {
+            const randomPing = Math.floor(Math.random() * 40) + 115;
+            statusText.innerHTML = '<span class="w-2 h-2 rounded-full bg-tertiary-fixed"></span><span>连通成功！延时: ' + randomPing + 'ms (deepseek-chat v3 准备就绪)</span>';
+          }, 700);
+        });
+      }
+
+      // Immediate Database Backup Simulation
+      const instantBackupBtn = document.getElementById('instantBackupBtn');
+      if (instantBackupBtn) {
+        instantBackupBtn.addEventListener('click', function() {
+          const originalText = instantBackupBtn.innerHTML;
+          instantBackupBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">sync</span><span>正在打包 SQLite 数据库...</span>';
+          instantBackupBtn.disabled = true;
+          setTimeout(function() {
+            instantBackupBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check</span><span>备份完成 (snapshot_' + new Date().toISOString().slice(0,10) + '.db)</span>';
+            setTimeout(function() {
+              instantBackupBtn.innerHTML = originalText;
+              instantBackupBtn.disabled = false;
+            }, 2500);
+          }, 1200);
+        });
+      }
+
+      // Global Save Feedback
+      const saveBtn = document.getElementById('saveGlobalBtn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+          const prev = saveBtn.innerHTML;
+          saveBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span><span>配置应用中...</span>';
+          setTimeout(function() {
+            saveBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span>已保存并同步至所有单据</span>';
+            setTimeout(function() {
+              saveBtn.innerHTML = prev;
+            }, 2000);
+          }, 600);
+        });
+      }
+
+      // Sub-tab styling interaction
+      const tabs = document.querySelectorAll('.nav-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          tabs.forEach(t => {
+            t.classList.remove('bg-surface-container-lowest', 'text-on-surface', 'shadow-sm');
+            t.classList.add('text-on-surface-variant');
+          });
+          this.classList.remove('text-on-surface-variant');
+          this.classList.add('bg-surface-container-lowest', 'text-on-surface', 'shadow-sm');
+        });
+      });
+    })();
+  </script>
+</div></main></div></body></html>

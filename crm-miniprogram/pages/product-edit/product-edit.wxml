@@ -1,0 +1,143 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
+
+  <view wx:if="{{!loading}}">
+    <view class="card">
+      <view class="card-title">
+        <text>产品图片</text>
+        <text class="more">{{images.length}}/{{maxImages}}</text>
+      </view>
+      <view class="img-grid">
+        <view wx:for="{{images}}" wx:key="url" class="img-cell">
+          <image class="img-thumb" src="{{item.url}}" mode="aspectFill" bindtap="onPreviewImage" data-url="{{item.url}}" />
+          <view class="img-del" catchtap="onRemoveImage" data-index="{{index}}">×</view>
+        </view>
+        <view wx:if="{{images.length < maxImages}}" class="img-add" bindtap="onChooseImage">
+          <text class="img-plus">+</text>
+          <text class="img-add-text">添加</text>
+        </view>
+      </view>
+      <view class="t-sub img-tip">第一张作为封面，可从相册选或拍照，单张最多 6 张</view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">基本信息</view>
+
+      <view class="field required">
+        <text class="f-label">产品名称</text>
+        <input class="f-input" value="{{form.name}}" data-field="name" bindinput="onInput" placeholder="必填，如 不锈钢法兰" placeholder-class="ph" />
+      </view>
+
+      <view class="field">
+        <text class="f-label">英文名</text>
+        <input class="f-input" value="{{form.name_en}}" data-field="name_en" bindinput="onInput" placeholder="Stainless Steel Flange" placeholder-class="ph" />
+      </view>
+
+      <view class="field">
+        <text class="f-label">型号</text>
+        <input class="f-input" value="{{form.model}}" data-field="model" bindinput="onInput" placeholder="规格型号" placeholder-class="ph" />
+      </view>
+
+      <view class="field">
+        <text class="f-label">HS编码</text>
+        <input class="f-input" value="{{form.hs_code}}" data-field="hs_code" bindinput="onInput" placeholder="海关编码" placeholder-class="ph" />
+      </view>
+
+      <view class="field">
+        <text class="f-label">产地</text>
+        <input class="f-input" value="{{form.origin}}" data-field="origin" bindinput="onInput" placeholder="如 中国浙江" placeholder-class="ph" />
+      </view>
+
+      <view class="field">
+        <text class="f-label">颜色</text>
+        <input class="f-input" value="{{form.color}}" data-field="color" bindinput="onInput" placeholder="选填" placeholder-class="ph" />
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">价格</view>
+
+      <view class="field">
+        <text class="f-label">币种</text>
+        <picker mode="selector" range="{{currencies}}" value="{{currencyIndex}}" bindchange="onCurrencyChange">
+          <view class="f-picker">
+            <text>{{form.currency}}</text>
+            <text class="arrow">›</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <text class="f-label">销售单价</text>
+        <input class="f-input" type="digit" value="{{form.price}}" data-field="price" bindinput="onInput" placeholder="0.00" placeholder-class="ph" />
+      </view>
+
+      <view class="field">
+        <text class="f-label">成本价</text>
+        <input class="f-input" type="digit" value="{{form.cost_price}}" data-field="cost_price" bindinput="onInput" placeholder="0.00" placeholder-class="ph" />
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">库存</view>
+
+      <view class="field">
+        <text class="f-label">单位</text>
+        <input class="f-input" value="{{form.unit}}" data-field="unit" bindinput="onInput" placeholder="pcs / 台 / kg" placeholder-class="ph" />
+      </view>
+
+      <view class="field">
+        <text class="f-label">当前库存</text>
+        <input class="f-input" type="digit" value="{{form.stock}}" data-field="stock" bindinput="onInput" placeholder="0" placeholder-class="ph" />
+      </view>
+
+      <view class="field">
+        <text class="f-label">库存预警值</text>
+        <input class="f-input" type="digit" value="{{form.stock_alert}}" data-field="stock_alert" bindinput="onInput" placeholder="低于该值时提醒，0 = 不提醒" placeholder-class="ph" />
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">包装信息</view>
+
+      <view class="field">
+        <text class="f-label">每箱数量</text>
+        <input class="f-input" type="digit" value="{{form.pcs_per_ctn}}" data-field="pcs_per_ctn" bindinput="onInput" placeholder="pcs/ctn" placeholder-class="ph" />
+      </view>
+
+      <view class="field">
+        <text class="f-label">箱数</text>
+        <input class="f-input" type="digit" value="{{form.ctn_count}}" data-field="ctn_count" bindinput="onInput" placeholder="ctn" placeholder-class="ph" />
+      </view>
+
+      <view class="field">
+        <text class="f-label">体积 (CBM)</text>
+        <input class="f-input" type="digit" value="{{form.volume}}" data-field="volume" bindinput="onInput" placeholder="立方米" placeholder-class="ph" />
+      </view>
+
+      <view class="field">
+        <text class="f-label">重量 (KG)</text>
+        <input class="f-input" type="digit" value="{{form.weight}}" data-field="weight" bindinput="onInput" placeholder="公斤" placeholder-class="ph" />
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">备注</view>
+      <textarea class="f-textarea" value="{{form.notes}}" data-field="notes" bindinput="onInput" placeholder="选填" placeholder-class="ph" auto-height />
+    </view>
+
+    <view class="card">
+      <view class="switch-row">
+        <view>
+          <view class="t-main">团队共享</view>
+          <view class="t-sub">开启后其他成员也能看到并修改该产品</view>
+        </view>
+        <switch checked="{{form.is_shared}}" bindchange="onShareToggle" color="#2f6bff" />
+      </view>
+    </view>
+
+    <view class="btn {{saving ? 'btn-disabled' : ''}}" bindtap="onSave">保存</view>
+    <view class="btn btn-ghost" bindtap="onCancel">取消</view>
+    <view class="bottom-space"></view>
+  </view>
+</view>

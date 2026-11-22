@@ -1,0 +1,73 @@
+<view wx:if="{{error}}" class="card error-box">{{error}}</view>
+
+<block wx:if="{{customer}}">
+  <view class="head-card">
+    <view class="head-company">{{customer.company}}</view>
+    <view class="head-sub" wx:if="{{customer.nameEn}}">{{customer.nameEn}}</view>
+    <view class="head-tags">
+      <view class="tag tag-white" wx:if="{{customer.status}}">{{customer.status}}</view>
+      <view class="tag tag-white" wx:if="{{customer.level}}">{{customer.level}}</view>
+      <view class="tag tag-white" wx:if="{{customer.country}}">{{customer.country}}</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">联系方式</view>
+    <view class="row" wx:if="{{customer.phone}}" data-value="{{customer.phone}}" bindtap="copy">
+      <text class="row-label">电话</text><text class="row-value copyable">{{customer.phone}} 📋</text>
+    </view>
+    <view class="row" wx:if="{{customer.email}}" data-value="{{customer.email}}" bindtap="copy">
+      <text class="row-label">邮箱</text><text class="row-value copyable">{{customer.email}} 📋</text>
+    </view>
+    <view class="row" wx:if="{{customer.whatsapp}}" data-value="{{customer.whatsapp}}" bindtap="copy">
+      <text class="row-label">WhatsApp</text><text class="row-value copyable">{{customer.whatsapp}} 📋</text>
+    </view>
+    <view class="row" wx:if="{{customer.wechat}}" data-value="{{customer.wechat}}" bindtap="copy">
+      <text class="row-label">微信</text><text class="row-value copyable">{{customer.wechat}} 📋</text>
+    </view>
+    <view class="row" wx:if="{{customer.website}}" data-value="{{customer.website}}" bindtap="copy">
+      <text class="row-label">网站</text><text class="row-value copyable">{{customer.website}} 📋</text>
+    </view>
+    <view class="row" wx:if="{{customer.address}}" data-value="{{customer.address}}" bindtap="copy">
+      <text class="row-label">地址</text><text class="row-value copyable">{{customer.address}} 📋</text>
+    </view>
+    <view class="row" wx:if="{{customer.source}}">
+      <text class="row-label">来源</text><text class="row-value">{{customer.source}}</text>
+    </view>
+    <view class="row" wx:if="{{customer.industry}}">
+      <text class="row-label">行业</text><text class="row-value">{{customer.industry}}</text>
+    </view>
+    <view class="notes" wx:if="{{customer.notes}}">{{customer.notes}}</view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">联系人（{{contacts.length}}）</view>
+    <view wx:if="{{!contacts.length}}" class="empty">暂无联系人</view>
+    <view wx:for="{{contacts}}" wx:key="id" class="contact-item">
+      <view class="contact-line">
+        <text class="contact-name">{{item.name}}</text>
+        <view class="tag tag-orange" wx:if="{{item.primary}}">主要</view>
+        <text class="contact-pos" wx:if="{{item.position}}">{{item.position}}</text>
+      </view>
+      <view class="contact-acts">
+        <view wx:if="{{item.phone}}" class="action-link" data-value="{{item.phone}}" catchtap="call">📞 {{item.phone}}</view>
+        <view wx:if="{{item.email}}" class="action-link" data-value="{{item.email}}" catchtap="copy">📋 {{item.email}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">最近跟进（{{activities.length}}）</view>
+    <view wx:if="{{!activities.length}}" class="empty">暂无跟进记录</view>
+    <view wx:for="{{activities}}" wx:key="id" class="act-item">
+      <view class="act-line">
+        <view class="tag tag-gray">{{item.type}}</view>
+        <text class="act-date">{{item.date}}</text>
+      </view>
+      <view class="act-subject">{{item.subject}}</view>
+      <view class="act-next" wx:if="{{item.next}}">{{item.next}}</view>
+    </view>
+  </view>
+</block>
+
+<view wx:if="{{loading}}" class="loading-more">加载中…</view>

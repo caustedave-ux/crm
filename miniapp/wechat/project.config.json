@@ -1,0 +1,24 @@
+{
+  "compileType": "miniprogram",
+  "appid": "填入你的小程序AppID",
+  "projectname": "foreign-trade-crm-mp",
+  "description": "HQ CRM 小程序端",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "libVersion": "3.4.10",
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

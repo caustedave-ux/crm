@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed": "#ffdad2", "on-error-container": "#93000a", "on-surface-variant": "#46464b", "outline-variant": "#c7c6cb", "surface": "#f8f9fb", "tertiary-fixed": "#fce42e", "on-background": "#191c1e", "surface-container-low": "#f3f4f6", "on-secondary": "#ffffff", "error": "#ba1a1a", "background": "#f8f9fb", "on-primary-fixed-variant": "#46464a", "inverse-primary": "#c7c6ca", "primary": "#000000", "on-primary": "#ffffff", "tertiary-fixed-dim": "#dec800", "error-container": "#ffdad6", "surface-container-highest": "#e1e2e4", "primary-fixed": "#e3e2e6", "outline": "#76777b", "on-surface": "#191c1e", "on-primary-fixed": "#1b1b1f", "surface-container-lowest": "#ffffff", "secondary-fixed-dim": "#ffb4a3", "secondary-container": "#ff5c38", "secondary": "#b52705", "surface-dim": "#d9dadc", "on-tertiary-container": "#484000", "on-error": "#ffffff", "on-secondary-container": "#5b0d00", "surface-variant": "#e1e2e4", "on-secondary-fixed-variant": "#8b1900", "on-primary-container": "#848387", "inverse-surface": "#2e3132", "tertiary": "#6a5f00", "on-tertiary-fixed-variant": "#504700", "on-tertiary": "#ffffff", "primary-fixed-dim": "#c7c6ca", "surface-container": "#edeef0", "tertiary-container": "#c0ad00", "surface-bright": "#f8f9fb", "on-secondary-fixed": "#3d0600", "surface-container-high": "#e7e8ea", "inverse-on-surface": "#f0f1f3", "surface-tint": "#5e5e62", "on-tertiary-fixed": "#201c00", "primary-container": "#1b1b1f" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin": "2rem", "space-sm": "0.625rem", "gutter-mobile": "0.75rem", "space-xs": "0.375rem", "margin-mobile": "1rem", "gutter": "1.25rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "body-sm": [ "Inter" ], "body-lg": [ "Inter" ], "headline-lg": [ "Inter" ], "headline-lg-mobile": [ "Inter" ], "headline-md": [ "Inter" ], "label-sm": [ "Inter" ], "label-md": [ "Inter" ], "display-lg": [ "Inter" ], "body-md": [ "Inter" ], "headline-sm": [ "Inter" ], "numeric-stat": [ "Inter" ] }, "fontSize": { "body-sm": [ "12px", { "lineHeight": "16px", "fontWeight": "400" } ], "body-lg": [ "16px", { "lineHeight": "24px", "fontWeight": "400" } ], "headline-lg": [ "28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "headline-lg-mobile": [ "22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" } ], "headline-md": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "label-sm": [ "11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" } ], "label-md": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "display-lg": [ "36px", { "lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "body-md": [ "14px", { "lineHeight": "20px", "fontWeight": "400" } ], "headline-sm": [ "16px", { "lineHeight": "24px", "fontWeight": "600" } ], "numeric-stat": [ "32px", { "lineHeight": "38px", "letterSpacing": "-0.03em", "fontWeight": "700" } ] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 z-50 bg-primary text-on-primary h-16 shadow-[0_4px_20px_rgba(0,0,0,0.12)]"><div class="w-full h-16 px-gutter flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-md"><img alt="HQ CRM Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WoWTmGJ8WzTB9EO8tux_06mJrvdqKPFJb0vsLxg9hT-05bxnAlKbsbt14JuOVa6TQUJHE7hFJFmISXkzTAKNwBSCcBkf69XF1aXg-qU0hPau9Lj04bo8FXldcNf83ZXEWfQ591f-Lk3AHbPcmefgyywYXGl1q9U8ubZ2qJiSNUdz9QtZsQkC3B2vC2tZhkUD7dtbCb9uu5Hwtv8yMnITbcrvXFso2e9QPoo_t43RWNewfV-6K2ODmevBw"/><div class="flex items-baseline gap-space-xs"><span class="font-headline-sm text-headline-sm tracking-tight text-on-primary">HQ CRM</span><span class="px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold uppercase tracking-wider">Global Pro</span></div></div><div class="flex-1 max-w-xl mx-auto hidden md:block"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-3 text-outline text-[18px]">search</span><input class="w-full bg-surface-container-highest/20 hover:bg-surface-container-highest/30 focus:bg-surface-container-highest/40 text-on-primary placeholder:text-outline font-body-sm text-body-sm pl-9 pr-12 py-1.5 rounded-lg border-0 transition-all outline-none" placeholder="全局穿透检索：客户名 / 英文品名 / 提单号 / PI单号 / 汇款水单 (Cmd+K)" type="text"/><kbd class="absolute right-3 px-1.5 py-0.5 rounded bg-surface-container-highest/30 text-outline font-label-sm text-label-sm select-none">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><button class="hidden lg:flex items-center gap-1.5 bg-secondary-container hover:bg-secondary text-on-secondary font-label-md text-label-md px-3.5 py-1.5 rounded-full transition-colors shadow-sm" type="button"><span class="material-symbols-outlined text-[18px]">add</span><span>新建业务单据</span></button><button class="relative p-2 rounded-full hover:bg-surface-container-highest/20 text-on-primary transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">warning</span><span class="absolute top-1.5 right-1.5 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-secondary-container"></span></span></button><button class="relative p-2 rounded-full hover:bg-surface-container-highest/20 text-on-primary transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 px-1 min-w-[14px] h-[14px] rounded-full bg-secondary-container text-on-secondary font-label-sm text-[9px] leading-[14px] text-center font-bold">5</span></button><div class="flex items-center gap-space-sm pl-space-xs ml-space-xs"><div class="hidden sm:flex flex-col items-end text-right"><span class="font-label-md text-label-md text-on-primary font-medium">Alex Henderson</span><span class="font-label-sm text-label-sm text-outline">亚太大客户总监</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col justify-between py-space-md shadow-[2px_0_12px_rgba(0,0,0,0.03)] overflow-y-auto"><div class="flex flex-col gap-space-sm px-space-sm"><div class="px-3 py-1 text-outline font-label-sm text-label-sm uppercase tracking-wider font-semibold">核心业务矩阵</div><nav class="flex flex-col gap-1" data-active-classes="bg-primary text-on-primary font-headline-sm shadow-sm"><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="dashboard" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">grid_view</span><span class="font-label-md text-label-md">经营仪表盘</span></div><span class="font-label-sm text-label-sm text-outline">Overview</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="customers" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">badge</span><span class="font-label-md text-label-md">客户档案管理</span></div><span class="px-1.5 py-0.2 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold">29天预警</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="public-pool" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">groups_3</span><span class="font-label-md text-label-md">公海线索池</span></div><span class="px-1.5 py-0.2 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold">42</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="follow-ups" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">event_note</span><span class="font-label-md text-label-md">跟进日程看板</span></div><span class="w-2 h-2 rounded-full bg-tertiary-container"></span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="products" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">inventory_2</span><span class="font-label-md text-label-md">外贸产品图库</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="inventory" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">warehouse</span><span class="font-label-md text-label-md">仓储与欠货回补</span></div><span class="px-1.5 py-0.2 rounded bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">缺料 3</span></a><a aria-current="page" class="flex items-center justify-between px-3 py-2 rounded-lg transition-colors bg-primary text-on-primary font-headline-sm shadow-sm" data-path="documents" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">description</span><span class="font-label-md text-label-md">单据中心 (PI/SC)</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="payments" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">payments</span><span class="font-label-md text-label-md">定金与外汇货款</span></div><span class="text-tertiary-container font-label-sm text-label-sm font-bold">USD</span></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="shipments" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">local_shipping</span><span class="font-label-md text-label-md">订舱唛头与发运</span></div></a><a class="flex items-center justify-between px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="suppliers-and-settings" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">tune</span><span class="font-label-md text-label-md">工厂供应与设置</span></div></a></nav></div><div class="px-space-md pt-space-sm"><div class="p-3 rounded-xl bg-surface-container-low flex items-center justify-between"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-outline">汇率中间价 (USD/CNY)</span><span class="font-headline-sm text-headline-sm text-on-surface font-bold">7.2384</span></div><span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">实时</span></div></div></aside><div class="pl-64"><main class="relative pt-16 min-h-screen bg-surface"><div class="flex flex-col w-full">
+<div class="p-margin-mobile lg:p-margin flex flex-col gap-space-lg max-w-[1600px] mx-auto w-full">
+<!-- Top Command & Action Bar -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md bg-surface-container-lowest p-space-md lg:p-space-lg rounded-xl shadow-sm">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold tracking-wide uppercase">PRD 3.8 Spec</span>
+<span class="text-outline font-label-sm text-label-sm">外贸业务单据协同引擎</span>
+</div>
+<div class="flex items-baseline gap-space-sm">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">形式发票制作</h1>
+<span class="font-body-md text-body-md text-outline">Proforma Invoice (PI) Studio</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-space-xs sm:gap-space-sm">
+<div class="relative">
+<button class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors" id="templateBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">view_quilt</span>
+<span>外贸经典红白模板 v3.4</span>
+<span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
+</button>
+</div>
+<button class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors" onclick="window.print()" type="button">
+<span class="material-symbols-outlined text-[18px]">print</span>
+<span>实时打印预览</span>
+</button>
+<button class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-highest hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors" id="saveDraftBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">save</span>
+<span>存为草稿</span>
+</button>
+<button class="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary hover:bg-inverse-surface text-on-primary font-headline-sm text-headline-sm shadow-md transition-all" id="generatePiBtn" type="button">
+<span class="material-symbols-outlined text-[20px] text-tertiary-fixed">verified</span>
+<span>确认生成正式 PI</span>
+</button>
+</div>
+</div>
+<!-- Quick Status Banner -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-space-sm">
+<div class="bg-primary text-on-primary p-space-md rounded-xl flex items-center justify-between shadow-sm">
+<div class="flex flex-col">
+<span class="text-outline font-label-sm text-label-sm uppercase tracking-wider">PI Reference</span>
+<span class="font-headline-sm text-headline-sm text-tertiary-fixed tracking-wide" id="piNumberHeader">PI-2026-092</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-highest/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary-fixed text-[22px]">tag</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl flex items-center justify-between shadow-sm">
+<div class="flex flex-col">
+<span class="text-outline font-label-sm text-label-sm uppercase tracking-wider">合规风控校验</span>
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-tertiary-container inline-block"></span>
+            已匹配 9405 编码关税
+          </span>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">EU Standard</span>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl flex items-center justify-between shadow-sm">
+<div class="flex flex-col">
+<span class="text-outline font-label-sm text-label-sm uppercase tracking-wider">结算币种与锁汇</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">USD ($) · 7.2384</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">Spot Lock</span>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl flex items-center justify-between shadow-sm">
+<div class="flex flex-col">
+<span class="text-outline font-label-sm text-label-sm uppercase tracking-wider">报关出运预警</span>
+<span class="font-headline-sm text-headline-sm text-secondary-container font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">acute</span>
+            28 Days Buffer
+          </span>
+</div>
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-semibold">排产合流</span>
+</div>
+</div>
+<!-- Section 2: Header Information Cards (Bento-style Split) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md">
+<!-- Customer Information (7 Cols) -->
+<div class="lg:col-span-7 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[20px] text-primary">account_circle</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">客户抬头信息 (Buyer Consignee)</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container font-label-sm text-label-sm text-on-surface-variant">ERP Linked Profile</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1 md:col-span-2">
+<label class="font-label-sm text-label-sm text-outline uppercase font-semibold">选择存量客户档案</label>
+<div class="relative">
+<select class="w-full bg-surface-container-low text-on-surface font-body-md text-body-md py-2 px-3 rounded-lg appearance-none cursor-pointer outline-none" id="customerSelect">
+<option value="samplelight">Sample Lighting GmbH (DE · 德国汉堡)</option>
+<option value="aurora">Aurora Nordic Solutions AS (NO · 挪威奥斯陆)</option>
+<option value="pacific">Pacific Lighting Supply LLC (US · 美国洛杉矶)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-outline pointer-events-none text-[20px]">expand_more</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline">客户公司英文全称 (Full Company Name)</label>
+<div class="p-2 rounded-lg bg-surface font-body-md text-body-md text-on-surface font-medium" id="cName">EuroBright Lighting International GmbH</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline">国家与抵运港 (Country &amp; Destination)</label>
+<div class="p-2 rounded-lg bg-surface font-body-md text-body-md text-on-surface" id="cCountry">Germany · Port of Hamburg (DEHAM)</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline">商务联络人 (Contact Person)</label>
+<div class="p-2 rounded-lg bg-surface font-body-md text-body-md text-on-surface" id="cContact">Dr. Markus Richter (Procurement Dir.)</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline">联系邮箱与 WhatsApp</label>
+<div class="p-2 rounded-lg bg-surface font-body-md text-body-md text-on-surface flex items-center justify-between" id="cMail">
+<span>m.richter@example.com</span>
+<span class="font-label-sm text-label-sm text-outline">+49 170 000190</span>
+</div>
+</div>
+<div class="md:col-span-2 flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline">账单与海关单据寄送地址 (Invoicing Address)</label>
+<div class="p-2 rounded-lg bg-surface font-body-sm text-body-sm text-on-surface-variant" id="cAddress">Sample Street 1, 20000 Hamburg, Germany · VAT ID: DE000000000</div>
+</div>
+</div>
+</div>
+<!-- Trade Terms & Logistics Parameters (5 Cols) -->
+<div class="lg:col-span-5 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[20px] text-primary">contract</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">商务与履约条款</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold">Standard LC/TT</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline uppercase font-semibold">单据编号 (PI NO.)</label>
+<input class="bg-surface-container-low px-3 py-2 rounded-lg font-headline-sm text-headline-sm text-on-surface outline-none" id="piNumberInput" type="text" value="PI-2026-092"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline uppercase font-semibold">开单日期 (PI Date)</label>
+<input class="bg-surface-container-low px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface outline-none" type="date" value="2026-04-18"/>
+</div>
+<div class="flex flex-col gap-1 sm:col-span-2">
+<label class="font-label-sm text-label-sm text-outline uppercase font-semibold">贸易条款 (Incoterms 2020)</label>
+<select class="bg-surface-container-low px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface outline-none">
+<option value="FOB_NB">FOB Ningbo Port, China (离岸港交货)</option>
+<option value="CIF_HAM">CIF Hamburg Port, Germany (到岸成本加海运保费)</option>
+<option value="EXW_ZJ">EXW Factory Workshop, Zhejiang (工厂交货)</option>
+<option value="DAP_FRA">DAP Frankfurt Terminal (目的地交货未完税)</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline uppercase font-semibold">交货期 (Lead Time)</label>
+<input class="bg-surface-container-low px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface outline-none" type="text" value="35 Days after 30% deposit"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-outline uppercase font-semibold">起运装载港 (POL)</label>
+<input class="bg-surface-container-low px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface outline-none" type="text" value="Ningbo / Zhoushan, CN"/>
+</div>
+<div class="flex flex-col gap-1 sm:col-span-2">
+<label class="font-label-sm text-label-sm text-outline uppercase font-semibold">付款方式 (Payment Terms)</label>
+<select class="bg-surface-container-low px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface outline-none">
+<option>30% T/T Deposit, 70% Balance before original B/L release</option>
+<option>100% Irrevocable Confirmed L/C at sight</option>
+<option>20% T/T Deposit, 80% upon copy of Bill of Lading</option>
+<option>OA 60 Days (Sinosure Credit Insured)</option>
+</select>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Line Items Dynamic Table (PRD 3.8 Core Engine) -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary text-on-primary flex items-center justify-center font-headline-sm text-headline-sm">03</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-md text-headline-md text-on-surface">外贸商品明细与装运参数</span>
+<span class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-label-sm text-outline font-semibold" id="rowCountBadge">3 款品目</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">动态计算联动：总数量 = 箱数 × 每箱件数 | 总额 = 数量 × 单价 | 自动折算 CBM 与毛重</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors" id="addByCategoryBtn" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">category</span>
+<span>+ 按分类查找添加商品</span>
+</button>
+<button class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary-container hover:bg-secondary text-on-secondary font-label-md text-label-md transition-colors shadow-sm" id="addBySkuBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">add_box</span>
+<span>+ 按货号搜索快速录入</span>
+</button>
+</div>
+</div>
+<!-- Responsive Interactive Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[1100px]">
+<thead>
+<tr class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-3 px-2 w-12 text-center">No.</th>
+<th class="py-3 px-2 w-20 text-center">商品图片</th>
+<th class="py-3 px-3 min-w-[260px]">Description 品名及英文描述</th>
+<th class="py-3 px-3 w-32">规格型号</th>
+<th class="py-3 px-2 w-24 text-right">CTN 箱数</th>
+<th class="py-3 px-2 w-24 text-right">每箱件数</th>
+<th class="py-3 px-2 w-28 text-right bg-surface-container-high">T.T QTY 总数量</th>
+<th class="py-3 px-2 w-24 text-right">单箱 CBM</th>
+<th class="py-3 px-2 w-28 text-right">总体积 (m³)</th>
+<th class="py-3 px-2 w-28 text-right">总毛重 (kg)</th>
+<th class="py-3 px-3 w-28 text-right bg-surface-container-high">单价 (USD)</th>
+<th class="py-3 px-3 w-32 text-right bg-primary text-on-primary">小计金额</th>
+<th class="py-3 px-2 w-14 text-center">操作</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm text-on-surface" id="itemsTableBody">
+<!-- Row 1 -->
+<tr class="item-row hover:bg-surface-container-low transition-colors" data-cbm="0.048" data-weight="14.5">
+<td class="py-3 px-2 text-center font-label-md text-label-md text-outline row-idx">1</td>
+<td class="py-3 px-2 text-center">
+<div class="w-14 h-14 rounded-lg bg-surface-container-high overflow-hidden mx-auto flex items-center justify-center relative">
+<img class="w-full h-full object-cover" data-alt="High precision architectural industrial LED floodlight luminaire with matte black aluminum casing in photorealistic studio light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlRwlWXuZXI8mONFEAeLWYR6W9_yMRDEtE_xt60BiOlcMM6RjvLXxQ5xoVl5q_7WXkAVa0NVgKN9zMfageCl7zLHWrzBjx8aHZAAHIW0FkJ3g7lQ77T7tSUM0aor6E2bcSb40yb9MSsoicfVPxURdnSxAjUUG6oiNtYqDDVzUojo6GjXbPNAyjAswucGqQpbRiB77B7VyWuPOQ_sf7C_X7muNZIAymMI0LkCbDh-_8WlsBku1mkYGC"/>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<input class="font-headline-sm text-headline-sm text-on-surface bg-transparent outline-none w-full" type="text" value="Architectural IP66 Highbay LED Luminaire"/>
+<span class="font-body-sm text-body-sm text-outline">工业压铸铝工矿灯 · 5000K CCT · Meanwell Driver</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="px-2 py-1 rounded bg-surface-container font-label-sm text-label-sm font-medium">HB-200W-PRO</span>
+</td>
+<td class="py-3 px-2 text-right">
+<input class="input-ctn w-20 bg-surface text-right font-headline-sm text-headline-sm p-1.5 rounded-lg outline-none" min="1" type="number" value="120"/>
+</td>
+<td class="py-3 px-2 text-right">
+<input class="input-pcs w-16 bg-surface-container text-right font-body-md text-body-md p-1.5 rounded-lg outline-none text-outline" min="1" readonly="" type="number" value="4"/>
+</td>
+<td class="py-3 px-2 text-right bg-surface-container-low">
+<span class="row-total-qty font-headline-sm text-headline-sm font-bold text-on-surface">480</span>
+<span class="font-label-sm text-label-sm text-outline block">PCS</span>
+</td>
+<td class="py-3 px-2 text-right text-outline">0.048</td>
+<td class="py-3 px-2 text-right font-body-md text-body-md row-vol font-medium">5.76</td>
+<td class="py-3 px-2 text-right font-body-md text-body-md row-wt font-medium">1,740.0</td>
+<td class="py-3 px-3 text-right bg-surface-container-low">
+<div class="relative">
+<span class="absolute left-2 top-1.5 text-outline text-label-sm">$</span>
+<input class="input-price w-24 bg-surface text-right font-headline-sm text-headline-sm pl-4 pr-1.5 py-1.5 rounded-lg outline-none" step="0.1" type="number" value="52.00"/>
+</div>
+</td>
+<td class="py-3 px-3 text-right bg-surface-container font-headline-sm text-headline-sm font-bold text-on-surface row-subtotal">
+                $24,960.00
+              </td>
+<td class="py-3 px-2 text-center">
+<button class="p-1 rounded-full text-outline hover:text-error hover:bg-error-container/40 transition-colors" onclick="deleteRow(this)" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="item-row hover:bg-surface-container-low transition-colors" data-cbm="0.035" data-weight="9.8">
+<td class="py-3 px-2 text-center font-label-md text-label-md text-outline row-idx">2</td>
+<td class="py-3 px-2 text-center">
+<div class="w-14 h-14 rounded-lg bg-surface-container-high overflow-hidden mx-auto flex items-center justify-center relative">
+<img class="w-full h-full object-cover" data-alt="Slim architectural recessed LED linear lighting fixture with warm white diffuser clean minimalist studio packshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqQ-OhcSHku08_6qViXkQPOsP56tXHiuTlgyAyZ0tznc3IcSJbmvjs5NFhcaU1dNmYdwmmFEoyI2Fmtx-sonu8L-ehdhSJhD-v3XXpR-DfQC85d6IpN5m1WIRUc4S5kr6yjPjEQNA3bc7bH1p0BhtJuA-FNnfWQReu1dftb5CNg8OEEFVCi6e_HPpRToPAJ4NCk5qnu44h4KwV85T5uKq1InFX7iO72pIPzu7yiIxE5VgaaDv_dJY0"/>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<input class="font-headline-sm text-headline-sm text-on-surface bg-transparent outline-none w-full" type="text" value="Modular Slim Linear Track Spotlight"/>
+<span class="font-body-sm text-body-sm text-outline">磁吸轨道线性射灯系统 · DALI-2 调光模块</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="px-2 py-1 rounded bg-surface-container font-label-sm text-label-sm font-medium">TRK-DALI-48V</span>
+</td>
+<td class="py-3 px-2 text-right">
+<input class="input-ctn w-20 bg-surface text-right font-headline-sm text-headline-sm p-1.5 rounded-lg outline-none" min="1" type="number" value="80"/>
+</td>
+<td class="py-3 px-2 text-right">
+<input class="input-pcs w-16 bg-surface-container text-right font-body-md text-body-md p-1.5 rounded-lg outline-none text-outline" min="1" readonly="" type="number" value="10"/>
+</td>
+<td class="py-3 px-2 text-right bg-surface-container-low">
+<span class="row-total-qty font-headline-sm text-headline-sm font-bold text-on-surface">800</span>
+<span class="font-label-sm text-label-sm text-outline block">PCS</span>
+</td>
+<td class="py-3 px-2 text-right text-outline">0.035</td>
+<td class="py-3 px-2 text-right font-body-md text-body-md row-vol font-medium">2.80</td>
+<td class="py-3 px-2 text-right font-body-md text-body-md row-wt font-medium">784.0</td>
+<td class="py-3 px-3 text-right bg-surface-container-low">
+<div class="relative">
+<span class="absolute left-2 top-1.5 text-outline text-label-sm">$</span>
+<input class="input-price w-24 bg-surface text-right font-headline-sm text-headline-sm pl-4 pr-1.5 py-1.5 rounded-lg outline-none" step="0.1" type="number" value="18.50"/>
+</div>
+</td>
+<td class="py-3 px-3 text-right bg-surface-container font-headline-sm text-headline-sm font-bold text-on-surface row-subtotal">
+                $14,800.00
+              </td>
+<td class="py-3 px-2 text-center">
+<button class="p-1 rounded-full text-outline hover:text-error hover:bg-error-container/40 transition-colors" onclick="deleteRow(this)" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="item-row hover:bg-surface-container-low transition-colors" data-cbm="0.062" data-weight="18.0">
+<td class="py-3 px-2 text-center font-label-md text-label-md text-outline row-idx">3</td>
+<td class="py-3 px-2 text-center">
+<div class="w-14 h-14 rounded-lg bg-surface-container-high overflow-hidden mx-auto flex items-center justify-center relative">
+<img class="w-full h-full object-cover" data-alt="Industrial solar street light with integrated monocrystalline PV panel and lithium battery pack pristine commercial product photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEy1ut1I3-hbboDw2zeB4aoI6XEjsdZyWbzORuHXLMvlX19vHatpqwf0Fd7BdNt7-IS3SKGL-IzBOHR_PxGk_1K4IxNA6P93xc6fv7IEJqlEEHcsOHK5XDLD-w_WAcaHdZqMrmofcQq3VUhvfD8zN64QgHVHnLZaNLXkxSj03nCcC-ZwfrrJjR--Dyc9weCIICWTqBeVlbK8k92lMTkzdWDd0DlhjaKftjq5GdwH0qXYDpAABlZpo9"/>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<input class="font-headline-sm text-headline-sm text-on-surface bg-transparent outline-none w-full" type="text" value="Smart Photovoltaic Solar Street Lamp 60W"/>
+<span class="font-body-sm text-body-sm text-outline">一体化太阳能智慧路灯 · LiFePO4 磷酸铁锂储能</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="px-2 py-1 rounded bg-surface-container font-label-sm text-label-sm font-medium">SL-60W-ECO</span>
+</td>
+<td class="py-3 px-2 text-right">
+<input class="input-ctn w-20 bg-surface text-right font-headline-sm text-headline-sm p-1.5 rounded-lg outline-none" min="1" type="number" value="25"/>
+</td>
+<td class="py-3 px-2 text-right">
+<input class="input-pcs w-16 bg-surface-container text-right font-body-md text-body-md p-1.5 rounded-lg outline-none text-outline" min="1" readonly="" type="number" value="2"/>
+</td>
+<td class="py-3 px-2 text-right bg-surface-container-low">
+<span class="row-total-qty font-headline-sm text-headline-sm font-bold text-on-surface">50</span>
+<span class="font-label-sm text-label-sm text-outline block">PCS</span>
+</td>
+<td class="py-3 px-2 text-right text-outline">0.062</td>
+<td class="py-3 px-2 text-right font-body-md text-body-md row-vol font-medium">1.55</td>
+<td class="py-3 px-2 text-right font-body-md text-body-md row-wt font-medium">450.0</td>
+<td class="py-3 px-3 text-right bg-surface-container-low">
+<div class="relative">
+<span class="absolute left-2 top-1.5 text-outline text-label-sm">$</span>
+<input class="input-price w-24 bg-surface text-right font-headline-sm text-headline-sm pl-4 pr-1.5 py-1.5 rounded-lg outline-none" step="0.1" type="number" value="57.80"/>
+</div>
+</td>
+<td class="py-3 px-3 text-right bg-surface-container font-headline-sm text-headline-sm font-bold text-on-surface row-subtotal">
+                $2,890.00
+              </td>
+<td class="py-3 px-2 text-center">
+<button class="p-1 rounded-full text-outline hover:text-error hover:bg-error-container/40 transition-colors" onclick="deleteRow(this)" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Quick Action row under table -->
+<div class="flex items-center justify-between pt-space-xs text-outline font-body-sm text-body-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">info</span>
+          更改箱数或单价后，总体积、总毛重及订单金额均自动联动刷新，并对齐海运提单预配舱单标准。
+        </span>
+<button class="text-primary hover:underline font-label-md text-label-md flex items-center gap-1" id="addNewBlankRow" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+          插入自定义空白品类行
+        </button>
+</div>
+</div>
+<!-- Section 4: Document Aggregations & Contingent Specs -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md">
+<!-- Aggregation Metric Cards (4 Bento Panels in 7 cols) -->
+<div class="lg:col-span-7 flex flex-col gap-space-md">
+<!-- Totals Bento Block -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface">装箱与物流体积汇总 (Packing &amp; Volume Summary)</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">FCL/LCL Estimation</span>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm">
+<div class="bg-surface-container p-space-md rounded-xl flex flex-col justify-between">
+<span class="text-outline font-label-sm text-label-sm uppercase">总箱数 Total CTN</span>
+<div class="mt-2">
+<span class="font-numeric-stat text-numeric-stat text-on-surface" id="summaryTotalCtn">225</span>
+<span class="font-body-sm text-body-sm text-outline ml-1">CTNS</span>
+</div>
+</div>
+<div class="bg-surface-container p-space-md rounded-xl flex flex-col justify-between">
+<span class="text-outline font-label-sm text-label-sm uppercase">总件数 Total QTY</span>
+<div class="mt-2">
+<span class="font-numeric-stat text-numeric-stat text-on-surface" id="summaryTotalQty">1,330</span>
+<span class="font-body-sm text-body-sm text-outline ml-1">PCS</span>
+</div>
+</div>
+<div class="bg-surface-container p-space-md rounded-xl flex flex-col justify-between">
+<span class="text-outline font-label-sm text-label-sm uppercase">总体积 Total CBM</span>
+<div class="mt-2">
+<span class="font-numeric-stat text-numeric-stat text-on-surface" id="summaryTotalCbm">10.11</span>
+<span class="font-body-sm text-body-sm text-outline ml-1">m³</span>
+</div>
+</div>
+<div class="bg-surface-container p-space-md rounded-xl flex flex-col justify-between">
+<span class="text-outline font-label-sm text-label-sm uppercase">总毛重 Total G.W.</span>
+<div class="mt-2">
+<span class="font-numeric-stat text-numeric-stat text-on-surface" id="summaryTotalGw">2,974</span>
+<span class="font-body-sm text-body-sm text-outline ml-1">KG</span>
+</div>
+</div>
+</div>
+<!-- Container Utilization Visualizer -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">directions_boat</span>
+                20GP 标准柜容积利用率预估 (33.2 CBM Capacity)
+              </span>
+<span class="font-bold text-on-surface" id="utilizationText">30.45% (适合拼箱 LCL 或并柜)</span>
+</div>
+<div class="w-full h-3 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full rounded-full bg-secondary-container transition-all" id="utilizationBar" style="width: 30.45%;"></div>
+</div>
+</div>
+</div>
+<!-- Attachment & Specific Marking Upload Zone -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">PI 备注图片与技术图纸附页</span>
+<span class="font-body-sm text-body-sm text-outline">支持实物图、内外包装唛头 (Shipping Marks) 或客供图纸，将自动打印在发票附页</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold">正式附件</span>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm">
+<!-- Uploaded Image 1 -->
+<div class="relative group rounded-xl overflow-hidden aspect-square bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="High quality packaging carton box with outer shipping marks stamped in black ink for maritime export cargo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA52LFVGQTgDl83laznBO9P4XLsRjdKbq-i6TF0B03bzdy76Aw-r4O0c2jMDVcLpupeMkBDoVKfoADeuV7YKptCDFwRqmhtSiIagZ_85igfszHK6meuu5c1tUdTRwoK3HWTeY-o8DBzvUJZ4xnzlLerjl4DhTA2h-TZnKnaZ8XuemjqMAnWmahzNnysiuH2rlH-MiV4bdiC1zy_7J8kD2nWtEiXFgs1CMe8zWvWLjtObBqFYrVAF2-h"/>
+<div class="absolute inset-0 bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+<button class="p-1 rounded-full bg-surface text-on-surface" type="button"><span class="material-symbols-outlined text-[16px]">visibility</span></button>
+<button class="p-1 rounded-full bg-error text-on-error" type="button"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+</div>
+<span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-primary/70 text-on-primary font-label-sm text-[10px]">外箱正唛</span>
+</div>
+<!-- Uploaded Image 2 -->
+<div class="relative group rounded-xl overflow-hidden aspect-square bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Technical CAD blueprint engineering diagram for custom lighting mounting bracket stamped with quality control seal" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBADXy2S_t8_MV84bKh1_ICvfJpTRr5Qz-MzxH94Rp6mDs-6y7bw7u6lf5l1B-In-WV1jsIUtLCPO3EX0KJb05HfAzNQZAfoF3iAZVtbR6TU3RvTWGlJM2l8QLKaYCKwo49gmMuxuxFT_C73aNb5D_TpXoiDIrXnZHhl94TgIoETG2LVHX_qoMgBQAIghg1hh5l27kuPnpbZ5jdnsEbxsH2UtnVJeKKw5VlXLkOl3hQ1tQjQl-zm75V"/>
+<div class="absolute inset-0 bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+<button class="p-1 rounded-full bg-surface text-on-surface" type="button"><span class="material-symbols-outlined text-[16px]">visibility</span></button>
+<button class="p-1 rounded-full bg-error text-on-error" type="button"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+</div>
+<span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-primary/70 text-on-primary font-label-sm text-[10px]">定制挂架图纸</span>
+</div>
+<!-- Upload Area Button -->
+<label class="border-2 border-dashed border-outline-variant hover:border-primary rounded-xl aspect-square flex flex-col items-center justify-center cursor-pointer bg-surface-container-low hover:bg-surface-container transition-all">
+<span class="material-symbols-outlined text-[28px] text-outline">add_photo_alternate</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold mt-1">上传单据图片</span>
+<span class="font-label-sm text-[10px] text-outline">JPG/PNG ≤ 10MB</span>
+<input accept="image/*" class="hidden" onchange="alert('已成功选择文件，将追加至PI打印附页')" type="file"/>
+</label>
+</div>
+</div>
+</div>
+<!-- Financial Total & Bank Details (5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<!-- Big Number Total Block -->
+<div class="bg-primary text-on-primary p-space-lg rounded-xl shadow-lg flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<span class="text-tertiary-fixed font-label-sm text-label-sm uppercase tracking-wider font-semibold">Total Amount (FOB Ningbo)</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px] text-tertiary-fixed">attach_money</span>
+</div>
+</div>
+<div class="flex flex-col gap-1 mb-6">
+<div class="font-display-lg text-display-lg tracking-tight text-on-primary" id="summaryGrandTotal">
+              $42,650.00
+            </div>
+<span class="text-outline font-body-sm text-body-sm">
+              SAY TOTAL US DOLLARS: <strong class="text-on-primary font-normal" id="amountWords">FORTY-TWO THOUSAND SIX HUNDRED FIFTY ONLY</strong>
+</span>
+</div>
+<div class="pt-4 flex items-center justify-between bg-surface-container-highest/10 rounded-lg p-3">
+<div class="flex flex-col">
+<span class="text-outline font-label-sm text-label-sm">30% TT Deposit Required</span>
+<span class="font-headline-md text-headline-md text-tertiary-fixed font-bold" id="depositRequired">$12,795.00</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-outline font-label-sm text-label-sm">70% Balance Remainder</span>
+<span class="font-headline-sm text-headline-sm text-on-primary" id="balanceRequired">$29,855.00</span>
+</div>
+</div>
+</div>
+<!-- Bank Routing Info (Verified Account) -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[20px] text-primary">account_balance</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">企业境外收汇公户 (Beneficiary)</span>
+</div>
+<button class="text-primary hover:underline font-label-sm text-label-sm" type="button">切换收汇账户</button>
+</div>
+<div class="p-3 rounded-lg bg-surface-container-low font-body-sm text-body-sm flex flex-col gap-1 text-on-surface">
+<div class="flex justify-between"><span class="text-outline">Beneficiary Name:</span> <strong class="font-medium">HANGZHOU TRADEOS TECH INDUSTRIAL CO., LTD</strong></div>
+<div class="flex justify-between"><span class="text-outline">Beneficiary Bank:</span> <span>HSBC BANK (CHINA) COMPANY LIMITED HANGZHOU BR.</span></div>
+<div class="flex justify-between"><span class="text-outline">SWIFT Code:</span> <strong class="text-primary">HSBCCNBJNNG</strong></div>
+<div class="flex justify-between"><span class="text-outline">USD A/C Number:</span> <strong class="tracking-wide">029-883920-001-USD</strong></div>
+<div class="flex justify-between"><span class="text-outline">Bank Address:</span> <span>188 Jiaogong Rd, Xihu District, Hangzhou, CN</span></div>
+</div>
+</div>
+<!-- Contract Clauses & Remarks -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface">形式发票特别条款 (Special Terms)</span>
+<span class="font-label-sm text-label-sm text-outline">打印在发票底部</span>
+</div>
+<textarea class="w-full bg-surface-container-low text-on-surface font-body-sm text-body-sm p-3 rounded-lg outline-none resize-none" rows="3">1. Inspection standard follows AQL Level II, Critical 0, Major 1.5, Minor 4.0.
+2. Prices are valid within 14 calendar days from PI issuance date due to raw material fluctuations.
+3. Country of Origin: P.R. CHINA. Port of Loading: NINGBO SEAPORT.</textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  function updateCalculations() {
+    let totalCtn = 0;
+    let totalQty = 0;
+    let totalCbm = 0;
+    let totalGw = 0;
+    let grandTotal = 0;
+
+    const rows = document.querySelectorAll('#itemsTableBody tr.item-row');
+    rows.forEach((row, index) => {
+      const idxCell = row.querySelector('.row-idx');
+      if (idxCell) idxCell.textContent = index + 1;
+
+      const ctnInput = row.querySelector('.input-ctn');
+      const pcsInput = row.querySelector('.input-pcs');
+      const priceInput = row.querySelector('.input-price');
+      const qtySpan = row.querySelector('.row-total-qty');
+      const volSpan = row.querySelector('.row-vol');
+      const wtSpan = row.querySelector('.row-wt');
+      const subtotalSpan = row.querySelector('.row-subtotal');
+
+      const ctn = parseFloat(ctnInput ? ctnInput.value : 0) || 0;
+      const pcsPerCtn = parseFloat(pcsInput ? pcsInput.value : 1) || 1;
+      const price = parseFloat(priceInput ? priceInput.value : 0) || 0;
+
+      const unitCbm = parseFloat(row.getAttribute('data-cbm')) || 0.04;
+      const unitWt = parseFloat(row.getAttribute('data-weight')) || 12.0;
+
+      const rowQty = ctn * pcsPerCtn;
+      const rowVol = ctn * unitCbm;
+      const rowWt = ctn * unitWt;
+      const subtotal = rowQty * price;
+
+      if (qtySpan) qtySpan.textContent = rowQty.toLocaleString();
+      if (volSpan) volSpan.textContent = rowVol.toFixed(2);
+      if (wtSpan) wtSpan.textContent = rowWt.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      if (subtotalSpan) subtotalSpan.textContent = '$' + subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      totalCtn += ctn;
+      totalQty += rowQty;
+      totalCbm += rowVol;
+      totalGw += rowWt;
+      grandTotal += subtotal;
+    });
+
+    // Update Top Row badge
+    const badge = document.getElementById('rowCountBadge');
+    if (badge) badge.textContent = rows.length + ' 款品目';
+
+    // Update Summaries
+    const sCtn = document.getElementById('summaryTotalCtn');
+    if (sCtn) sCtn.textContent = totalCtn.toLocaleString();
+
+    const sQty = document.getElementById('summaryTotalQty');
+    if (sQty) sQty.textContent = totalQty.toLocaleString();
+
+    const sCbm = document.getElementById('summaryTotalCbm');
+    if (sCbm) sCbm.textContent = totalCbm.toFixed(2);
+
+    const sGw = document.getElementById('summaryTotalGw');
+    if (sGw) sGw.textContent = Math.round(totalGw).toLocaleString();
+
+    const gTotal = document.getElementById('summaryGrandTotal');
+    if (gTotal) gTotal.textContent = '$' + grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const depositEl = document.getElementById('depositRequired');
+    if (depositEl) depositEl.textContent = '$' + (grandTotal * 0.3).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const balanceEl = document.getElementById('balanceRequired');
+    if (balanceEl) balanceEl.textContent = '$' + (grandTotal * 0.7).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // Container utilization (standard 20GP = 33.2 CBM)
+    const util = Math.min(100, (totalCbm / 33.2) * 100);
+    const bar = document.getElementById('utilizationBar');
+    const utilText = document.getElementById('utilizationText');
+    if (bar) bar.style.width = util.toFixed(2) + '%';
+    if (utilText) utilText.textContent = util.toFixed(2) + '% ' + (util > 75 ? '(高配柜容积)' : '(适合拼箱 LCL 或并柜)');
+  }
+
+  function deleteRow(btn) {
+    const row = btn.closest('tr');
+    if (row) {
+      row.remove();
+      updateCalculations();
+    }
+  }
+
+  // Bind change and input events
+  document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('input-ctn') || e.target.classList.contains('input-price')) {
+      updateCalculations();
+    }
+  });
+
+  // Customer change emulation
+  const customerSelect = document.getElementById('customerSelect');
+  if (customerSelect) {
+    customerSelect.addEventListener('change', function(e) {
+      const val = e.target.value;
+      if (val === 'aurora') {
+        document.getElementById('cName').textContent = 'Aurora Nordic Solutions AS';
+        document.getElementById('cCountry').textContent = 'Norway · Port of Oslo (NOOSL)';
+        document.getElementById('cContact').textContent = 'Astrid Lindholm (VP Supply Chain)';
+        document.getElementById('cMail').innerHTML = '<span>a.lindholm@example.com</span><span class="font-label-sm text-outline">+47 22 00 8000</span>';
+        document.getElementById('cAddress').textContent = 'Haakon VIIs gate 1, 0161 Oslo, Norway · Org Nr: 923 881 129 MVA';
+      } else if (val === 'pacific') {
+        document.getElementById('cName').textContent = 'Pacific Lighting Supply LLC';
+        document.getElementById('cCountry').textContent = 'United States · Port of Long Beach (USLGB)';
+        document.getElementById('cContact').textContent = 'Jason Vance (Operations Mgr)';
+        document.getElementById('cMail').innerHTML = '<span>j.vance@example.com</span><span class="font-label-sm text-outline">+1 (562) 000-8811</span>';
+        document.getElementById('cAddress').textContent = '2440 E Willow St, Long Beach, CA 90806, USA · EIN: 95-4389201';
+      } else {
+        document.getElementById('cName').textContent = 'EuroBright Lighting International GmbH';
+        document.getElementById('cCountry').textContent = 'Germany · Port of Hamburg (DEHAM)';
+        document.getElementById('cContact').textContent = 'Dr. Markus Richter (Procurement Dir.)';
+        document.getElementById('cMail').innerHTML = '<span>m.richter@example.com</span><span class="font-label-sm text-outline">+49 170 000190</span>';
+        document.getElementById('cAddress').textContent = 'Sample Street 1, 20000 Hamburg, Germany · VAT ID: DE000000000';
+      }
+    });
+  }
+
+  // Button actions
+  const addBlankBtn = document.getElementById('addNewBlankRow');
+  if (addBlankBtn) {
+    addBlankBtn.addEventListener('click', function() {
+      const tbody = document.getElementById('itemsTableBody');
+      const tr = document.createElement('tr');
+      tr.className = 'item-row hover:bg-surface-container-low transition-colors';
+      tr.setAttribute('data-cbm', '0.045');
+      tr.setAttribute('data-weight', '12.0');
+      tr.innerHTML = `
+        <td class="py-3 px-2 text-center font-label-md text-label-md text-outline row-idx"></td>
+        <td class="py-3 px-2 text-center">
+          <div class="w-14 h-14 rounded-lg bg-surface-container-high overflow-hidden mx-auto flex items-center justify-center text-outline">
+            <span class="material-symbols-outlined text-[20px]">image</span>
+          </div>
+        </td>
+        <td class="py-3 px-3">
+          <div class="flex flex-col">
+            <input type="text" class="font-headline-sm text-headline-sm text-on-surface bg-transparent outline-none w-full" placeholder="输入商品中英文描述">
+            <span class="font-body-sm text-body-sm text-outline">定制参数规格描述</span>
+          </div>
+        </td>
+        <td class="py-3 px-3">
+          <input type="text" value="CUSTOM-SKU" class="px-2 py-1 rounded bg-surface-container font-label-sm text-label-sm font-medium w-28 outline-none">
+        </td>
+        <td class="py-3 px-2 text-right">
+          <input type="number" min="1" value="10" class="input-ctn w-20 bg-surface text-right font-headline-sm text-headline-sm p-1.5 rounded-lg outline-none">
+        </td>
+        <td class="py-3 px-2 text-right">
+          <input type="number" min="1" value="5" readonly class="input-pcs w-16 bg-surface-container text-right font-body-md text-body-md p-1.5 rounded-lg outline-none text-outline">
+        </td>
+        <td class="py-3 px-2 text-right bg-surface-container-low">
+          <span class="row-total-qty font-headline-sm text-headline-sm font-bold text-on-surface">50</span>
+          <span class="font-label-sm text-label-sm text-outline block">PCS</span>
+        </td>
+        <td class="py-3 px-2 text-right text-outline">0.045</td>
+        <td class="py-3 px-2 text-right font-body-md text-body-md row-vol font-medium">0.45</td>
+        <td class="py-3 px-2 text-right font-body-md text-body-md row-wt font-medium">120.0</td>
+        <td class="py-3 px-3 text-right bg-surface-container-low">
+          <div class="relative">
+            <span class="absolute left-2 top-1.5 text-outline text-label-sm">$</span>
+            <input type="number" step="0.1" value="25.00" class="input-price w-24 bg-surface text-right font-headline-sm text-headline-sm pl-4 pr-1.5 py-1.5 rounded-lg outline-none">
+          </div>
+        </td>
+        <td class="py-3 px-3 text-right bg-surface-container font-headline-sm text-headline-sm font-bold text-on-surface row-subtotal">
+          $1,250.00
+        </td>
+        <td class="py-3 px-2 text-center">
+          <button type="button" onclick="deleteRow(this)" class="p-1 rounded-full text-outline hover:text-error hover:bg-error-container/40 transition-colors">
+            <span class="material-symbols-outlined text-[18px]">delete</span>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+      updateCalculations();
+    });
+  }
+
+  const addBySkuBtn = document.getElementById('addBySkuBtn');
+  if (addBySkuBtn) {
+    addBySkuBtn.addEventListener('click', function() {
+      const sku = prompt('请输入快速检索的工厂货号 (如: HB-150W, LED-TUBE-4FT):', 'HB-150W-ECO');
+      if (sku) {
+        alert('已成功匹配图库档案 [' + sku + '] 并自动提取装箱量及单箱体积。');
+        addBlankBtn.click();
+      }
+    });
+  }
+
+  const generatePiBtn = document.getElementById('generatePiBtn');
+  if (generatePiBtn) {
+    generatePiBtn.addEventListener('click', function() {
+      alert('【TradeOS 生产就绪】形式发票单据 PI-2026-092 已正式生成！\n\n- PDF已附加密钥数字签章\n- 自动生成对应交期跟进看板任务\n- 已同步推送至买家客户门户');
+    });
+  }
+
+  const saveDraftBtn = document.getElementById('saveDraftBtn');
+  if (saveDraftBtn) {
+    saveDraftBtn.addEventListener('click', function() {
+      alert('草稿数据已保存至云端 (版本同步时间: ' + new Date().toLocaleTimeString() + ')');
+    });
+  }
+
+  // Initial Calculation Run
+  updateCalculations();
+</script></main></div></body></html>

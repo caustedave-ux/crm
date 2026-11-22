@@ -1,0 +1,45 @@
+# ===== 依赖（不进仓库）=====
+node_modules/
+
+# ===== 敏感业务数据（按用户要求排除）=====
+data/
+uploads/
+WhatsApp聊天记录/
+*.sqlite
+*.sqlite-journal
+*.db
+
+# ===== 日志 =====
+*.log
+server.log
+server.err.log
+server-before-*.log
+npm-debug.log*
+
+# ===== 工具/临时目录 =====
+.workbuddy/
+.wbapp_*
+dist/
+
+# ===== 第三方独立项目（自带 .git，不纳入主仓库）=====
+apps/b2b-buyer-discovery/
+
+# ===== 商业素材（产品图/商品目录，39MB，不公开上传）=====
+auto-reply/materials/
+
+# ===== 调试/探针临时文件（下划线开头）=====
+_*.txt
+_*.cjs
+_*.html
+_*.out
+_*.json
+
+# ===== 系统杂项 =====
+.DS_Store
+Thumbs.db
+desktop.ini
+$null
+nul
+*.swp
+.idea/
+.vscode/

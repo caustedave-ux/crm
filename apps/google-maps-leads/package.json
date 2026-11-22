@@ -1,0 +1,9 @@
+{
+  "name": "google-maps-leads",
+  "version": "1.0.0",
+  "private": true,
+  "main": "scrape.js",
+  "dependencies": {
+    "playwright-core": "^1.55.0"
+  }
+}

@@ -1,0 +1,25 @@
+.doc-item {
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0f2f5;
+}
+
+.doc-item:last-of-type {
+  border-bottom: none;
+}
+
+.doc-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.doc-item-mid {
+  margin-top: 8rpx;
+}
+
+.doc-item-bottom {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 10rpx;
+}

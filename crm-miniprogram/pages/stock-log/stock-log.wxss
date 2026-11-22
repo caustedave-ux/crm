@@ -1,0 +1,22 @@
+.mv-left {
+  flex: 1;
+  padding-right: 20rpx;
+}
+
+.mv-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.mv-change {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.mv-change.up {
+  color: #e0483d;
+}
+
+.mv-change.down {
+  color: #22a35a;
+}

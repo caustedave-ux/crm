@@ -1,0 +1,90 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
+
+  <view wx:if="{{!loading && errMsg}}" class="card">
+    <view class="empty">{{errMsg}}</view>
+  </view>
+
+  <block wx:if="{{!loading && product}}">
+    <view class="card">
+      <view class="p-head">
+        <view class="p-name">{{product.name}}</view>
+        <view class="tag {{product.low ? 'tag-red' : 'tag-green'}}" wx:if="{{product.hasAlert}}">
+          {{product.low ? '库存不足' : '库存正常'}}
+        </view>
+      </view>
+      <view class="t-sub" wx:if="{{product.name_en}}">{{product.name_en}}</view>
+
+      <view class="stock-box">
+        <view class="stock-cell">
+          <view class="stat-num {{product.low ? 'num-red' : ''}}">{{product.stockText}}</view>
+          <view class="stat-label">当前库存{{product.unit ? '（' + product.unit + '）' : ''}}</view>
+        </view>
+        <view class="stock-cell">
+          <view class="stat-num sm">{{product.stock_alert}}</view>
+          <view class="stat-label">预警值</view>
+        </view>
+        <view class="stock-cell">
+          <view class="stat-num sm">{{product.priceText}}</view>
+          <view class="stat-label">销售单价</view>
+        </view>
+      </view>
+
+      <view class="btn btn-ghost" bindtap="onAdjust">库存调整</view>
+    </view>
+
+    <view wx:if="{{imageUrls.length}}" class="card">
+      <view class="card-title">
+        <text>产品图片</text>
+        <text class="more">{{imageUrls.length}} 张</text>
+      </view>
+      <view class="img-grid">
+        <image
+          wx:for="{{imageUrls}}"
+          wx:key="*this"
+          class="img-thumb"
+          src="{{item}}"
+          mode="aspectFill"
+          bindtap="onPreviewImage"
+          data-url="{{item}}"
+        />
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">
+        <text>产品信息</text>
+        <text class="more" wx:if="{{product.updatedText}}">更新于 {{product.updatedText}}</text>
+      </view>
+      <view class="row" wx:for="{{rows}}" wx:key="label">
+        <text class="label">{{item.label}}</text>
+        <text class="value" bindtap="copyValue" data-value="{{item.value}}">{{item.value}}</text>
+      </view>
+      <view wx:if="{{rows.length === 0}}" class="empty sm-empty">暂无补充信息</view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">
+        <text>最近库存变动</text>
+        <text class="more" wx:if="{{moves.length}}" bindtap="onAllMoves">全部 ›</text>
+      </view>
+
+      <view wx:if="{{moves.length === 0}}" class="empty sm-empty">暂无变动记录</view>
+
+      <view wx:for="{{moves}}" wx:key="id" class="list-item">
+        <view class="mv-left">
+          <view class="t-main">{{item.changeText}}</view>
+          <view class="t-sub">{{item.remark || '无备注'}}</view>
+        </view>
+        <view class="mv-right">
+          <view class="t-sub">结存 {{item.balanceText}}</view>
+          <view class="t-sub">{{item.timeText}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="btn btn-ghost" bindtap="onEdit">编辑产品</view>
+    <view class="btn btn-danger" bindtap="onDelete">删除产品</view>
+    <view class="bottom-space"></view>
+  </block>
+</view>

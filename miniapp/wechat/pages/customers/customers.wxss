@@ -1,0 +1,42 @@
+.search-bar {
+  display: flex;
+  align-items: center;
+  margin: 20rpx 24rpx 0;
+  background: #ffffff;
+  border-radius: 999rpx;
+  padding: 8rpx 8rpx 8rpx 28rpx;
+  box-shadow: 0 2rpx 10rpx rgba(31, 43, 61, 0.05);
+}
+.search-input { flex: 1; font-size: 28rpx; }
+.search-btn {
+  background: #2f6bff;
+  color: #ffffff;
+  font-size: 26rpx;
+  padding: 12rpx 32rpx;
+  border-radius: 999rpx;
+}
+.count-line {
+  color: #8a94a6;
+  font-size: 24rpx;
+  margin: 16rpx 30rpx 0;
+}
+.error-box { color: #e5484d; font-size: 26rpx; }
+.cust-card { padding: 24rpx 28rpx; }
+.cust-top { display: flex; align-items: center; justify-content: space-between; }
+.cust-company { font-size: 30rpx; font-weight: 600; flex: 1; margin-right: 12rpx; }
+.cust-sub { color: #8a94a6; font-size: 24rpx; margin-top: 6rpx; }
+.cust-bottom {
+  display: flex;
+  align-items: center;
+  margin-top: 14rpx;
+}
+.cust-country { color: #4a5568; font-size: 24rpx; }
+.cust-actions { margin-top: 14rpx; }
+.action-link {
+  color: #2f6bff;
+  font-size: 26rpx;
+  display: inline-block;
+  padding: 8rpx 20rpx;
+  background: #eef3ff;
+  border-radius: 999rpx;
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HQ CRM · 产品原型（Stitch）</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,'Microsoft YaHei',sans-serif;background:#f4f5f7;color:#191c1e}
+  header{background:#121316;color:#fff;padding:22px 32px;display:flex;align-items:center;gap:14px}
+  header .logo{width:40px;height:40px;border-radius:10px;background:#fbe32d;color:#121316;display:flex;align-items:center;justify-content:center;font-weight:800}
+  header h1{font-size:20px;margin:0}
+  header .sub{color:rgba(255,255,255,.6);font-size:12px}
+  .wrap{max-width:1600px;margin:0 auto;padding:24px}
+  .bar{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+  .bar a{background:#fff;border:1px solid #e5e7eb;border-radius:9999px;padding:7px 14px;font-size:13px;text-decoration:none;color:#121316}
+  .bar a:hover{border-color:#121316}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;box-shadow:0 8px 24px -4px rgba(18,19,22,.04),0 2px 6px -1px rgba(18,19,22,.02);transition:transform .15s ease,box-shadow .15s ease}
+  .card:hover{transform:translateY(-3px);box-shadow:0 16px 32px -6px rgba(18,19,22,.12)}
+  .card img{width:100%;height:230px;object-fit:cover;object-position:top;display:block;background:#edeef0}
+  .meta{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid #e5e7eb}
+  .no{background:#ff5c38;color:#fff;border-radius:9999px;min-width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  .t{font-weight:600;font-size:14px}
+  .e{color:#6b7280;font-size:11px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">T</div>
+  <div><h1>HQ CRM · 产品原型（12 个页面）</h1><div class="sub">HQ CRM Prototype · Stitch Project 9836361844615305133</div></div>
+</header>
+<div class="wrap">
+  <div class="bar">
+    <a href="./design-system.md">📐 设计系统规范</a>
+    <a href="./logo/screenshot.png" target="_blank">🔶 Logo</a>
+    <a href="./logo/logo.svg" target="_blank">SVG 源文件</a>
+    <a href="./manifest.json" target="_blank">🧾 清单 JSON</a>
+  </div>
+  <div class="grid">
+      <a class='card' href='./01-dashboard/index.html' target='_blank'><img src='./01-dashboard/screenshot.png' alt='仪表盘经营看板'><div class='meta'><span class='no'>01</span><div><div class='t'>仪表盘经营看板</div><div class='e'>Dashboard</div></div></div></a>
+      <a class='card' href='./02-customers/index.html' target='_blank'><img src='./02-customers/screenshot.png' alt='客户管理列表'><div class='meta'><span class='no'>02</span><div><div class='t'>客户管理列表</div><div class='e'>Customer Management</div></div></div></a>
+      <a class='card' href='./03-public-pool/index.html' target='_blank'><img src='./03-public-pool/screenshot.png' alt='公共客户池'><div class='meta'><span class='no'>03</span><div><div class='t'>公共客户池</div><div class='e'>Public Pool</div></div></div></a>
+      <a class='card' href='./04-followups/index.html' target='_blank'><img src='./04-followups/screenshot.png' alt='跟进看板与记录'><div class='meta'><span class='no'>04</span><div><div class='t'>跟进看板与记录</div><div class='e'>Follow-up Timeline</div></div></div></a>
+      <a class='card' href='./05-products/index.html' target='_blank'><img src='./05-products/screenshot.png' alt='产品与规格档案'><div class='meta'><span class='no'>05</span><div><div class='t'>产品与规格档案</div><div class='e'>Product Catalog</div></div></div></a>
+      <a class='card' href='./06-inventory/index.html' target='_blank'><img src='./06-inventory/screenshot.png' alt='库存管理与变动流水'><div class='meta'><span class='no'>06</span><div><div class='t'>库存管理与变动流水</div><div class='e'>Inventory</div></div></div></a>
+      <a class='card' href='./07-pi-editor/index.html' target='_blank'><img src='./07-pi-editor/screenshot.png' alt='形式发票 PI 编辑制作'><div class='meta'><span class='no'>07</span><div><div class='t'>形式发票 PI 编辑制作</div><div class='e'>PI Editor</div></div></div></a>
+      <a class='card' href='./08-document-center/index.html' target='_blank'><img src='./08-document-center/screenshot.png' alt='单据中心与 PI 打印预览'><div class='meta'><span class='no'>08</span><div><div class='t'>单据中心与 PI 打印预览</div><div class='e'>Document Center</div></div></div></a>
+      <a class='card' href='./09-payments/index.html' target='_blank'><img src='./09-payments/screenshot.png' alt='货款与分笔收款管理'><div class='meta'><span class='no'>09</span><div><div class='t'>货款与分笔收款管理</div><div class='e'>Payments & Collections</div></div></div></a>
+      <a class='card' href='./10-shipments/index.html' target='_blank'><img src='./10-shipments/screenshot.png' alt='发货与物流履约管理'><div class='meta'><span class='no'>10</span><div><div class='t'>发货与物流履约管理</div><div class='e'>Shipments & Fulfillment</div></div></div></a>
+      <a class='card' href='./11-suppliers/index.html' target='_blank'><img src='./11-suppliers/screenshot.png' alt='供应商与工厂管理'><div class='meta'><span class='no'>11</span><div><div class='t'>供应商与工厂管理</div><div class='e'>Suppliers & Sourcing</div></div></div></a>
+      <a class='card' href='./13-settings/index.html' target='_blank'><img src='./13-settings/screenshot.png' alt='系统设置与运维中心'><div class='meta'><span class='no'>13</span><div><div class='t'>系统设置与运维中心</div><div class='e'>Settings & System Admin</div></div></div></a>
+  </div>
+</div>
+</body>
+</html>

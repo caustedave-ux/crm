@@ -1,0 +1,39 @@
+.profile-card {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #2f6bff, #5b8cff);
+  color: #ffffff;
+  margin: 20rpx 24rpx;
+  border-radius: 20rpx;
+  padding: 34rpx 30rpx;
+}
+.avatar {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  text-align: center;
+  line-height: 100rpx;
+  font-size: 38rpx;
+  font-weight: 700;
+  margin-right: 24rpx;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.profile-name { font-size: 34rpx; font-weight: 700; }
+.profile-role { font-size: 24rpx; opacity: 0.85; margin-top: 8rpx; }
+.note-item {
+  color: #4a5568;
+  font-size: 26rpx;
+  line-height: 1.8;
+}
+.copyable { color: #2f6bff; }
+.logout-wrap { margin: 40rpx 24rpx; }
+.btn-logout {
+  background: #ffffff;
+  color: #e5484d;
+  border-radius: 16rpx;
+  font-size: 30rpx;
+  border: 1rpx solid #ffecec;
+}
+.btn-logout::after { border: none; }

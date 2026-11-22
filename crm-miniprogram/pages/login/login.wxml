@@ -1,0 +1,17 @@
+<view class="login-page">
+  <view class="brand">
+    <view class="logo">CRM</view>
+    <view class="brand-name">HQ CRM</view>
+    <view class="brand-desc">客户 · 跟进 · 单据，随时随地查</view>
+  </view>
+
+  <view class="login-card">
+    <view class="login-title">登录后可新增编辑、调整库存</view>
+    <button class="wx-login-btn {{loading ? 'is-loading' : ''}}" bindtap="onWechatLogin" disabled="{{loading}}">
+      {{loading ? '登录中…' : '微信一键登录'}}
+    </button>
+    <view class="browse-link" bindtap="onBrowse">先逛逛，浏览客户与产品 ›</view>
+    <view wx:if="{{errMsg}}" class="err-msg">{{errMsg}}</view>
+    <view class="login-tip">数据存储在云端，与电脑版 CRM 同源</view>
+  </view>
+</view>

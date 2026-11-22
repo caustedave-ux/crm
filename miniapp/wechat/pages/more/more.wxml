@@ -1,0 +1,29 @@
+<view class="profile-card" wx:if="{{user}}">
+  <view class="avatar">{{user.display_name || user.username || '?'}}</view>
+  <view class="profile-info">
+    <view class="profile-name">{{user.display_name || user.username}}</view>
+    <view class="profile-role">{{user.role === 'admin' ? '管理员' : '业务员'}} · {{user.username}}</view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="card-title">功能说明</view>
+  <view class="note-item">· 客户资料 / 联系人 / 跟进记录 查看与拨打</view>
+  <view class="note-item">· 产品库与库存状态查询</view>
+  <view class="note-item">· 报价单、PI、合同、CI、PL 等单据查询</view>
+  <view class="note-item">· 新增客户、编辑单据、库存与供应商管理等，请使用电脑网页版（数据实时同步）</view>
+</view>
+
+<view class="card">
+  <view class="card-title">服务信息</view>
+  <view class="row" data-value="{{baseUrl}}" bindtap="copyUrl">
+    <text class="row-label">服务地址</text><text class="row-value copyable">{{baseUrl}} 📋</text>
+  </view>
+  <view class="row">
+    <text class="row-label">数据来源</text><text class="row-value">与网页版共用同一数据库</text>
+  </view>
+</view>
+
+<view class="logout-wrap">
+  <button class="btn-logout" bindtap="onLogout">退出登录</button>
+</view>

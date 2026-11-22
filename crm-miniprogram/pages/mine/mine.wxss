@@ -1,0 +1,26 @@
+.user-card {
+  display: flex;
+  align-items: center;
+}
+
+.avatar.big {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 24rpx;
+  font-size: 36rpx;
+}
+
+.user-main {
+  margin-left: 24rpx;
+}
+
+.about {
+  line-height: 1.7;
+  margin-top: 12rpx;
+}
+
+.logout-btn {
+  background: #ffffff;
+  color: #e0483d;
+  border: 1rpx solid #ffd9d5;
+}

@@ -1,0 +1,126 @@
+/* =========================================================
+   方向 A · 纸墨台账（Editorial Ledger）
+   —— 一切从"这是一本要天天翻的贸易台账"出发：
+      暖纸底、墨色字、发丝线、零阴影；唯一强调色是最浓的墨绿。
+      圆角统一 10px，标题不再用渐变块，层级靠字重和留白，不靠投影。
+   ========================================================= */
+:root{
+  --neo-ink:#1b1a17;
+  --neo-ink-2:#2f2c26;
+  --neo-coral:#1f4d3d;          /* 强调色：墨绿（替换珊瑚橙） */
+  --neo-coral-dark:#153a2d;
+  --neo-yellow:#efe6d3;         /* 高亮：旧纸黄，不刺眼 */
+  --neo-green:#1f4d3d;
+  --neo-bg:#f6f4ef;
+  --neo-surface:#fffdfa;
+  --neo-surface-2:#faf8f3;
+  --neo-line:#e7e1d5;
+  --neo-line-strong:#d6cfc0;
+  --neo-muted:#6d675b;
+  --neo-muted-2:#968f81;
+  --neo-radius:10px;
+  --neo-shadow:none;
+  --neo-shadow-lg:0 12px 32px rgba(40,36,28,.10);
+}
+body{background:var(--neo-bg);color:var(--neo-ink);font-size:14px;}
+a{color:var(--neo-ink);}
+a:hover{color:var(--neo-coral);}
+::selection{background:#e4dcc9;color:var(--neo-ink);}
+
+/* 顶栏：从深色渐变块改成纸色横线栏 */
+.topbar{
+  color:var(--neo-ink);
+  background:var(--neo-surface);
+  border-bottom:1px solid var(--neo-line);
+  box-shadow:none;
+}
+.topbar-product,.user-name{color:var(--neo-ink);}
+.topbar-context,.user-role{color:var(--neo-muted-2);}
+.pro-pill{background:var(--neo-coral);color:#fff;letter-spacing:.10em;}
+.global-search input{
+  border-color:var(--neo-line);
+  color:var(--neo-ink);
+  background:var(--neo-surface-2);
+}
+.global-search input::placeholder{color:var(--neo-muted-2);}
+.global-search input:focus{border-color:var(--neo-coral);background:#fff;box-shadow:0 0 0 3px rgba(31,77,61,.10);}
+.global-search i{color:var(--neo-muted-2);}
+.topbar-new{background:var(--neo-coral);box-shadow:none;border-radius:8px;}
+.topbar-new:hover{background:var(--neo-coral-dark);}
+.topbar-icon-btn{color:var(--neo-muted);}
+.topbar-icon-btn:hover,.topbar-icon-btn.show{background:var(--neo-surface-2);color:var(--neo-ink);}
+.topbar-count{background:var(--neo-coral);color:#fff;border-color:var(--neo-surface);}
+.user-avatar{background:var(--neo-coral);color:#fff;}
+.user-trigger:hover,.user-trigger.show{background:var(--neo-surface-2);color:var(--neo-ink);}
+
+/* 侧栏 */
+.sidebar{background:var(--neo-surface);box-shadow:none;border-right:1px solid var(--neo-line);color:var(--neo-muted);}
+.sidebar-section-label{color:var(--neo-muted-2);letter-spacing:.16em;}
+.sidebar-nav .nav-link{color:#54503f;border-radius:8px;}
+.sidebar-nav .nav-link:hover{background:var(--neo-surface-2);color:var(--neo-ink);transform:none;}
+.sidebar-nav .nav-link.active{background:#efe9db;color:var(--neo-ink);box-shadow:none;}
+.sidebar-nav .nav-link.active .nav-icon{color:var(--neo-coral);}
+.nav-icon{color:#8b8577;}
+.nav-badge-danger{background:#f6e7e2;color:#8c3520;}
+.nav-badge-warning{background:#f3ecd9;color:#6a5a2a;}
+
+/* 页头：去掉黑底渐变 + 装饰圆环 */
+.page-eyebrow{color:var(--neo-muted-2);letter-spacing:.18em;}
+.page-title{font-size:26px;font-weight:700;letter-spacing:-.02em;}
+.page-subtitle{color:var(--neo-muted);}
+.page-dashboard .page-heading{
+  min-height:0;padding:26px 28px;border:1px solid var(--neo-line);
+  border-radius:12px;color:var(--neo-ink);
+  background:var(--neo-surface);box-shadow:none;
+}
+.page-dashboard .page-heading::after{display:none;}
+.page-dashboard .page-title{color:var(--neo-ink);font-size:28px;}
+.page-dashboard .page-subtitle{color:var(--neo-muted);}
+.page-dashboard .page-eyebrow{color:var(--neo-coral);}
+
+/* 卡片：发丝线，无阴影 */
+.card,.neo-card{border:1px solid var(--neo-line);border-radius:10px;box-shadow:none;background:var(--neo-surface);}
+.card-header{background:transparent !important;border-bottom:1px solid var(--neo-line);padding:14px 18px;}
+.card-heading{font-size:13.5px;font-weight:700;letter-spacing:.01em;}
+.card-body{padding:18px;}
+.stat-card{border:1px solid var(--neo-line);border-radius:10px;box-shadow:none;min-height:104px;background:var(--neo-surface);}
+.stat-card::after{display:none;}
+.stat-card:hover{border-color:var(--neo-line-strong);box-shadow:none;transform:none;}
+.stat-icon{border:1px solid var(--neo-line);border-radius:8px;background:var(--neo-surface-2) !important;color:var(--neo-coral) !important;}
+.stat-num{font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+.stat-label{font-weight:600;}
+.page-dashboard .row:first-of-type .col-6:nth-child(n) .stat-icon{color:var(--neo-coral) !important;background:var(--neo-surface-2) !important;}
+
+/* 表格 */
+.table{color:var(--neo-ink);}
+.table thead th{
+  color:var(--neo-muted);background:var(--neo-surface-2) !important;
+  font-size:11px;letter-spacing:.08em;font-weight:700;border-bottom:1px solid var(--neo-line);
+}
+.table > :not(caption) > * > *{border-bottom-color:var(--neo-line);padding:11px;}
+.table-hover > tbody > tr:hover > *{--bs-table-accent-bg:var(--neo-surface-2);color:var(--neo-ink);}
+.list-item{border-bottom:1px solid var(--neo-line);border-radius:0;}
+.list-item:hover{background:var(--neo-surface-2);}
+
+/* 徽标与按钮：统一 8px 圆角、去掉上浮动效 */
+.badge{border-radius:6px;font-weight:700;letter-spacing:0;}
+.text-bg-primary{background:var(--neo-ink) !important;}
+.text-bg-secondary{background:#eee9de !important;color:#5c5647 !important;}
+.text-bg-success{background:#e3efe7 !important;color:#1f4d3d !important;}
+.text-bg-danger{background:#f6e5e0 !important;color:#8c3520 !important;}
+.text-bg-warning{background:#f3ecd9 !important;color:#6a5a2a !important;}
+.text-bg-info{background:#e5eef0 !important;color:#255660 !important;}
+.text-bg-light{background:var(--neo-surface-2) !important;color:var(--neo-muted) !important;}
+.text-bg-dark{background:#3a372f !important;}
+.btn{border-radius:8px;font-weight:600;letter-spacing:.01em;}
+.btn:hover{transform:none;}
+.btn-sm{border-radius:6px;}
+.btn-primary{border-color:var(--neo-ink);background:var(--neo-ink);}
+.btn-primary:hover{background:#35322b;border-color:#35322b;}
+.btn-secondary{background:var(--neo-surface-2);border-color:var(--neo-line);color:var(--neo-ink);}
+.btn-outline-primary{border-color:var(--neo-line-strong);color:var(--neo-ink);background:transparent;}
+.btn-outline-primary:hover{background:var(--neo-ink);border-color:var(--neo-ink);color:#fff;}
+.btn-outline-secondary{border-color:var(--neo-line);color:var(--neo-muted);background:transparent;}
+.btn-outline-secondary:hover{background:var(--neo-surface-2);border-color:var(--neo-line-strong);color:var(--neo-ink);}
+.form-control,.form-select{border-color:var(--neo-line-strong);border-radius:8px;background:var(--neo-surface);}
+.form-control:focus,.form-select:focus{border-color:var(--neo-coral);box-shadow:0 0 0 3px rgba(31,77,61,.10);}

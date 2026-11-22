@@ -1,0 +1,26 @@
+<view class="search-bar">
+  <input class="search-input" placeholder="搜索品名 / 型号 / HS编码" value="{{kw}}" bindinput="onSearch" bindconfirm="onSearchConfirm" confirm-type="search" />
+  <view class="search-btn" bindtap="onSearchConfirm">搜索</view>
+</view>
+
+<view class="count-line">共 {{total}} 个产品</view>
+
+<view wx:if="{{error}}" class="card error-box">{{error}}</view>
+
+<view wx:for="{{list}}" wx:key="id" class="card prod-card">
+  <view class="prod-top">
+    <view class="prod-name">{{item.name}}</view>
+    <view class="tag {{item.lowStock ? 'tag-red' : 'tag-green'}}">{{item.lowStock ? '库存预警' : '库存 ' + item.stock}}</view>
+  </view>
+  <view class="prod-en" wx:if="{{item.nameEn}}">{{item.nameEn}}</view>
+  <view class="prod-meta">
+    <text wx:if="{{item.model}}" class="prod-meta-item">型号：{{item.model}}</text>
+    <text wx:if="{{item.hs}}" class="prod-meta-item">HS：{{item.hs}}</text>
+    <text wx:if="{{item.unit}}" class="prod-meta-item">单位：{{item.unit}}</text>
+  </view>
+  <view class="prod-price">{{item.price}}</view>
+</view>
+
+<view wx:if="{{!list.length && !loading && !error}}" class="empty">没有找到产品</view>
+<view wx:if="{{hasMore}}" class="loading-more">上拉加载更多…</view>
+<view wx:elif="{{list.length}}" class="loading-more">— 没有更多了 —</view>

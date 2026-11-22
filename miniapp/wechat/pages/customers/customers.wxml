@@ -1,0 +1,27 @@
+<view class="search-bar">
+  <input class="search-input" placeholder="搜索公司 / 国家" value="{{kw}}" bindinput="onSearch" bindconfirm="onSearchConfirm" confirm-type="search" />
+  <view class="search-btn" bindtap="onSearchConfirm">搜索</view>
+</view>
+
+<view class="count-line">共 {{total}} 个客户</view>
+
+<view wx:if="{{error}}" class="card error-box">{{error}}</view>
+
+<view wx:for="{{list}}" wx:key="id" class="card cust-card" data-id="{{item.id}}" bindtap="goDetail">
+  <view class="cust-top">
+    <view class="cust-company">{{item.company}}</view>
+    <view class="tag {{item.level === '重点' ? 'tag-orange' : 'tag-gray'}}" wx:if="{{item.level}}">{{item.level}}</view>
+  </view>
+  <view class="cust-sub" wx:if="{{item.nameEn}}">{{item.nameEn}}</view>
+  <view class="cust-bottom">
+    <view class="tag tag-green" wx:if="{{item.status}}">{{item.status}}</view>
+    <text class="cust-country" wx:if="{{item.country}}">{{item.country}}</text>
+  </view>
+  <view class="cust-actions" wx:if="{{item.phone}}">
+    <view class="action-link" data-phone="{{item.phone}}" catchtap="callPhone">📞 {{item.phone}}</view>
+  </view>
+</view>
+
+<view wx:if="{{!list.length && !loading && !error}}" class="empty">没有找到客户</view>
+<view wx:if="{{hasMore}}" class="loading-more">上拉加载更多…</view>
+<view wx:elif="{{list.length}}" class="loading-more">— 没有更多了 —</view>

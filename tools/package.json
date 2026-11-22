@@ -1,0 +1,13 @@
+{
+  "name": "crm-cloud-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HQ CRM 本地 SQLite 与小程序云端数据库双向同步（独立工具，不依赖也不修改主系统）",
+  "scripts": {
+    "sync": "node sync-cloud.js",
+    "dry": "node sync-cloud.js --dry"
+  },
+  "dependencies": {
+    "@tencent-ai/workbuddy-cloud-sdk": "dev"
+  }
+}

@@ -1,0 +1,82 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
+
+  <view wx:if="{{!loading && errMsg}}" class="card">
+    <view class="empty">{{errMsg}}</view>
+    <view class="btn btn-ghost" bindtap="load">重试</view>
+  </view>
+
+  <block wx:if="{{!loading && !errMsg}}">
+    <!-- 统计 -->
+    <view class="card">
+      <view class="card-title">数据概览</view>
+      <view class="stat-grid">
+        <view class="stat-cell">
+          <view class="stat-num">{{stats.totalCustomers}}</view>
+          <view class="stat-label">客户总数</view>
+        </view>
+        <view class="stat-cell">
+          <view class="stat-num">{{stats.newCustomersMonth}}</view>
+          <view class="stat-label">本月新增客户</view>
+        </view>
+        <view class="stat-cell">
+          <view class="stat-num">{{stats.docMonth}}</view>
+          <view class="stat-label">本月单据</view>
+        </view>
+        <view class="stat-cell">
+          <view class="stat-num">{{amountText}}</view>
+          <view class="stat-label">本月单据金额</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 库存预警 -->
+    <view class="card" bindtap="goStock">
+      <view class="card-title">
+        <text>库存预警</text>
+        <text class="more">产品 {{stats.productCount}} 个 ›</text>
+      </view>
+      <view wx:if="{{stats.lowStock > 0}}" class="warn-row">
+        <text class="warn-num">{{stats.lowStock}}</text>
+        <text class="warn-text">个产品库存低于预警值，需要补货</text>
+      </view>
+      <view wx:else class="ok-row">库存充足，暂无预警产品</view>
+    </view>
+
+    <!-- 待跟进 -->
+    <view class="card">
+      <view class="card-title">待跟进</view>
+      <view wx:if="{{upcoming.length === 0}}" class="empty">近期没有待跟进事项</view>
+      <view wx:for="{{upcoming}}" wx:key="id" class="list-item" bindtap="goCustomer" data-id="{{item.customer_id}}">
+        <view class="follow-main">
+          <view class="t-main">{{item.company_name || '未关联客户'}}</view>
+          <view class="t-sub">{{item.subject || item.type || '跟进'}}</view>
+          <view class="t-sub" wx:if="{{item.next_follow_notes}}">备注：{{item.next_follow_notes}}</view>
+        </view>
+        <view class="follow-side">
+          <view class="tag {{item.overdue ? 'tag-red' : 'tag-orange'}}">{{item.dateText}}{{item.overdue ? ' 已逾期' : ''}}</view>
+          <view class="t-sub" wx:if="{{item.contact_person}}">{{item.contact_person}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 最近单据 -->
+    <view class="card">
+      <view class="card-title">
+        <text>最近单据</text>
+        <text class="more" bindtap="goProducts">产品库 ›</text>
+      </view>
+      <view wx:if="{{recentDocs.length === 0}}" class="empty">暂无单据</view>
+      <view wx:for="{{recentDocs}}" wx:key="id" class="list-item" bindtap="goDocument" data-id="{{item.id}}">
+        <view class="doc-main">
+          <view class="t-main">{{item.doc_no}}</view>
+          <view class="t-sub">{{item.typeName}} · {{item.company_name}}</view>
+        </view>
+        <view class="doc-side">
+          <view class="t-strong">{{item.currency}} {{item.amountText}}</view>
+          <view class="t-sub">{{item.dateText}}</view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,9 @@
+{
+  "name": "crm-miniprogram",
+  "version": "1.0.0",
+  "description": "HQ CRM 微信小程序（云端版）",
+  "private": true,
+  "dependencies": {
+    "@tencent-ai/workbuddy-cloud-sdk": "dev"
+  }
+}

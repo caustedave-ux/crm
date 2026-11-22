@@ -1,0 +1,142 @@
+<view class="page">
+  <view class="search-bar">
+    <text class="muted">🔍</text>
+    <input
+      value="{{kw}}"
+      placeholder="搜索品名 / 型号"
+      placeholder-class="muted"
+      bindinput="onSearchInput"
+      confirm-type="search"
+    />
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
+
+  <view wx:if="{{!loading && errMsg}}" class="card">
+    <view class="empty">{{errMsg}}</view>
+    <view class="btn btn-ghost" bindtap="refresh">重试</view>
+  </view>
+
+  <block wx:if="{{!loading && !errMsg}}">
+    <view class="card">
+      <view class="card-title">
+        <text>库存概览</text>
+        <text class="more">共 {{stats.total}} 个产品</text>
+      </view>
+      <view class="stat-grid">
+        <view class="stat-cell">
+          <view class="stat-num red">{{stats.low}}</view>
+          <view class="stat-label">低库存预警</view>
+        </view>
+        <view class="stat-cell">
+          <view class="stat-num orange">{{stats.zero}}</view>
+          <view class="stat-label">零库存</view>
+        </view>
+        <view class="stat-cell">
+          <view class="stat-num sm">{{stats.qtyText}}</view>
+          <view class="stat-label">有库存产品合计数量</view>
+        </view>
+        <view class="stat-cell" wx:for="{{stats.values}}" wx:key="currency">
+          <view class="stat-num sm">{{item.currency}} {{item.valueText}}</view>
+          <view class="stat-label">库存总值（{{item.currency}} 售价）</view>
+        </view>
+      </view>
+
+      <view wx:if="{{showNoAlertTip}}" class="tip-row">
+        还有 {{stats.noAlert}} 个产品未设置预警值，设置后才会出现在「低库存预警」里。可在产品详情里编辑。
+      </view>
+    </view>
+
+    <view class="filters">
+      <view
+        wx:for="{{tabs}}"
+        wx:key="key"
+        class="filter-chip {{tab === item.key ? 'active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onTab"
+      >{{item.name}}</view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">
+        <text>库存明细</text>
+        <text class="more">{{list.length}} 条</text>
+      </view>
+
+      <view wx:if="{{list.length === 0}}" class="empty">没有匹配的库存记录</view>
+
+      <view wx:for="{{list}}" wx:key="id" class="stock-item">
+        <view class="si-main" bindtap="onDetail" data-id="{{item.id}}">
+          <view class="t-main">
+            {{item.name}}
+            <text wx:if="{{item.low}}" class="tag tag-red">预警</text>
+            <text wx:elif="{{item.zero}}" class="tag tag-gray">无库存</text>
+          </view>
+          <view class="t-sub">
+            <text wx:if="{{item.model}}">型号 {{item.model}} · </text>
+            <text wx:if="{{item.stock_alert}}">预警值 {{item.stock_alert}} · </text>
+            <text wx:if="{{item.price}}">{{item.currency}} {{item.priceText}}</text>
+          </view>
+        </view>
+        <view class="si-side">
+          <view class="si-num {{item.low ? 'num-red' : ''}}">{{item.stockText}}</view>
+          <view class="t-sub" wx:if="{{item.unit}}">{{item.unit}}</view>
+          <view class="si-btn" data-id="{{item.id}}" catchtap="onAdjust">调整</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="btn btn-ghost" bindtap="onLogs">查看库存流水</view>
+    <view class="btn btn-ghost" bindtap="onAdd">新增产品</view>
+    <view class="bottom-space"></view>
+  </block>
+
+  <!-- 库存调整弹层 -->
+  <view wx:if="{{modal.show}}" class="mask" bindtap="onModalClose">
+    <view class="sheet" catchtap="stopPop">
+      <view class="sheet-title">库存调整</view>
+      <view class="sheet-sub">{{modal.name}} · 当前 {{modal.stock}}{{modal.unit ? ' ' + modal.unit : ''}}</view>
+
+      <view class="filters">
+        <view
+          wx:for="{{types}}"
+          wx:key="key"
+          class="filter-chip {{modal.type === item.key ? 'active' : ''}}"
+          data-key="{{item.key}}"
+          bindtap="onModalType"
+        >{{item.name}}</view>
+      </view>
+
+      <view class="field">
+        <text class="f-label">{{modal.type === 'set' ? '盘点后数量' : '变动数量'}}</text>
+        <input
+          class="f-input"
+          type="digit"
+          value="{{modal.qty}}"
+          data-field="qty"
+          bindinput="onModalInput"
+          placeholder="{{modal.type === 'set' ? '输入实际盘点数量' : '输入数量'}}"
+          placeholder-class="ph"
+          focus="{{modal.show}}"
+        />
+      </view>
+
+      <view class="field">
+        <text class="f-label">备注</text>
+        <input
+          class="f-input"
+          value="{{modal.remark}}"
+          data-field="remark"
+          bindinput="onModalInput"
+          placeholder="如 采购入库 / 客户发货"
+          placeholder-class="ph"
+        />
+      </view>
+
+      <view class="sheet-tip" wx:if="{{modal.type === 'out'}}">出库后库存不足时仍可提交，结存会记为负数（欠货）。</view>
+
+      <view class="btn {{submitting ? 'btn-disabled' : ''}}" bindtap="onModalSubmit">确认调整</view>
+      <view class="btn btn-ghost" bindtap="onModalClose">取消</view>
+    </view>
+  </view>
+</view>

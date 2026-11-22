@@ -1,0 +1,21 @@
+<view class="login-wrap">
+  <view class="login-logo">
+    <view class="logo-mark">CRM</view>
+    <view class="login-title">HQ CRM</view>
+    <view class="login-sub">客户 · 跟进 · 单据 随身管理</view>
+  </view>
+
+  <view class="card login-card">
+    <view class="input-row">
+      <text class="input-label">用户名</text>
+      <input class="input" placeholder="请输入用户名" value="{{username}}" data-field="username" bindinput="onInput" />
+    </view>
+    <view class="input-row">
+      <text class="input-label">密码</text>
+      <input class="input" password placeholder="请输入密码" value="{{password}}" data-field="password" bindinput="onInput" />
+    </view>
+    <view wx:if="{{error}}" class="login-error">{{error}}</view>
+    <button class="btn-primary" disabled="{{loading}}" bindtap="onSubmit">{{loading ? '登录中…' : '登 录'}}</button>
+    <view class="login-hint">使用系统网页版相同的账号密码登录</view>
+  </view>
+</view>

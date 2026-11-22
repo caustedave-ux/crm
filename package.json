@@ -1,0 +1,33 @@
+{
+  "name": "foreigntrade-crm",
+  "version": "2.0.0",
+  "description": "外贸AI客服工作台 2.0（HQ CRM 局域网共享版）- 深色紫色主题 + AI 报价助手 + WhatsApp 三栏 + 跟进看板",
+  "main": "server.js",
+  "private": true,
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "check": "node tools/check-routes.js",
+    "test:inquiry": "node tools/test-website-inquiry.js",
+    "test:tiers": "node tools/test-customer-tiers.js",
+    "test:wa": "node tools/test-wa-import.js && node tools/test-wa-media.js && node tools/test-wa-inbox.js",
+    "test:briefings": "node tools/test-briefings.js",
+    "test:doc-price": "node tools/test-doc-last-price.js",
+    "test:auto-reply": "node auto-reply/selftest.js",
+    "test:codex-assistant": "node tools/test-codex-assistant.js",
+    "test:knowledge": "node tools/test-knowledge-base.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "7.0.0-rc14",
+    "exceljs": "^4.4.0",
+    "https-proxy-agent": "^9.1.0",
+    "markdown-it": "14.3.3",
+    "puppeteer-core": "^25.16.0",
+    "qrcode": "^1.5.4",
+    "rss-parser": "^3.13.0",
+    "socks-proxy-agent": "^10.1.0",
+    "undici": "^7.30.1"
+  }
+}

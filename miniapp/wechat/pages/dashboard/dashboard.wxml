@@ -1,0 +1,55 @@
+<view class="hello">你好，{{userName || '业务员'}} 👋 今天也要加油签单</view>
+
+<view wx:if="{{error}}" class="card error-box">{{error}}<view class="error-tip">请检查 miniapp/wechat/utils/config.js 中的服务地址配置</view></view>
+
+<view wx:if="{{stats}}" class="stat-grid">
+  <view class="stat-card" bindtap="goCustomers">
+    <view class="stat-num">{{stats.totalCustomers}}</view>
+    <view class="stat-label">客户总数</view>
+    <view class="stat-sub">本月新增 {{stats.newCustomersMonth}}</view>
+  </view>
+  <view class="stat-card" bindtap="goDocuments">
+    <view class="stat-num">{{stats.docMonth}}</view>
+    <view class="stat-label">本月单据</view>
+    <view class="stat-sub">金额 ${{stats.docMonthAmount}}</view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="card-title">快捷入口</view>
+  <view class="quick-grid">
+    <view class="quick-item" bindtap="goCustomers"><view class="quick-icon blue">客</view><view>客户</view></view>
+    <view class="quick-item" bindtap="goProducts"><view class="quick-icon green">品</view><view>产品</view></view>
+    <view class="quick-item" bindtap="goDocuments"><view class="quick-icon orange">单</view><view>单据</view></view>
+    <view class="quick-item" bindtap="goMore"><view class="quick-icon gray">我</view><view>我的</view></view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="card-title">待跟进提醒（{{upcoming.length}}）</view>
+  <view wx:if="{{!upcoming.length}}" class="empty">暂无待跟进事项，太棒了</view>
+  <view wx:for="{{upcoming}}" wx:key="id" class="fu-item" data-id="{{item.customer_id}}" bindtap="goCustomer">
+    <view class="fu-main">
+      <view class="fu-company">{{item.company}}</view>
+      <view class="fu-note">{{item.type}} · {{item.subject}}</view>
+    </view>
+    <view class="tag {{item.overdue ? 'tag-red' : 'tag-orange'}}">{{item.overdue ? '已逾期' : '待跟进'}} {{item.date}}</view>
+  </view>
+</view>
+
+<view class="card">
+  <view class="card-title">最近单据</view>
+  <view wx:if="{{!recentDocs.length}}" class="empty">还没有单据</view>
+  <view wx:for="{{recentDocs}}" wx:key="id" class="doc-item">
+    <view class="doc-left">
+      <view class="doc-no">{{item.doc_no}}</view>
+      <view class="doc-company">{{item.type}} · {{item.company}}</view>
+    </view>
+    <view class="doc-right">
+      <view class="doc-amount">{{item.amount}}</view>
+      <view class="tag tag-gray">{{item.status}}</view>
+    </view>
+  </view>
+</view>
+
+<view wx:if="{{loading}}" class="loading-more">加载中…</view>

@@ -1,0 +1,56 @@
+.follow-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.follow-side {
+  text-align: right;
+  flex-shrink: 0;
+  margin-left: 20rpx;
+}
+
+.follow-main .t-main,
+.doc-main .t-main {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-side {
+  text-align: right;
+  flex-shrink: 0;
+  margin-left: 20rpx;
+}
+
+.stat-num {
+  font-size: 40rpx;
+}
+
+.warn-row {
+  display: flex;
+  align-items: baseline;
+  margin-top: 12rpx;
+}
+
+.warn-num {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #e0483d;
+  margin-right: 16rpx;
+}
+
+.warn-text {
+  font-size: 26rpx;
+  color: #6b7688;
+}
+
+.ok-row {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: #22a35a;
+}

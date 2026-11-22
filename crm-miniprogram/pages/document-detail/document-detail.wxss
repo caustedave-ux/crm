@@ -1,0 +1,46 @@
+.doc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.t-main.big {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.amount-row {
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f2f5;
+}
+
+.amount {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #2f6bff;
+  margin-top: 6rpx;
+}
+
+.item-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f2f5;
+}
+
+.item-row:last-of-type {
+  border-bottom: none;
+}
+
+.item-main {
+  flex: 1;
+  min-width: 0;
+  padding-right: 20rpx;
+}
+
+.item-side {
+  flex-shrink: 0;
+  text-align: right;
+}
