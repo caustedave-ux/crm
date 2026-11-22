@@ -856,6 +856,69 @@ function customersPage(ctx) {
   return page({ title: '客户管理', active: 'customers', user: ctx.user, content, flash: ctx.flash() });
 }
 
+// ============ 客户 AI 分析摘要：按真实数据实时计算（修掉写死的示例文案） ============
+// 根因：以前这里是写死的演示文本（样式 2/3 打版、针法/用纱、“更新于 09:54”、意向分恒为 85、
+// “11月21日跟进”），跟哪个客户、哪条跟进、哪张单据都没关系，所以跟实际永远对不上。
+// 现在每次打开客户详情都按该客户的最新跟进记录、单据、分层分数现算，不缓存、不写死。
+function buildCustomerAiSummary(c, acts, docs) {
+  const list = Array.isArray(acts) ? acts : [];
+  const docList = Array.isArray(docs) ? docs : [];
+  const today = dateAfter(0);
+  const score = Math.round(Number(c.tier_score || 0));
+  const intent = score >= 80 ? '高意向' : (score >= 60 ? '中意向' : '一般意向');
+  const intentCls = score >= 80 ? 'text-bg-success' : (score >= 60 ? 'text-bg-warning' : 'text-bg-light border');
+  const docTypeName = { quotation: '报价单', pi: '形式发票', so: '销售合同', ci: '商业发票', pl: '装箱单', po: '采购单' };
+  // 阶段：与工作台客户分层规则一致（成交 > 样品 > 报价 > 已联系 > 初步接洽）
+  let stage = '初步接洽';
+  const won = String(c.status || '') === '合作客户'
+    || docList.some(d => ['pi', 'so', 'ci'].includes(d.doc_type) && ['已确认', '已完成', '已付款'].includes(String(d.status || '')));
+  const sampling = list.some(a => String(a.type || '') === '样品' && !Number(a.archived || 0));
+  const quoted = String(c.status || '') === '报价中'
+    || docList.some(d => d.doc_type === 'quotation' && !['草稿', '已作废'].includes(String(d.status || '')));
+  if (won) stage = '成交 / 履约阶段';
+  else if (sampling) stage = '样品确认阶段';
+  else if (quoted) stage = '报价阶段';
+  else if (String(c.status || '') === '意向客户' || list.length) stage = '跟进中';
+  // 客户需求：取最近 3 条有内容的跟进（主题优先，没有主题用内容前 40 字）
+  const needBits = list.filter(a => String(a.subject || '').trim() || String(a.content || '').trim()).slice(0, 3).map(a => {
+    const s = String(a.subject || '').trim();
+    const txt = s || String(a.content || '').trim().slice(0, 40);
+    const d = String(a.activity_date || '').slice(0, 10);
+    return txt + (d ? '（' + d + '）' : '');
+  });
+  const needs = needBits.length ? needBits.join('；') : '暂无跟进记录，尚未记录明确需求';
+  // 未解决问题 = 未完成且有下次跟进日期的跟进
+  const open = list.filter(a => !Number(a.archived || 0) && String(a.next_follow_date || '').trim());
+  const openIssues = open.length
+    ? open.map(a => (String(a.subject || '').trim() || String(a.type || '跟进')) + '（下次 ' + String(a.next_follow_date).slice(0, 10) + '）').join('；')
+    : '无待跟进事项';
+  // 最近报价：最新一张单据
+  const latestDoc = docList[0];
+  const latestQuote = latestDoc
+    ? `${latestDoc.doc_no || ''} · ${docTypeName[latestDoc.doc_type] || latestDoc.doc_type || '单据'} ${latestDoc.currency || 'USD'}${moneyFmt(latestDoc.total_amount)}（${String(latestDoc.issue_date || '').slice(0, 10)}，${latestDoc.status || '-'}）`
+    : '暂无报价';
+  // 下一步行动：最近的一次待跟进（先看未到期的，再看逾期的）
+  const upcoming = open.filter(a => String(a.next_follow_date).slice(0, 10) >= today)
+    .sort((x, y) => String(x.next_follow_date).localeCompare(String(y.next_follow_date)));
+  const overdue = open.filter(a => String(a.next_follow_date).slice(0, 10) < today)
+    .sort((x, y) => String(x.next_follow_date).localeCompare(String(y.next_follow_date)));
+  const nextOne = upcoming[0] || overdue[0] || null;
+  const nextAction = nextOne
+    ? `跟进「${String(nextOne.subject || '').trim() || String(nextOne.type || '跟进')}」（${String(nextOne.next_follow_date).slice(0, 10)}）${String(nextOne.next_follow_notes || '').trim() ? '：' + String(nextOne.next_follow_notes).trim() : ''}`
+    : '暂无待跟进事项，建议主动联系客户确认需求与报价反馈';
+  const followupReminder = nextOne
+    ? `${String(nextOne.next_follow_date).slice(0, 10)} 跟进「${String(nextOne.subject || '').trim() || String(nextOne.type || '跟进')}」`
+    : '暂无待跟进事项';
+  const now = new Date();
+  const updatedAt = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  return {
+    score, scoreDisplay: score > 0 ? String(score) : '–',
+    scoreText: score > 0 ? score + '/100 ' + intent + '客户' : '尚未评分',
+    intent, intentCls, stage, needs, openIssues, openCount: open.length,
+    latestQuote, nextAction, followupReminder, updatedAt,
+  };
+}
+
 function customerDetailPage(ctx) {
   try { customerTiers.refreshTiers(ctx.user.id); } catch (e) {}
   const c = get('SELECT * FROM customers WHERE id=? AND (user_id=? OR COALESCE(in_pool,0)=1)', ctx.params.id, ctx.user.id);
@@ -909,6 +972,7 @@ function customerDetailPage(ctx) {
       ${c.ad_first_seen_at ? '<div class="text-muted small">首次进入：' + esc(String(c.ad_first_seen_at).slice(0,16)) + '</div>' : ''}
       ${customerAdUrl ? '<a class="small" href="' + esc(customerAdUrl) + '" target="_blank" rel="noopener noreferrer">打开广告落地页</a>' : ''}
     </div>`;
+  const aiSum = buildCustomerAiSummary(c, acts, docs);
   const content = `
     <header class="customer-profile-header">
       <div class="customer-profile-identity">
@@ -931,20 +995,49 @@ function customerDetailPage(ctx) {
     <nav class="customer-section-nav"><a href="#customerOverview">客户概览</a><a href="#customerContacts">联系人</a><a href="#customerTimeline">沟通时间线</a><a href="#customerDocuments">报价与订单</a></nav>
     <div class="ai-panel mb-3" aria-label="AI 客户分析摘要">
       <div class="d-flex gap-3 align-items-start flex-wrap">
-        <div class="ai-score-ring"><span>${Number(c.tier_score || 0) >= 80 ? 85 : Math.max(55, Math.round(Number(c.tier_score || 0) || 85))}</span></div>
+        <div class="ai-score-ring"><span>${aiSum.scoreDisplay}</span></div>
         <div class="flex-grow-1 min-w-0">
-          <h3 class="ai-panel-title"><i class="bi bi-stars"></i> AI 客户分析摘要 <span class="text-muted small">更新于 09:54 · 基于聊天记录和客户资料的智能分析</span></h3>
-          <div class="small" style="line-height:1.9">
-            <div><b>当前阶段：</b>样品确认阶段（开发中） · <b>评级与意向：</b>85/100 高意向客户</div>
-            <div><b>客户需求：</b>样式 2 和 3 的打版与报价；需要确认针法/刺绣工艺、用纱颜色、图案位置、尺码</div>
-            <div><b>未解决问题（3）：</b>确认具体用纱（成分与支数） · 提供工艺与细节实拍图 · 样品费用与交期</div>
-            <div><b>最近报价：</b>暂无报价 · <b>下一步行动（AI 建议）：</b>整理款式 2 和 3 的工艺与细节资料；提供打样费用、交期与 MOQ 方案；确认目标零售价（如 USD 70–80）；约定打样时间与确认尺寸表</div>
-            <div><b>跟进提醒：</b>11月21日（周五）16:00 跟进样品方案与报价反馈</div>
+          <h3 class="ai-panel-title"><i class="bi bi-stars"></i> AI 客户分析摘要 <span class="text-muted small" id="aiSumUpdated">更新于 ${aiSum.updatedAt} · 根据客户资料、跟进记录与单据实时生成</span></h3>
+          <div class="small" style="line-height:1.9" id="aiSumBody">
+            <div><b>当前阶段：</b><span id="aiSumStage">${esc(aiSum.stage)}</span> · <b>评级与意向：</b><span id="aiSumScore">${esc(aiSum.scoreText)}</span></div>
+            <div><b>客户需求：</b><span id="aiSumNeeds">${esc(aiSum.needs)}</span></div>
+            <div><b>未解决问题（<span id="aiSumOpenCount">${aiSum.openCount}</span>）：</b><span id="aiSumIssues">${esc(aiSum.openIssues)}</span></div>
+            <div><b>最近报价：</b><span id="aiSumQuote">${esc(aiSum.latestQuote)}</span> · <b>下一步行动：</b><span id="aiSumNext">${esc(aiSum.nextAction)}</span></div>
+            <div><b>跟进提醒：</b><span id="aiSumReminder">${esc(aiSum.followupReminder)}</span></div>
           </div>
         </div>
-        <div><span class="badge text-bg-success">高意向</span> <span class="badge text-bg-light border">开发中</span></div>
+        <div><span class="badge ${aiSum.intentCls}">${aiSum.intent}</span> <span class="badge text-bg-light border">${esc(aiSum.stage)}</span></div>
       </div>
-      <div class="text-muted small mt-2">意向分复用现有客户分层贡献值（tier_score）换算，85 为图片示例；真实阶段/需求仍以跟进记录为准。</div>
+      <div class="d-flex gap-2 align-items-center mt-2 flex-wrap">
+        <button type="button" class="btn btn-sm btn-outline-primary" id="aiSumRegenBtn"><i class="bi bi-stars me-1"></i>用 AI 重新生成</button>
+        <span class="text-muted small" id="aiSumRegenMsg">摘要按真实数据实时计算；点“重新生成”会用 DeepSeek 结合最新跟进与单据再写一版。</span>
+      </div>
+      <script>
+        (function () {
+          var btn = document.getElementById('aiSumRegenBtn');
+          if (!btn) return;
+          btn.addEventListener('click', async function () {
+            btn.disabled = true;
+            var msg = document.getElementById('aiSumRegenMsg');
+            msg.textContent = 'AI 生成中…';
+            try {
+              var r = await fetch('/api/customers/${c.id}/ai-summary', { method: 'POST' });
+              var d = await r.json();
+              if (!d.ok) throw new Error(d.error || '生成失败');
+              var s = d.summary || {};
+              var set = function (id, v) { var el = document.getElementById(id); if (el && v !== undefined && v !== null) el.textContent = v; };
+              set('aiSumStage', s.stage); set('aiSumScore', s.scoreText); set('aiSumNeeds', s.needs);
+              set('aiSumIssues', s.openIssues); set('aiSumOpenCount', s.openCount);
+              set('aiSumQuote', s.latestQuote); set('aiSumNext', s.nextAction); set('aiSumReminder', s.followupReminder);
+              var u = document.getElementById('aiSumUpdated');
+              if (u) u.textContent = 'AI 已重新生成于 ' + new Date().toTimeString().slice(0, 5) + ' · 仅依据客户资料、跟进记录与单据';
+              msg.textContent = '已用 AI 重新生成（仅依据真实数据，未编造）。';
+            } catch (e) {
+              msg.textContent = '生成失败：' + e.message + '（仍显示按真实数据计算的版本）';
+            } finally { btn.disabled = false; }
+          });
+        })();
+      </script>
     </div>
     <div class="row g-3 mb-3" id="customerOverview">
       <div class="col-12 col-xl-4"><div class="customer-profile-card">${card({ title: '客户基本信息', actions: isOwner ? `<a class="btn btn-sm btn-outline-secondary" href="/customers/${c.id}/edit"><i class="bi bi-pencil"></i></a>` : '', body: `<div class="small">
@@ -1330,6 +1423,27 @@ function activityFormPage(ctx) {
 }
 
 // ================= 产品 =================
+// ---------- 产品分类：添加分类弹窗（列表页筛选区 / 产品表单共用） ----------
+function addCategoryModalHtml(categories, backUrl) {
+  const parents = (categories || []).filter(c => !c.parent_id);
+  const parentOpts = parents.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  return `<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">添加产品分类</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button></div>
+      <form method="post" action="/products/categories">
+        <div class="modal-body">
+          <input type="hidden" name="back" value="${esc(backUrl)}">
+          <div class="mb-3"><label class="form-label">分类名称 <span class="text-danger">*</span></label><input class="form-control" name="name" maxlength="30" required placeholder="如 智能锁 / 门吸 / 地弹簧"></div>
+          <div class="mb-3"><label class="form-label">父分类（可选，选了就是二级分类）</label><select class="form-select" name="parent_id"><option value="">无（顶级分类）</option>${parentOpts}</select></div>
+          <div class="form-text">保存后立即出现在分类下拉和筛选中，不用重启。</div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary">保存分类</button></div>
+      </form>
+    </div></div>
+  </div>`;
+}
+const addCategoryBtnHtml = `<button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal" title="添加新分类"><i class="bi bi-plus-lg"></i> 添加分类</button>`;
+
 function productsPage(ctx) {
   const kw = ctx.query.search || '';
   const catFilter = parseInt(ctx.query.category || '', 10) || 0;
@@ -1464,7 +1578,7 @@ function productsPage(ctx) {
       <form class="row g-2 mb-3 align-items-center" method="get">
         <input type="hidden" name="en" value="${esc(en)}"><input type="hidden" name="sort" value="${esc(sortParam)}">
         <div class="col-md-4"><input class="form-control" name="search" value="${esc(kw)}" placeholder="搜索品名 / 型号 / 颜色"></div>
-        <div class="col-md-2"><select class="form-select" name="category" aria-label="按分类筛选"><option value="">全部分类</option>${categories.map(c => `<option value="${c.id}" ${catFilter === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></div>
+        <div class="col-md-2"><div class="d-flex gap-1"><select class="form-select" name="category" aria-label="按分类筛选"><option value="">全部分类</option>${categories.map(c => `<option value="${c.id}" ${catFilter === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>${addCategoryBtnHtml}</div></div>
         <div class="col-md-2"><select class="form-select" name="material" aria-label="按材质筛选"><option value="">全部材质</option>${materials.map(m => `<option ${matFilter === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></div>
         <div class="col-md-2"><select class="form-select" name="status" aria-label="按状态筛选"><option value="">全部状态</option>${['在售', '下架', '停产'].map(s => `<option ${statusFilter === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
         <div class="col-auto"><button class="btn btn-outline-primary"><i class="bi bi-search"></i> 搜索</button></div>
@@ -1474,7 +1588,8 @@ function productsPage(ctx) {
       <div class="table-responsive"><table class="table table-hover align-middle">
         <thead><tr><th>产品名称</th><th>规格型号</th><th>分类</th><th class="text-center">颜色</th><th class="text-center">单位</th><th class="text-center">MOQ</th><th class="text-center">交期</th><th class="text-end">库存</th><th class="text-end">进货价</th><th class="text-end">操作</th></tr></thead>
         <tbody>${rowsHtml}</tbody></table></div>
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2"><span class="text-muted small">共 ${totalCount} 个产品 · 每页 15 · 第 ${safePage}/${pageCount} 页</span>${pagination}</div>` })}`;
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2"><span class="text-muted small">共 ${totalCount} 个产品 · 每页 15 · 第 ${safePage}/${pageCount} 页</span>${pagination}</div>
+      ${addCategoryModalHtml(categories, backTarget)}` })}`;
   return page({ title: '产品管理', active: 'products', user: ctx.user, content, flash: ctx.flash() });
 }
 
@@ -1486,11 +1601,17 @@ function productFormPage(ctx) {
   const backUrl = /^\/(?!\/)/.test(String(ctx.query.back || '')) ? String(ctx.query.back).replace(/[\r\n]/g, '') : '';
   const returnUrl = backUrl || '/products';
   const categories = all('SELECT * FROM product_categories ORDER BY sort_order, id');
+  // 刚在弹窗里加完分类跳回来时（?category_id=新 id），表单直接预选它
+  const preselectCat = parseInt(ctx.query.category_id, 10) || 0;
+  const catValue = v.category_id || preselectCat || '';
+  const formUrl = (p ? '/products/' + p.id + '/edit' : '/products/new') + (backUrl ? '?back=' + encodeURIComponent(backUrl) : '');
   const SPEC_PRESETS = {
     '锁体': [['锁体尺寸', '如 85mm'], ['孔距', '如 72mm'], ['适用门厚', '如 35-55mm'], ['锁舌材质', '如 不锈钢']],
     '把手': [['长度', '如 128mm'], ['孔距', '如 96mm'], ['管径', '如 12mm']],
     '锁芯': [['长度', '如 70mm'], ['偏心距', '如 30+10mm'], ['钥匙数量', '如 3把']],
     '合页': [['尺寸', '如 4寸'], ['承重', '如 25kg'], ['开合角度', '如 180°']],
+    '智能锁': [['解锁方式', '如 指纹/密码/刷卡'], ['供电方式', '如 干电池/锂电池'], ['适用门厚', '如 35-55mm'], ['联网方式', '如 WiFi/蓝牙']],
+    '门吸': [['材质', '如 不锈钢/锌合金'], ['安装方式', '如 地装/墙装'], ['承重', '如 25kg'], ['表面处理', '如 拉丝']],
     '其他': [['规格', ''], ['参数', '']],
   };
   let curSpecs = {};
@@ -1589,7 +1710,7 @@ function productFormPage(ctx) {
             <div class="col-md-6">${fld({ label: '英文品名', name: 'name_en', value: v.name_en, placeholder: 'English Name' })}</div>
             <div class="col-md-3">${fld({ label: '规格型号', name: 'model', value: v.model })}</div>
             <div class="col-md-3">${fld({ label: '颜色', name: 'color', value: v.color, placeholder: '如 SS / 黑色 / 金色' })}</div>
-            <div class="col-md-3">${fld({ id: 'productCategory', label: '分类', name: 'category_id', value: v.category_id || '', type: 'select', options: [{ v: '', l: '未分类' }].concat(categories.map(c => ({ v: String(c.id), l: c.name }))) })}</div>
+            <div class="col-md-3"><label class="form-label" for="productCategory">分类</label><div class="input-group"><select class="form-select" id="productCategory" name="category_id">${[{ v: '', l: '未分类' }].concat(categories.map(c => ({ v: String(c.id), l: c.name }))).map(op => `<option value="${esc(op.v)}" ${String(op.v) === String(catValue) ? 'selected' : ''}>${esc(op.l)}</option>`).join('')}</select><button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal" title="添加新分类"><i class="bi bi-plus-lg"></i></button></div></div>
             <div class="col-md-3"><label class="form-label" for="productMaterial">材质</label><input class="form-control" id="productMaterial" name="material" list="materialList" value="${esc(v.material || '')}" placeholder="如 不锈钢 / 锌合金"><datalist id="materialList"><option>不锈钢</option><option>锌合金</option><option>铜</option><option>铝合金</option><option>铁</option></datalist><div class="form-text">可直接填，不限于列表</div></div>
             <div class="col-md-3"><label class="form-label" for="productFinish">表面处理</label><input class="form-control" id="productFinish" name="finish" list="finishList" value="${esc(v.finish || '')}" placeholder="如 拉丝 / 电镀"><datalist id="finishList"><option>拉丝</option><option>镜面</option><option>电镀</option><option>喷涂</option><option>古铜</option><option>黑色</option></datalist><div class="form-text">可直接填，不限于列表</div></div>
             <div class="col-md-3">${fld({ label: 'MOQ（最低起订量）', name: 'moq', value: (p ? numFmt(v.moq) : ''), type: 'number', step: 'any', min: 0 })}</div>
@@ -1618,7 +1739,7 @@ function productFormPage(ctx) {
               <div class="form-label fw-semibold">类别专属参数</div>
               <div id="specFields" class="row g-2"></div>
               <input type="hidden" name="specs" id="specsJson" value='${esc(JSON.stringify(curSpecs))}'>
-              <div class="form-text">按所选分类显示对应参数（锁体：锁体尺寸/孔距；把手：长度/孔距；锁芯：长度/偏心距；合页：尺寸/承重）；换分类后已填的值会保留。</div>
+              <div class="form-text">按所选分类显示对应参数（锁体：锁体尺寸/孔距；把手：长度/孔距；锁芯：长度/偏心距；合页：尺寸/承重；智能锁：解锁方式/供电方式；门吸：材质/安装方式）；换分类后已填的值会保留。</div>
             </div>
             <div class="col-12">${fld({ label: '产品描述', name: 'description', value: v.description, type: 'textarea', rows: 3, help: '中英双语销售文案，AI 回答和报价时引用；价格、MOQ、交期请填上面字段，不要写在这里' })}</div>
             <div class="col-12">${fld({ label: '备注', name: 'notes', value: v.notes, help: '内部备注（包装方式、可印 Logo 等），不对外' })}</div>
@@ -1643,7 +1764,8 @@ function productFormPage(ctx) {
         };
         rd.readAsDataURL(file);
       });
-    </script>` })}`;
+    </script>
+    ${addCategoryModalHtml(categories, formUrl)}` })}`;
   return page({ title, active: 'products', user: ctx.user, content, flash: ctx.flash() });
 }
 

@@ -9,6 +9,7 @@ const CATEGORIES = Object.freeze([
   '工厂资料',
   '外贸术语',
   '历史经验',
+  '问答',
 ]);
 
 const markdown = new MarkdownIt({

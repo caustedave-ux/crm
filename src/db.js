@@ -781,14 +781,18 @@ function migrate() {
   run('CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)');
   run('CREATE INDEX IF NOT EXISTS idx_knowledge_articles_product ON knowledge_articles(product_id)');
   run('CREATE INDEX IF NOT EXISTS idx_product_attachments_product ON product_attachments(product_id)');
-  // 初始产品分类（门锁五金）：仅首次为空时写入，用户可在产品管理里按需调整
+  // 初始产品分类（门锁五金）：逐个补齐缺失项，老库升级也会补上智能锁、门吸；用户可在产品管理里按需添加
   try {
-    if (get('SELECT COUNT(*) c FROM product_categories').c === 0) {
-      const t = nowStr();
-      ['锁体', '把手', '锁芯', '合页', '其他'].forEach((name, i) => {
+    const t = nowStr();
+    const want = ['锁体', '把手', '锁芯', '合页', '智能锁', '门吸', '其他'];
+    want.forEach((name, i) => {
+      const exists = get('SELECT id FROM product_categories WHERE name=? AND parent_id IS NULL', name);
+      if (exists) {
+        run('UPDATE product_categories SET sort_order=? WHERE id=?', i + 1, exists.id);
+      } else {
         run('INSERT INTO product_categories(name,parent_id,sort_order,created_at,updated_at) VALUES(?,?,?, ?,?)', name, null, i + 1, t, t);
-      });
-    }
+      }
+    });
   } catch (e) {}
   // 删除针织服装示例文章：只删标题明确是服装的“产品资料”，且标题不含“锁”字；门锁五金文章不受影响
   try {
