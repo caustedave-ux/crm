@@ -76,8 +76,18 @@ function page(opts) {
   const roleText = user && user.role === 'admin' ? '系统管理员' : '业务员';
   const userName = user && user.display_name ? user.display_name : '用户';
   const userInitial = String(userName).trim().slice(0, 1).toUpperCase() || 'U';
-  const notifyCount = lowStock + warnFollow + poolCount + inquiryCount + followDue + waUnread;
+  // 强弹窗通知未读数：客户给出具体需求转人工（notifications 表）
+  let notifUnread = 0, notifLatestLink = '/whatsapp/session';
+  try {
+    notifUnread = (get('SELECT COUNT(*) c FROM notifications WHERE user_id=? AND is_read=0', user ? user.id : 0).c) || 0;
+    if (notifUnread > 0) {
+      const latest = get('SELECT link FROM notifications WHERE user_id=? AND is_read=0 ORDER BY id DESC LIMIT 1', user ? user.id : 0);
+      if (latest && latest.link) notifLatestLink = latest.link;
+    }
+  } catch (e) {}
+  const notifyCount = lowStock + warnFollow + poolCount + inquiryCount + followDue + waUnread + notifUnread;
   const notifyItems = [
+    { href: notifLatestLink, icon: 'bi-bell-fill', label: '客户给出具体需求', count: notifUnread },
     { href: '/followups', icon: 'bi-calendar2-check', label: '今日 / 逾期跟进', count: followDue },
     { href: '/inquiries', icon: 'bi-globe2', label: '独立站询盘（待领取）', count: inquiryCount },
     { href: '/whatsapp/session?filter=unread', icon: 'bi-whatsapp', label: 'WhatsApp 未读', count: waUnread },
@@ -157,6 +167,123 @@ function page(opts) {
 </div>
 <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/app.js"></script>
+<div class="notify-toast-stack" id="notifyToastStack" aria-live="polite"></div>
+<script>
+(function () {
+  var stack = document.getElementById('notifyToastStack');
+  if (!stack) return;
+  var shown = {};
+  var soundOn = true;
+  try { soundOn = localStorage.getItem('crm_wa_sound') !== '0'; } catch (e) {}
+  var audioCtx = null;
+  function unlockAudio() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!audioCtx) audioCtx = new Ctx();
+      if (audioCtx.state === 'suspended') audioCtx.resume().catch(function () {});
+    } catch (e) {}
+  }
+  function beep() {
+    if (!soundOn) return;
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!audioCtx) audioCtx = new Ctx();
+      var ctx = audioCtx;
+      var play = function () {
+        try {
+          var now = ctx.currentTime;
+          [0, 0.14].forEach(function (offset, index) {
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(index === 0 ? 880 : 1174.66, now + offset);
+            gain.gain.setValueAtTime(0.0001, now + offset);
+            gain.gain.exponentialRampToValueAtTime(0.16, now + offset + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.12);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + offset);
+            osc.stop(now + offset + 0.13);
+          });
+        } catch (e) {}
+      };
+      if (ctx.state === 'suspended') { try { ctx.resume().then(play).catch(function () {}); } catch (e) {} }
+      else play();
+    } catch (e) {}
+  }
+  function markRead(id) {
+    try {
+      fetch('/api/notifications/' + encodeURIComponent(id) + '/read', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
+    } catch (e) {}
+  }
+  function buildCard(n) {
+    var card = document.createElement('div');
+    card.className = 'notify-toast';
+    card.setAttribute('role', 'alert');
+    var head = document.createElement('div');
+    head.className = 'notify-toast-head';
+    var bell = document.createElement('i');
+    bell.className = 'bi bi-bell-fill';
+    var headText = document.createElement('span');
+    headText.textContent = '客户给出具体需求';
+    var time = document.createElement('span');
+    time.className = 'notify-toast-time';
+    time.textContent = String(n.created_at || '').slice(0, 16);
+    head.appendChild(bell);
+    head.appendChild(headText);
+    head.appendChild(time);
+    var title = document.createElement('div');
+    title.className = 'notify-toast-title';
+    title.textContent = n.title || '';
+    var body = document.createElement('div');
+    body.className = 'notify-toast-body';
+    body.textContent = n.body || '';
+    var actions = document.createElement('div');
+    actions.className = 'notify-toast-actions';
+    var go = document.createElement('a');
+    go.className = 'btn btn-sm notify-toast-go';
+    go.href = n.link || '/whatsapp/session';
+    go.textContent = '去跟进';
+    var ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = 'btn btn-sm btn-outline-light notify-toast-ok';
+    ok.textContent = '知道了';
+    ok.addEventListener('click', function () {
+      markRead(n.id);
+      if (card.parentNode) card.parentNode.removeChild(card);
+    });
+    actions.appendChild(go);
+    actions.appendChild(ok);
+    card.appendChild(head);
+    card.appendChild(title);
+    card.appendChild(body);
+    card.appendChild(actions);
+    return card;
+  }
+  function poll() {
+    fetch('/api/notifications?unread=1', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok || !Array.isArray(d.notifications)) return;
+        var fresh = false;
+        d.notifications.forEach(function (n) {
+          if (!n || shown[n.id]) return;
+          shown[n.id] = true;
+          fresh = true;
+          stack.appendChild(buildCard(n));
+        });
+        if (fresh) beep();
+      })
+      .catch(function () {});
+  }
+  document.addEventListener('pointerdown', unlockAudio, { passive: true });
+  document.addEventListener('keydown', unlockAudio);
+  poll();
+  setInterval(poll, 25000);
+})();
+</script>
 ${scriptHtml}
 </body>
 </html>`;

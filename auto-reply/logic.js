@@ -98,15 +98,32 @@ function followupDue(state, cfg) {
 
 /**
  * 要目录的新客户转人工原因（只用于 purpose=catalog 且非老客户）。
- * 报了采购量 / 答了 2 轮问题 / 要样品或视频看厂 → 人工接手给适配报价，不再自动追问。
+ * 报了采购量 / 要样品或视频看厂 → 人工接手给适配报价，不再自动追问。
+ * 注意：v4 起不再“答了 2 轮就转人工”——客户没给具体需求之前继续一轮一问地挖，
+ * 直到判精准或追问到上限（maxQualifyRounds，默认 6 轮）才转人工。
  * 返回原因字符串，不满足返回 null。
  */
 function catalogHandoffReason(signals, rounds) {
   const s = signals || {};
   if (s.quantityGiven) return '客户已报采购量，转人工给适配报价';
   if (s.wantsSampleOrTour) return '客户要样品或视频看厂，转人工';
-  if (Number(rounds) >= 2) return '客户已回答 2 轮问题，转人工跟进';
   return null;
+}
+
+/** 已挖到的信息摘要：追问到上限转人工时附上，让人工一眼看到客户已给过什么，不丢信息 */
+function summarizeDugUp(verdict) {
+  const v = verdict || {};
+  const s = v.signals || {};
+  const bits = [];
+  if (s.productSpecific) bits.push('产品已具体');
+  if (s.quantityGiven) bits.push('已报采购量');
+  if (s.destinationGiven) bits.push('目的国已给');
+  if (s.tradeTerms) bits.push('贸易条款已提');
+  if (['explicit', 'inferred'].includes(String(s.importExperience || ''))) bits.push('有中国进口经验');
+  if (s.buyerRole && s.buyerRole !== 'unknown') bits.push('角色：' + s.buyerRole);
+  if (v.purpose && v.purpose !== 'other') bits.push('目的：' + v.purpose);
+  if (v.evidence) bits.push('依据：' + String(v.evidence).slice(0, 200));
+  return bits.length ? bits.join('；') : '暂无已挖到的具体信息';
 }
 
 /**
@@ -205,7 +222,7 @@ function decideQualification(verdict, current, cfg) {
   const riskFlags = normalizeRiskFlags(verdict.riskFlags);
   const signals = verdict.signals || {};
   const rounds = Number((current && current.ask_rounds) || 0);
-  const maxRounds = Number((cfg && cfg.maxQualifyRounds) || 2);
+  const maxRounds = Number((cfg && cfg.maxQualifyRounds) || 6);
   const minHigh = Number((cfg && cfg.minHighConfidence) || 0.78);
   const minLow = Number((cfg && cfg.minLowConfidence) || 0.85);
 
@@ -240,12 +257,12 @@ function decideQualification(verdict, current, cfg) {
     if (purpose === 'catalog') {
       const handoff = catalogHandoffReason(signals, rounds);
       if (handoff) {
-        return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, reason: handoff };
+        return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, notify: true, reason: handoff };
       }
       if (rounds < maxRounds) {
         return { action: 'ask', status: 'pending', precision, purpose, confidence, riskFlags, ask_rounds: rounds + 1, reason: '要目录的新客户不直接发全套，追问第 ' + (rounds + 1) + ' 轮' };
       }
-      return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, reason: '追问 ' + maxRounds + ' 轮仍无法判定，转人工' };
+      return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, notify: true, reason: '追问 ' + maxRounds + ' 轮，客户已给具体需求，转人工给适配报价｜已挖到：' + summarizeDugUp(verdict) };
     }
     return { action: 'send_material', status: 'qualified', precision, purpose, confidence, riskFlags, reason: '高置信度，按目的分发素材' };
   }
@@ -259,8 +276,8 @@ function decideQualification(verdict, current, cfg) {
     }
     return { action: 'ask', status: 'pending', precision, purpose, confidence, riskFlags, ask_rounds: rounds + 1, reason: '信息不足，追问第 ' + (rounds + 1) + ' 轮' };
   }
-  // 追问到上限仍不明 → 转人工
-  return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, reason: '追问 ' + maxRounds + ' 轮仍无法判定，转人工' };
+  // 追问到上限仍不明 → 转人工，附上已挖到的信息摘要（不丢信息；这类客户没给具体需求，不弹强通知）
+  return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, reason: '追问 ' + maxRounds + ' 轮仍无法判定，转人工｜已挖到：' + summarizeDugUp(verdict) };
 }
 
 /** 已精准客户的状态：后续消息直接发素材，不再重复判定（除非人工在CRM改了置顶） */
@@ -285,5 +302,5 @@ function parseVerdict(text) {
 module.exports = {
   isPinned, humanReplied, isSensitive, isCoolingDown, quotaExceeded, chooseDecision,
   normalizePrecision, normalizePurpose, normalizeConfidence, normalizeRiskFlags, hasBlockingRisk, strongSignalCount, HARD_STOP_RE, decideQualification, isQualified, parseVerdict,
-  parseTs, silenceHours, isRefusal, followupDue, catalogHandoffReason,
+  parseTs, silenceHours, isRefusal, followupDue, catalogHandoffReason, summarizeDugUp,
 };

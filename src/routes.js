@@ -1041,6 +1041,37 @@ function registerRoutes(app, router) {
     ctx.res.json(200, { status: v.status, phone: v.account ? v.account.phone : '', error: v.error });
   });
 
+  // 强弹窗通知：客户给出具体需求转人工时，自动回复 worker 调这里写一条，
+  // 前端每 25 秒轮询未读列表，右下角弹窗提醒人工跟进。
+  router.post('/api/notifications', (ctx) => {
+    const type = String(ctx.body.type || 'qualified_handoff').slice(0, 40);
+    const title = String(ctx.body.title || '').trim().slice(0, 200);
+    const body = String(ctx.body.body || '').trim().slice(0, 2000);
+    const link = String(ctx.body.link || '').trim().slice(0, 500);
+    const chatKey = String(ctx.body.chat_key || '').trim().slice(0, 120);
+    if (!title) return ctx.res.json(400, { ok: false, error: '通知标题不能为空' });
+    if (!link.startsWith('/')) return ctx.res.json(400, { ok: false, error: '跳转链接不合法' });
+    // 24 小时内同一会话同类未读通知只留一条，避免重复弹窗刷屏
+    const dup = get(`SELECT id FROM notifications WHERE user_id=? AND type=? AND link=? AND is_read=0
+      AND created_at>=datetime('now','localtime','-24 hours') ORDER BY id DESC LIMIT 1`, ctx.user.id, type, link);
+    if (dup) return ctx.res.json(200, { ok: true, id: dup.id, duplicate: true });
+    const r = run('INSERT INTO notifications(user_id,type,title,body,link,chat_key,is_read,created_at) VALUES(?,?,?,?,?,?,0,?)',
+      ctx.user.id, type, title, body, link, chatKey, nowStr());
+    ctx.res.json(200, { ok: true, id: Number(r.lastInsertRowid) });
+  });
+
+  router.get('/api/notifications', (ctx) => {
+    const unreadOnly = String(ctx.query.unread || '') === '1';
+    const rows = all(`SELECT id,type,title,body,link,chat_key,created_at FROM notifications WHERE user_id=? ${unreadOnly ? 'AND is_read=0' : ''} ORDER BY id DESC LIMIT 20`, ctx.user.id);
+    const unread = (get('SELECT COUNT(*) c FROM notifications WHERE user_id=? AND is_read=0', ctx.user.id) || {}).c || 0;
+    ctx.res.json(200, { ok: true, notifications: rows, unread });
+  });
+
+  router.post('/api/notifications/:id/read', (ctx) => {
+    run('UPDATE notifications SET is_read=1, read_at=? WHERE id=? AND user_id=?', nowStr(), ctx.params.id, ctx.user.id);
+    ctx.res.json(200, { ok: true });
+  });
+
   router.get('/api/wa/poll', (ctx) => {
     const chat = visibleChat(ctx.query.chat_id, ctx.user.id);
     const after = parseInt(ctx.query.after, 10) || 0;

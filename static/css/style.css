@@ -1801,3 +1801,17 @@ a:hover { color: #c18bff; }
 @media (min-width: 1200px) {
   body.page-wa .wa-inbox.wa-3col { grid-template-columns: minmax(245px, .22fr) minmax(430px, .43fr) minmax(330px, .35fr); }
 }
+
+/* 右下角强弹窗：客户给出具体需求转人工（常驻，直到点“知道了”才消失） */
+.notify-toast-stack { position: fixed; right: 18px; bottom: 18px; z-index: 1080; display: flex; flex-direction: column-reverse; gap: 12px; width: min(380px, calc(100vw - 36px)); }
+.notify-toast { background: #1e1e2e; border: 2px solid #a855f7; border-radius: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, .55), 0 0 0 1px rgba(168, 85, 247, .35); color: #f1f1f8; padding: 14px 16px; animation: notifyToastIn .25s ease-out; }
+@keyframes notifyToastIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.notify-toast-head { display: flex; align-items: center; gap: 6px; color: #d5b1f4; font-size: 12px; font-weight: 700; }
+.notify-toast-head .bi { color: #a855f7; }
+.notify-toast-time { margin-left: auto; color: #aa9bb9; font-weight: 400; font-size: 11px; }
+.notify-toast-title { margin-top: 6px; font-size: 15px; font-weight: 700; line-height: 1.4; }
+.notify-toast-body { margin-top: 4px; font-size: 13px; line-height: 1.6; color: #d5d2e0; word-break: break-word; }
+.notify-toast-actions { display: flex; gap: 8px; margin-top: 12px; }
+.notify-toast-go { background: linear-gradient(135deg, #7c3aed, #a855f7); border: 0; color: #fff; font-weight: 700; flex: 1; }
+.notify-toast-go:hover { color: #fff; filter: brightness(1.1); }
+.notify-toast-ok { flex: 1; }

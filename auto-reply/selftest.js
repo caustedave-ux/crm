@@ -237,7 +237,7 @@ t('要目录的新客户报了采购量 → 转人工', () => {
   const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { quantityGiven: true } }, null, cfg2);
   assert.strictEqual(d.action, 'hold'); assert.strictEqual(d.status, 'review');
 });
-t('要目录的新客户答了 2 轮 → 转人工', () => {
+t('要目录的新客户答了 2 轮（上限 2 的旧配置）→ 到上限转人工', () => {
   const d = L.decideQualification({ precision: 'unknown', purpose: 'catalog', confidence: 0.3, signals: {} }, { ask_rounds: 2 }, cfg2);
   assert.strictEqual(d.action, 'hold'); assert.strictEqual(d.status, 'review');
 });
@@ -276,7 +276,7 @@ t('DeepSeek 网络错误至少重试 3 次', () => assert.strictEqual(Number(cfg
 t('AI 调用包含重试循环', () => assert(qualify.includes('for (let attempt = 1; attempt <= attempts; attempt++)') && qualify.includes('lastError')));
 t('追问规则禁止重复已知信息', () => assert(qualify.includes('已知信息不要重复询问')));
 t('中国采购经验可构成高精准证据', () => assert(qualify.includes('明确或可可靠推断从中国采购过')));
-t('资格追问最多 3 轮', () => assert.strictEqual(Number(cfg.qualify.maxQualifyRounds), 3));
+t('资格追问最多 6 轮', () => assert.strictEqual(Number(cfg.qualify.maxQualifyRounds), 6));
 t('回复采用自然 WhatsApp 销售口吻', () => assert(qualify.includes('像真实外贸业务员在 WhatsApp 上聊天') && qualify.includes('每次只问 1 个最关键的问题')));
 t('回复禁止模板式连续确认', () => assert(qualify.includes('不要写“为了准确报价请确认以下内容”')));
 
@@ -309,5 +309,86 @@ t('挑款按 positioning 字段，不按材质推断', () => {
 });
 t('qualify 接入破冰打法并能生成跟进', () => assert(qualify.includes('icebreakers.md') && qualify.includes('generateFollowup') && qualify.includes('icebreakerLines')));
 t('判定提示词按场景只取 1–2 条打法', () => assert(qualify.includes('icebreakerLines(sceneOfText(ctx.customerText), 2)')));
+
+console.log('== v3.0 挖到具体需求才转人工 + 强弹窗通知 ==');
+const cfg6 = { maxQualifyRounds: 6, minHighConfidence: 0.82, minLowConfidence: 0.85 };
+const layout = fs.readFileSync(path.join(__dirname, '..', 'src', 'views', 'layout.js'), 'utf8');
+const db = fs.readFileSync(path.join(__dirname, '..', 'src', 'db.js'), 'utf8');
+t('答了 2 轮不再转人工（上限 6）→ 继续追问', () => {
+  const d = L.decideQualification({ precision: 'unknown', purpose: 'catalog', confidence: 0.3, signals: {} }, { ask_rounds: 2 }, cfg6);
+  assert.strictEqual(d.action, 'ask');
+  assert.strictEqual(d.ask_rounds, 3);
+});
+t('catalogHandoffReason 不再按轮数转人工', () => {
+  assert.strictEqual(L.catalogHandoffReason({}, 5), null);
+  assert.strictEqual(L.catalogHandoffReason({ quantityGiven: true }, 0), '客户已报采购量，转人工给适配报价');
+  assert.strictEqual(L.catalogHandoffReason({ wantsSampleOrTour: true }, 0), '客户要样品或视频看厂，转人工');
+});
+t('问到第 5 轮仍不足 → 追问第 6 轮', () => {
+  const d = L.decideQualification({ precision: 'unknown', purpose: 'catalog', confidence: 0.3, signals: {} }, { ask_rounds: 5 }, cfg6);
+  assert.strictEqual(d.action, 'ask');
+  assert.strictEqual(d.ask_rounds, 6);
+});
+t('问满 6 轮仍不明 → 转人工并附已挖到的信息摘要', () => {
+  const d = L.decideQualification({ precision: 'unknown', purpose: 'catalog', confidence: 0.3, signals: { productSpecific: true, destinationGiven: true } }, { ask_rounds: 6 }, cfg6);
+  assert.strictEqual(d.action, 'hold');
+  assert.strictEqual(d.status, 'review');
+  assert.ok(d.reason.includes('已挖到'));
+  assert.ok(d.reason.includes('产品已具体'));
+  assert.ok(d.reason.includes('目的国已给'));
+});
+t('已挖信息摘要：空信号 → 暂无', () => {
+  assert.strictEqual(L.summarizeDugUp({ signals: {}, evidence: '' }), '暂无已挖到的具体信息');
+});
+t('已挖信息摘要：带证据', () => {
+  const s = L.summarizeDugUp({ signals: { quantityGiven: true, importExperience: 'explicit' }, evidence: '客户说要 500 箱' });
+  assert.ok(s.includes('已报采购量'));
+  assert.ok(s.includes('有中国进口经验'));
+  assert.ok(s.includes('客户说要 500 箱'));
+});
+t('要目录判精准 + 报采购量 → 转人工且弹强通知', () => {
+  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { quantityGiven: true } }, null, cfg6);
+  assert.strictEqual(d.action, 'hold');
+  assert.strictEqual(d.notify, true);
+});
+t('要目录判精准 + 问满 6 轮 → 转人工且弹强通知', () => {
+  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { productSpecific: true } }, { ask_rounds: 6 }, cfg6);
+  assert.strictEqual(d.action, 'hold');
+  assert.strictEqual(d.notify, true);
+  assert.ok(d.reason.includes('已挖到'));
+});
+t('问满 6 轮仍不明（没给具体需求）→ 转人工但不弹强通知', () => {
+  const d = L.decideQualification({ precision: 'unknown', purpose: 'other', confidence: 0.25 }, { ask_rounds: 6 }, cfg6);
+  assert.strictEqual(d.action, 'hold');
+  assert.strictEqual(d.notify, undefined);
+});
+t('判定提示词写明挖到具体需求为止、最多 6 轮', () => {
+  assert(qualify.includes('挖到具体需求') && qualify.includes('最多 6 轮'));
+  assert(qualify.includes("PROMPT_VERSION = 'v2.4'"));
+});
+t('worker 有 notifyHandoff 且只在给出具体需求时调用', () => {
+  assert(worker.includes('notifyHandoff') && worker.includes("POST /api/notifications") && worker.includes('decision.notify'));
+  assert(worker.includes("type: 'qualified_handoff'"));
+  assert(worker.includes('/whatsapp/session?chat='));
+});
+t('主库有 notifications 表', () => {
+  assert(db.includes('CREATE TABLE IF NOT EXISTS notifications('));
+  assert(db.includes('idx_notifications_user_unread'));
+});
+t('通知接口齐全（写一条/查未读/标已读）', () => {
+  assert(routes.includes("router.post('/api/notifications'"));
+  assert(routes.includes("router.get('/api/notifications'"));
+  assert(routes.includes("router.post('/api/notifications/:id/read'"));
+  assert(routes.includes('24 小时内同一会话同类未读通知只留一条'));
+});
+t('布局有右下角弹窗轮询（25 秒、常驻、去跟进/知道了）', () => {
+  assert(layout.includes('notifyToastStack') && layout.includes('/api/notifications?unread=1'));
+  assert(layout.includes('setInterval(poll, 25000)'));
+  assert(layout.includes('去跟进') && layout.includes('知道了'));
+  assert(layout.includes("localStorage.getItem('crm_wa_sound')"));
+});
+t('铃铛下拉挂未读通知数', () => {
+  assert(layout.includes('客户给出具体需求') && layout.includes('notifUnread'));
+});
 
 if (!process.exitCode) console.log('\n全部 ' + pass + ' 项通过 ✓');

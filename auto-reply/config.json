@@ -45,8 +45,8 @@
   "qualify": {
     "enabled": true,
     "_enabled说明": "v2 资格判定总开关。true=先判精准再决定是否发素材；false=退回 v1 的简单回复模式。",
-    "maxQualifyRounds": 3,
-    "_maxQualifyRounds说明": "信息不足时最多追问几轮，超过转人工。自然聊天模式下默认 3，每轮只问一个关键问题。",
+    "maxQualifyRounds": 6,
+    "_maxQualifyRounds说明": "信息不足时最多追问几轮，超过转人工并附上已挖到的信息摘要。v4 起默认 6 轮：客户没给具体需求之前继续一轮一问地挖，不要答两轮就停；只有报采购量、要样品/视频看厂、或判精准（产品、数量、目的国、贸易条款等说清楚了）才提前转人工。",
     "materialsDir": "materials",
     "_materialsDir说明": "素材目录，相对本目录。把你提供的画册文件放这里（PDF/图片）。",
     "catalogFile": "",

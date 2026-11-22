@@ -365,6 +365,34 @@ function recordLog(row) {
     row.reason || '', row.draft || '', Number(row.messageCount) || 0, Number(row.fileCount) || 0, row.at || nowStr());
 }
 
+/**
+ * 客户给出具体需求转人工 → 给主系统写一条强弹窗通知（POST /api/notifications）。
+ * 只在“客户给出具体需求”这类转人工事件调用（decision.notify 为真，或素材环节的高精准转人工）；
+ * 低精准、风险拦截、到上限仍未给具体需求的转人工不弹。尽力而为：失败只记日志，绝不阻塞主流程。
+ * 服务端 24 小时内同一会话同类未读通知只留一条，重复触发不会刷屏。
+ */
+async function notifyHandoff(chat, chatKey, reason, evidence) {
+  if (!chat) return;
+  try {
+    const name = chat.name || chat.phone || chat.jid || '';
+    const body = [reason, evidence].filter(Boolean).join('｜').slice(0, 500);
+    const r = await apiPostForm('/api/notifications', {
+      type: 'qualified_handoff',
+      title: '客户给出具体需求：' + name,
+      body,
+      link: '/whatsapp/session?chat=' + encodeURIComponent(chat.id),
+      chat_key: chatKey,
+    });
+    if (r.status === 200 && r.body && r.body.ok) {
+      log('INFO', '已通知人工跟进 ' + name + (r.body.duplicate ? '（24小时内已有未读通知，未重复建）' : ''));
+    } else {
+      log('WARN', '写通知失败 ' + name + '：HTTP ' + r.status);
+    }
+  } catch (e) {
+    log('WARN', '写通知异常：' + (e && e.message));
+  }
+}
+
 /* ---------------- 单个会话处理 ---------------- */
 async function processChat(item) {
   const chatKey = item.account_id + ':' + item.chat_jid;
@@ -509,6 +537,8 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
   if (decision.action === 'hold') {
     recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason: decision.reason + '｜' + verdict.evidence, draft: verdict.reply });
     log('WARN', name + '：' + decision.reason);
+    // 客户给出具体需求才弹强通知（decision.notify 为真）；低精准/风险/挖满 6 轮仍不明的不弹
+    if (decision.notify) await notifyHandoff(chat, chatKey, decision.reason, verdict.evidence);
     return;
   }
   if (decision.action === 'ask') {
@@ -525,12 +555,14 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
   if (cfg.qualify.sendMaterialPackage && material.fallback && !material.files.length) {
     recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason: '客户要报价但 materials 中没有报价文件，转人工补正式报价', draft: verdict.reply });
     log('WARN', name + '：缺报价文件，未发送');
+    await notifyHandoff(chat, chatKey, '客户要报价但 materials 中没有报价文件，转人工补正式报价', verdict.evidence);
     return;
   }
   const materialLimit = Number(cfg.qualify.dailyMaterialPackages) || 0;
   if (material.files.length && materialLimit > 0 && materialPackagesToday() >= materialLimit) {
     recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason: '今日素材包数量已达上限 ' + materialLimit + '，转人工处理', draft: verdict.reply });
     log('WARN', name + '：今日素材包额度已用尽，转人工');
+    await notifyHandoff(chat, chatKey, '今日素材包数量已达上限 ' + materialLimit + '，转人工处理', verdict.evidence);
     return;
   }
   const plannedFileCount = cfg.qualify.sendMaterialPackage ? material.files.length : 0;
@@ -538,6 +570,7 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
   if (plannedFileCount && fileLimit > 0 && filesSentToday() + plannedFileCount > fileLimit) {
     recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason: '今日文件发送额度不足：计划 ' + plannedFileCount + ' 个，已发 ' + filesSentToday() + '，上限 ' + fileLimit, draft: verdict.reply });
     log('WARN', name + '：今日文件额度不足，转人工');
+    await notifyHandoff(chat, chatKey, '今日文件发送额度不足，转人工处理', verdict.evidence);
     return;
   }
   const materialKey = 'material_sent:' + chatKey + ':' + material.kind;
@@ -555,6 +588,7 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
   if (!sends.length) {
     recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason: '判定精准但无可用素材（materials 目录为空），待人工补素材' });
     log('WARN', name + '：判定精准但 materials 目录没有可用素材，未发送');
+    await notifyHandoff(chat, chatKey, '判定精准但无可用素材（materials 目录为空），待人工补素材', verdict.evidence);
     return;
   }
   const delivered = await deliver(chat, chatKey, msgId, sends, caption, 'material:' + material.kind);
