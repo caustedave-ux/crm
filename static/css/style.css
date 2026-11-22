@@ -760,6 +760,17 @@ a:hover{color:var(--neo-coral);}
 .wa-ai-tab-panel{display:none;flex:1;min-height:0;overflow:auto;padding:12px;overscroll-behavior:contain;}
 .wa-ai-tab-panel.active{display:block;}
 .wa-ai-tab-panel[hidden]{display:none!important;}
+/* WhatsApp 右栏滚动条（2026-11-22）：原来用全站 8px 浅灰细条，在深色 AI 面板上
+   几乎看不见，用户找不到、拉不到底。改成深色紫色粗一点的滑块，平时就能看见。 */
+.page-wa .wa-ai-tab-panel{scrollbar-width:thin;scrollbar-color:#7c3aed #211a2d;}
+.page-wa .wa-ai-tab-panel::-webkit-scrollbar{width:10px;height:10px;}
+.page-wa .wa-ai-tab-panel::-webkit-scrollbar-track{background:#211a2d;}
+.page-wa .wa-ai-tab-panel::-webkit-scrollbar-thumb{background:#7c3aed;border-radius:999px;border:2px solid #211a2d;}
+.page-wa .wa-ai-tab-panel::-webkit-scrollbar-thumb:hover{background:#a855f7;}
+.page-wa .content::-webkit-scrollbar{width:10px;height:10px;}
+.page-wa .content::-webkit-scrollbar-track{background:#171725;}
+.page-wa .content::-webkit-scrollbar-thumb{background:#7c3aed;border-radius:999px;border:2px solid #171725;}
+.page-wa .content::-webkit-scrollbar-thumb:hover{background:#a855f7;}
 .wa-ai-section-title{display:flex;align-items:center;gap:7px;margin-bottom:9px;color:#e7dcf3;font-size:10px;font-weight:750;}
 .wa-ai-section-title>i{color:#bf7cff;}
 .wa-ai-context-label,.wa-ai-field-label{display:block;margin:11px 0 5px;color:#aa9bb8;font-size:9px;font-weight:700;}
@@ -819,7 +830,15 @@ a:hover{color:var(--neo-coral);}
     padding-bottom:16px;
     display:flex;
     flex-direction:column;
-    overflow:hidden;
+    /* 页面兜底滚动（2026-11-22）：原来 overflow:hidden 把整页锁死，
+       右栏内容超出视口时既看不到页面滚动条、也拉不到底。
+       改成纵向 auto：平时三栏各滚各的、页面不出现滚动条；
+       内容一旦超出视口高度，页面本身在最右边出现滚动条，能拉到底。
+       横向仍锁死，避免三栏被横向撑开。 */
+    overflow-x:hidden;
+    overflow-y:auto;
+    scrollbar-width:thin;
+    scrollbar-color:#7c3aed #171725;
   }
   .page-wa .content > .page-heading,
   .page-wa .content > .wa-account-details,
@@ -1497,7 +1516,12 @@ a:hover { color: #c18bff; }
 
 @media (min-width: 992px) {
   .page-wa .content > .wa-workbench-metrics { flex: 0 0 auto; }
-  .wa-inbox.wa-3col { flex: 1 1 auto; display: grid; grid-template-rows: minmax(0, 1fr); height: auto; }
+  .wa-inbox.wa-3col { flex: 1 1 auto; display: grid; grid-template-rows: minmax(0, 1fr); height: auto;
+    /* 网格最低高度（2026-11-22）：视口很矮时三栏会被 flex 压到内容最小高度以下，
+       里面的 overflow:hidden 直接裁掉输入框等内容，页面又报不出溢出、滑不动。
+       锁一个 420px 下限，压不下去时宁可让 .page-wa .content 纵向滚动（见上），
+       也不锁死。824px 高的常规窗口三栏约 560px，不受影响。 */
+    min-height: 420px; }
   .wa-inbox.wa-3col > .wa-left-column { grid-column: 1; grid-row: 1; }
   .wa-inbox.wa-3col > .wa-center-column { grid-column: 2; grid-row: 1; }
   .wa-inbox.wa-3col > .wa-right-column { grid-column: 3; grid-row: 1; }
