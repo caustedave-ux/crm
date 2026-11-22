@@ -153,10 +153,16 @@ async function waitReady(timeoutMs) {
     }
 
     const kbTitle = 'Knowledge CRUD Smoke ' + Date.now();
+    // “产品资料”类文章必须关联产品：取库里第一个产品，空库时造一个冒烟产品
+    let kbProduct = get('SELECT id FROM products ORDER BY id LIMIT 1');
+    if (!kbProduct) {
+      run('INSERT INTO products(name,model,status,created_at,updated_at) VALUES(?,?,?,?,?)', 'Smoke Product', 'SMOKE-1', '在售', '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+      kbProduct = get('SELECT id FROM products WHERE model=?', 'SMOKE-1');
+    }
     const kbCreate = await fetch(BASE + '/knowledge', {
       method: 'POST', redirect: 'manual',
       headers: { Cookie: 'crm_sid=' + TOKEN, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ title: kbTitle, category: '产品资料', tags: 'smoke', content: '# Internal test article' }),
+      body: new URLSearchParams({ title: kbTitle, category: '产品资料', tags: 'smoke', content: '# Internal test article', product_id: String(kbProduct.id) }),
     });
     const kbCreateLocation = kbCreate.headers.get('location') || '';
     const kbArticle = get('SELECT * FROM knowledge_articles WHERE title=?', kbTitle);

@@ -5,14 +5,15 @@ const { get } = require('../db');
 const APP_VERSION = require('../../package.json').version;
 
 // 2.0 导航：按图片架构（外贸AI客服工作台 2.0）。原有路由仍可直接访问，
-// 只是不再全部列在侧栏；产品/库存/供应商/物流/货款/单据模板等入口保留在
-// 工作台、订单管理与系统设置页内的快捷入口中。
+// 只是不再全部列在侧栏；库存/供应商/物流/货款/单据模板等入口保留在
+// 工作台、订单管理与系统设置页内的快捷入口中。产品管理已放回侧栏。
 const NAV = [
   { href: '/dashboard', key: 'dashboard', icon: 'bi-house', label: '工作台', section: '工作台' },
   { href: '/whatsapp/session', key: 'wa', icon: 'bi-whatsapp', label: 'WhatsApp' },
   { href: '/customers', key: 'customers', icon: 'bi-person', label: '客户管理', section: '客户与沟通' },
   { href: '/inquiries', key: 'inquiries', icon: 'bi-inbox', label: '询盘管理' },
   { href: '/quotes', key: 'quotes', icon: 'bi-tag', label: '报价管理', section: '报价与履约' },
+  { href: '/products', key: 'products', icon: 'bi-box-seam', label: '产品管理' },
   { href: '/documents', key: 'documents', icon: 'bi-file-earmark-text', label: '订单管理' },
   { href: '/followups', key: 'followups', icon: 'bi-check2-square', label: '跟进任务' },
   { href: '/knowledge', key: 'knowledge', icon: 'bi-journal-richtext', label: '知识库与 AI 助手', section: 'AI 与分析' },

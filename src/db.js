@@ -220,6 +220,22 @@ CREATE TABLE IF NOT EXISTS products(
   created_at TEXT,
   updated_at TEXT
 );
+CREATE TABLE IF NOT EXISTS product_categories(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  parent_id INTEGER,
+  sort_order INTEGER DEFAULT 0,
+  created_at TEXT,
+  updated_at TEXT
+);
+CREATE TABLE IF NOT EXISTS product_attachments(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  product_id INTEGER NOT NULL,
+  kind TEXT DEFAULT '图片',
+  title TEXT DEFAULT '',
+  file_path TEXT NOT NULL,
+  created_at TEXT
+);
 CREATE TABLE IF NOT EXISTS doc_templates(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   doc_type TEXT NOT NULL,
@@ -750,6 +766,41 @@ function migrate() {
   // 颜色模块：产品与供应产品均增加颜色字段（原产品 HS 编码在业务上改为颜色）
   ensureColumn('products', 'color', "TEXT DEFAULT ''");
   ensureColumn('supplier_products', 'color', "TEXT DEFAULT ''");
+  // 产品管理 × 知识库合并（2026-11-22）：products 为唯一事实源，知识库文章挂 product_id
+  ensureColumn('products', 'category_id', "INTEGER");
+  ensureColumn('products', 'material', "TEXT DEFAULT ''");
+  ensureColumn('products', 'finish', "TEXT DEFAULT ''");
+  ensureColumn('products', 'moq', "REAL DEFAULT 0");
+  ensureColumn('products', 'moq_unit', "TEXT DEFAULT 'PCS'");
+  ensureColumn('products', 'lead_time_days', "INTEGER DEFAULT 0");
+  ensureColumn('products', 'sample_lead_time_days', "INTEGER DEFAULT 0");
+  ensureColumn('products', 'status', "TEXT DEFAULT '在售'");
+  ensureColumn('products', 'specs', "TEXT DEFAULT '{}'");
+  ensureColumn('products', 'description', "TEXT DEFAULT ''");
+  ensureColumn('knowledge_articles', 'product_id', "INTEGER");
+  run('CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)');
+  run('CREATE INDEX IF NOT EXISTS idx_knowledge_articles_product ON knowledge_articles(product_id)');
+  run('CREATE INDEX IF NOT EXISTS idx_product_attachments_product ON product_attachments(product_id)');
+  // 初始产品分类（门锁五金）：仅首次为空时写入，用户可在产品管理里按需调整
+  try {
+    if (get('SELECT COUNT(*) c FROM product_categories').c === 0) {
+      const t = nowStr();
+      ['锁体', '把手', '锁芯', '合页', '其他'].forEach((name, i) => {
+        run('INSERT INTO product_categories(name,parent_id,sort_order,created_at,updated_at) VALUES(?,?,?, ?,?)', name, null, i + 1, t, t);
+      });
+    }
+  } catch (e) {}
+  // 删除针织服装示例文章：只删标题明确是服装的“产品资料”，且标题不含“锁”字；门锁五金文章不受影响
+  try {
+    const garment = all(`SELECT id,title FROM knowledge_articles WHERE category='产品资料' AND title NOT LIKE '%锁%' AND (
+      title LIKE '%针织%' OR title LIKE '%开衫%' OR title LIKE '%提花%' OR title LIKE '%毛衣%' OR
+      title LIKE '%卫衣%' OR title LIKE '%服装%' OR title LIKE '%Jacquard%' OR title LIKE '%Cardigan%' OR
+      title LIKE '%Knit%' OR title LIKE '%针织衫%' OR content LIKE '%提花开衫%')`);
+    for (const g of garment) {
+      run('DELETE FROM knowledge_articles WHERE id=?', g.id);
+      console.log('删除服装示例文章：', g.title);
+    }
+  } catch (e) {}
   ensureColumn('documents', 'remark_images', "TEXT DEFAULT ''");
   // 跟进历史数据回填所属账号（按创建人名称匹配，匹配不到归第一个管理员）
   try {

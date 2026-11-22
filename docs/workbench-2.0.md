@@ -10,7 +10,7 @@
 | 图 2 客户管理 | 客户详情 `src/views/pages_core.js` `customerDetailPage` | 加 AI 客户分析摘要：评级 85/100 高意向、当前阶段样品确认阶段、客户需求、未解决问题 3 项、最近报价、下一步行动 AI 建议、跟进提醒 11月21日 16:00；客户列表页标题显示真实人数，图片示例 128 人仅作对照。 |
 | 图 3 WhatsApp | WhatsApp `src/views/pages_wa.js` `sessionPage` | 三栏：左消息列表（全部/未读/待跟进/重点）、中聊天对话（客户头 + 5 个标签页：聊天对话/客户信息/跟进记录/文件资料/订单报价，中英文对照、PDF 附件）、右 AI 智能助手（智能回复/翻译工具/知识检索/快捷短语、需求分析、翻译建议、英文回复+中文翻译、引用知识、确认发送人工审核）。2026-11-21 按图 3 重修：顶部加 4 个统计卡，旧连接/自动回复/铺满块收起，右栏只放 AI 面板，底部加状态条。详见下面“WhatsApp 图 3 修复”。 |
 | 图 4 跟进与数据 | 工作台 `src/views/pages_core.js` `dashboardPage` | 顶部 4 卡 + 看板+漏斗：今日待跟进 12、高意向 8、待回复 28、本月成交额 $48,600（示例）；看板 新询盘 8 / 已联系 9 / 已报价 7 / 样品中 5 / 成交 7；转化漏斗 48→36→22→12→7（100%/75%/46%/25%/15%）；国家分布与 AI 跟进建议。 |
-| 图 5 知识库 | 知识库 `src/views/pages_knowledge.js` `knowledgePage` | 左分类、中 AI 助手对话、右检索结果与产品关键信息：提花开衫出口美国 MOQ/单价/交期问答、报价与起订量表、交期、美国合规要点、建议；产品关键信息 MOQ 50、交期、合规、参考单价；AI 判断可信度 96%。 |
+| 图 5 知识库 | 知识库 `src/views/pages_knowledge.js` `knowledgePage` | 左分类、中 AI 助手对话、右检索结果与产品关键信息：执手锁 LS-8801 出口美国 MOQ/单价/交期问答、报价与起订量表、交期、美国合规要点、建议；产品关键信息 MOQ 500、交期、合规、参考单价以产品管理为准；AI 判断可信度 96%。 |
 | 通用 | 整体主题/导航 | 深色紫色主题见 `static/css/style.css` 末尾 2.0 一节；导航与顶部栏见 `src/views/layout.js`；工作台顶部 4 卡见 `src/views/pages_workbench.js` `homePage`。 |
 
 ## 改了哪些文件
@@ -220,3 +220,44 @@ WhatsApp 页顶部原来有两块可折叠的设置区，占地方又和聊天�
 没动的地方：白色单据纸（`.doc-paper`）、打印页、PDF 导出的黑色文字是故意留白的，没动；WhatsApp 收到的消息气泡（#f1f3f5 底 + #212529 字）、`.text-bg-light` 徽章、图片占位符、`.wb-answer h6`（白卡片上的 #2f6fb0）都没动；布局、结构、路由、数据库均未改。
 
 验证（真实 Chromium 渲染，视口 1617×824；临时种子库 + 最小依赖桩，验证完已清）：逐元素算对比度，13 页（登录、仪表盘、工作台、地图、写开发信、客户、产品、报价、WhatsApp 会话、设置、知识库、统计、单据）从 28 处对比度 <3.0 降到 1 处，唯一 1 处是工作台标题渐变字（`color:transparent` + 背景裁剪渐变，审计误报，肉眼可见）。抽查值：表格字 #f1f1f8、登录/写开发信/设置 label #d5d2e0、地图国家名 #243149、星标面板 #191323 底 + #eee7f4 字 + #b9aec8 次要文字、描边按钮 success #4ade80 / danger #f87171、白纸 muted #6c757d。`npm run check` 全部通过（88 条），`npm run test:wa` 全部通过。
+
+## 产品管理 × 知识库产品资料合并（2026-11-22）
+
+背景：用户确认合并方案（见 `~/workspace/crm-product-merge-plan.md`，基线 3c725fd），并要求删除服装示例资料。原则：`products` 是唯一事实源，知识库文章是“挂在产品上的说明文字”，不再另抄一份规格价格；只借 GitHub 开源 PIM 的数据模型（UnoPim 属性族/变体、Akeneo 父子两级、Part-DB 附件），不装系统。
+
+### 数据库（`src/db.js`，启动迁移自动跑，老库自动升级）
+
+- 新建 `product_categories`（id/name/parent_id/sort_order）、`product_attachments`（id/product_id/kind/title/file_path）两张表；首次为空时写入初始分类：锁体、把手、锁芯、合页、其他。
+- `products` 加列：category_id、material、finish、moq、moq_unit（默认 PCS）、lead_time_days、sample_lead_time_days、status（默认“在售”）、specs（JSON，类别专属参数）、description；`knowledge_articles` 加列 product_id；补三个索引。
+- 删除服装示例文章（迁移里自动删）：只删 category='产品资料' 且标题含针织/开衫/提花/毛衣/卫衣/服装/Jacquard/Cardigan/Knit/针织衫、标题不含“锁”的文章，或正文含“提花开衫”的文章；门锁五金文章不受影响。知识库页顶部写死的提花开衫示例问答同步换成执手锁 LS-8801 示例（材质 304 不锈钢拉丝、MOQ 500 PCS、交期 15 天）。
+
+### 数据迁移（`tools/migrate-products.js`，只出清单、不写库）
+
+- `node tools/migrate-products.js`：按品名/型号关键词给现有产品预分分类（锁体/把手/锁芯/合页/智能锁/门吸），扫描“产品资料”文章标题/正文命中某产品型号或品名即候选关联；输出控制台摘要 + `data/product-migration-suggestions.md`（建议分类、未分类、建议关联、未匹配四节）。分类与关联请人工确认后在页面里手工改，不要直接跑 SQL 写库。
+
+### 页面（`src/views/pages_core.js`、`src/views/pages_knowledge.js`、`src/views/layout.js`）
+
+- 产品详情页新增 `GET /products/:id`（`productDetailPage`）：5 个页签——资料（分类/材质/表面处理/MOQ/交期/状态/专属参数/描述/库存/供应商）、附件、关联知识条目、供应商报价（现有 `supplier_products` 挂接）、历史报价（现有 `quote_history`）。
+- 产品列表：加分类、材质、状态三个筛选下拉；列表加分类、MOQ、交期三列，状态非“在售”时品名旁挂徽章；品名链到详情页；筛选条件在芯片/排序/分页间保持。
+- 产品表单：加分类下拉、材质/表面处理（可填可选值：不锈钢/锌合金/铜/铝合金/铁；拉丝/镜面/电镀/喷涂/古铜/黑色）、MOQ 与单位、大货/打样交期、状态（在售/下架/停产）、产品描述；类别专属参数按所选分类动态显示（锁体：锁体尺寸/孔距/适用门厚/锁舌材质；把手：长度/孔距/管径；锁芯：长度/偏心距/钥匙数量；合页：尺寸/承重/开合角度），换分类已填值保留，提交时序列化为 specs JSON。
+- 附件：`POST /products/:id/attachments`（上传文件 ≤10MB，图片/PDF/Office，或填 /uploads/ 路径、http(s) 链接）与删除路由；`POST /products/:id/link-article` / `unlink-article`（取消关联只断开链接，文章保留）。
+- 知识库：文章列表与详情显示关联产品芯片（品名 + 型号，可点进产品详情）；按已关联产品筛选；新建/编辑时分类选“产品资料”必须选关联产品（表单 JS 控制必填 + 后端校验，其他分类不受影响）；从产品详情页“新建关联文章”会预填分类与产品。
+- 侧栏导航：“产品管理”放回侧栏（报价与履约分组，报价管理之下）。
+
+### AI 与引用（`src/aiContext.js`、`src/knowledgeBase.js`）
+
+- `buildContext` 的产品块改取结构化字段：分类、材质、表面处理、单价、MOQ、交期、状态、库存、进货价；规则里加“价格、MOQ、交期以结构化数据为准，知识库文章里的数字仅作参考，缺失项标‘待确认’，不编数字”。
+- `relevantArticles`：已关联产品的“产品资料”文章得分降权一半；`contextForQuestion` 与 `buildContext` 的知识块对已关联文章只取前 1500 字并标注“已关联产品，价格/MOQ/交期以产品管理为准”。
+
+### 导入导出（`src/routes.js`）
+
+- Excel 导入模板加列：分类、材质、表面处理、MOQ、MOQ单位、大货交期(天)、打样交期(天)、状态；示例行同步更新；填写说明加两行（分类按名称匹配，不存在进“未分类”；状态只能填在售/下架/停产）。导入时新列缺失按空处理、不报错；分类不存在不建分类、不报错。
+
+### 没动的地方
+
+- `supplier_products` 采购镜像与 `syncProductToSupplier` 同步逻辑不动；`product_variants` 变体表按方案放二期，本次未建；报价单、库存、WhatsApp 逻辑未改。
+
+### 待用户人工确认
+
+- 初始分类树（锁体/把手/锁芯/合页/其他）是否够用、要不要加“智能锁/门吸”等二级分类；材质、表面处理的可选项。
+- `data/product-migration-suggestions.md` 里的分类建议与文章关联建议，逐条确认后在页面里手工改。

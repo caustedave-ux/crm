@@ -37,7 +37,14 @@ const knowledgeBase = require('./knowledgeBase');
 
 const FLASH_SAFE = { success: 1, danger: 1, info: 1, warning: 1 };
 
-const PRODUCT_IMPORT_HEADERS = ['品名*', '英文品名', '规格型号', '颜色', '单位', '币种', '参考单价', '进货价', '产地', '当前库存', '库存预警值', '箱数', '装箱数', '单件体积(m³)', '单件重量(kg)', '备注', '图片'];
+const PRODUCT_IMPORT_HEADERS = ['品名*', '英文品名', '规格型号', '颜色', '单位', '币种', '参考单价', '进货价', '产地', '当前库存', '库存预警值', '箱数', '装箱数', '单件体积(m³)', '单件重量(kg)', '分类', '材质', '表面处理', 'MOQ', 'MOQ单位', '大货交期(天)', '打样交期(天)', '状态', '备注', '图片'];
+const PRODUCT_STATUSES = ['在售', '下架', '停产'];
+function normProductStatus(s) { const v = String(s || '').trim(); return PRODUCT_STATUSES.includes(v) ? v : '在售'; }
+function normProductSpecs(s) {
+  if (!s) return '{}';
+  if (typeof s === 'object') { try { return JSON.stringify(s); } catch (e) { return '{}'; } }
+  try { const o = JSON.parse(String(s)); return (o && typeof o === 'object') ? JSON.stringify(o) : '{}'; } catch (e) { return '{}'; }
+}
 
 function ok(ctx, msg, url) {
   ctx.app.setFlash(ctx.sessionToken, 'success', msg);
@@ -233,6 +240,7 @@ function registerRoutes(app, router) {
   router.get('/stock/product/:id/buyers', (ctx) => ctx.res.send(pagesCore.productBuyersPage(ctx)));
   router.get('/products/new', (ctx) => ctx.res.send(pagesCore.productFormPage(ctx)));
   router.get('/products/:id/edit', (ctx) => ctx.res.send(pagesCore.productFormPage(ctx)));
+  router.get('/products/:id', (ctx) => ctx.res.send(pagesCore.productDetailPage(ctx)));
   router.get('/documents', (ctx) => ctx.res.send(pagesDocs.documentsPage(ctx)));
   router.get('/documents/new', (ctx) => ctx.res.send(pagesDocs.documentFormPage(ctx)));
   router.get('/documents/:id', (ctx) => ctx.res.send(pagesDocs.documentDetailPage(ctx)));
@@ -1352,15 +1360,67 @@ function registerRoutes(app, router) {
       const np = copyUpload(p.image);
       if (np) img = np;
     }
-    const r = run('INSERT INTO products(name,name_en,model,color,unit,price,currency,origin,supplier_id,stock,stock_alert,cost_price,pcs_per_ctn,ctn_count,image,notes,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+    const r = run('INSERT INTO products(name,name_en,model,color,unit,price,currency,origin,supplier_id,stock,stock_alert,cost_price,pcs_per_ctn,ctn_count,image,notes,category_id,material,finish,moq,moq_unit,lead_time_days,sample_lead_time_days,status,specs,description,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       String(p.name || '') + '（副本）', String(p.name_en || '') + (p.name_en ? ' (Copy)' : ''), p.model || '', p.color || '',
       p.unit || 'PCS', Number(p.price) || 0, p.currency || 'USD', p.origin || '', p.supplier_id || null, 0, Number(p.stock_alert) || 0, Number(p.cost_price) || 0, Number(p.pcs_per_ctn) || 0, Number(p.ctn_count) || 0,
-      img, p.notes || '', t, t);
+      img, p.notes || '', parseInt(p.category_id, 10) || null, String(p.material || ''), String(p.finish || ''), Number(p.moq) || 0, String(p.moq_unit || 'PCS'), parseInt(p.lead_time_days, 10) || 0, parseInt(p.sample_lead_time_days, 10) || 0, String(p.status || '在售'), normProductSpecs(p.specs), String(p.description || ''), t, t);
     const nid = Number(r.lastInsertRowid);
     syncProductToSupplier(nid);
     const back = String(ctx.body.back || '');
     const dest = /^\/(?!\/)/.test(back) ? back.replace(/[\r\n]/g, '') : '/products';
     ok(ctx, '已复制为新产品（id=' + nid + '）：' + p.name + '（副本），库存已归零，请按需调整', dest);
+  });
+
+  // ---------- 产品附件 / 关联知识条目 ----------
+  router.post('/products/:id/attachments', (ctx) => {
+    const p = get('SELECT * FROM products WHERE id=?', ctx.params.id);
+    if (!p) return fail(ctx, '产品不存在', '/products');
+    const kind = String(ctx.body.kind || '图片').trim() || '图片';
+    const title = String(ctx.body.title || '').trim();
+    const filePath = String(ctx.body.file_path || '').trim();
+    const file = ctx.files && ctx.files.file;
+    let saved = '';
+    if (file && file.data && file.data.length) {
+      const ext = path.extname(String(file.filename || '')).toLowerCase().replace('.', '');
+      const okExt = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
+      if (!okExt.includes(ext)) return fail(ctx, '附件格式不支持（仅图片 / PDF / Office 文档）', '/products/' + p.id + '?tab=attachments');
+      if (file.data.length > 10 * 1024 * 1024) return fail(ctx, '附件请小于 10MB', '/products/' + p.id + '?tab=attachments');
+      const dir = path.join(__dirname, '..', 'uploads', 'attachments');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const fname = Date.now() + '-' + Math.floor(Math.random() * 100000) + '.' + (ext === 'jpeg' ? 'jpg' : ext);
+      fs.writeFileSync(path.join(dir, fname), file.data);
+      saved = '/uploads/attachments/' + fname;
+    } else if (filePath) {
+      if (!/^(\/uploads\/|https?:\/\/)/i.test(filePath)) return fail(ctx, '附件链接请填站内 /uploads/ 路径或 http(s) 网址', '/products/' + p.id + '?tab=attachments');
+      saved = filePath;
+    } else {
+      return fail(ctx, '请上传文件或填写附件链接', '/products/' + p.id + '?tab=attachments');
+    }
+    run('INSERT INTO product_attachments(product_id,kind,title,file_path,created_at) VALUES(?,?,?,?,?)',
+      p.id, kind, title || (file ? String(file.filename || '') : saved), saved, nowStr());
+    ok(ctx, '附件已添加', '/products/' + p.id + '?tab=attachments');
+  });
+  router.post('/products/:id/attachments/:aid/delete', (ctx) => {
+    const p = get('SELECT * FROM products WHERE id=?', ctx.params.id);
+    if (!p) return fail(ctx, '产品不存在', '/products');
+    run('DELETE FROM product_attachments WHERE id=? AND product_id=?', ctx.params.aid, p.id);
+    ok(ctx, '附件已删除', '/products/' + p.id + '?tab=attachments');
+  });
+  router.post('/products/:id/link-article', (ctx) => {
+    const p = get('SELECT * FROM products WHERE id=?', ctx.params.id);
+    if (!p) return fail(ctx, '产品不存在', '/products');
+    const articleId = parseInt(ctx.body.article_id, 10) || 0;
+    const article = articleId ? get('SELECT * FROM knowledge_articles WHERE id=?', articleId) : null;
+    if (!article) return fail(ctx, '请选择要关联的知识条目', '/products/' + p.id + '?tab=articles');
+    run('UPDATE knowledge_articles SET product_id=?,updated_at=? WHERE id=?', p.id, nowStr(), article.id);
+    ok(ctx, '已关联知识条目：' + article.title, '/products/' + p.id + '?tab=articles');
+  });
+  router.post('/products/:id/unlink-article', (ctx) => {
+    const p = get('SELECT * FROM products WHERE id=?', ctx.params.id);
+    if (!p) return fail(ctx, '产品不存在', '/products');
+    const articleId = parseInt(ctx.body.article_id, 10) || 0;
+    run('UPDATE knowledge_articles SET product_id=NULL,updated_at=? WHERE id=? AND product_id=?', nowStr(), articleId, p.id);
+    ok(ctx, '已取消关联（文章保留在知识库）', '/products/' + p.id + '?tab=articles');
   });
 
   // ---------- 历史报价 ----------
@@ -1709,13 +1769,17 @@ function registerRoutes(app, router) {
     const category = String(ctx.body.category || '').trim();
     const tags = String(ctx.body.tags || '').trim();
     const content = String(ctx.body.content || '').trim();
+    const productId = parseInt(ctx.body.product_id, 10) || null;
     if (!title || title.length > 180) return fail(ctx, '标题不能为空且不能超过180个字符', '/knowledge/new');
     if (!knowledgeBase.CATEGORIES.includes(category)) return fail(ctx, '请选择有效的知识分类', '/knowledge/new');
     if (!content || content.length > 60000) return fail(ctx, '正文不能为空且不能超过60000个字符', '/knowledge/new');
     if (tags.length > 500) return fail(ctx, '标签不能超过500个字符', '/knowledge/new');
+    // 产品资料必须关联一个产品：价格/MOQ/交期以产品管理为准，文章只写说明文字
+    if (category === '产品资料' && !productId) return fail(ctx, '“产品资料”请先关联一个产品（价格、MOQ、交期以产品管理为准）', '/knowledge/new');
+    if (productId && !get('SELECT id FROM products WHERE id=?', productId)) return fail(ctx, '关联的产品不存在', '/knowledge/new');
     const stamp = nowStr();
-    const result = run(`INSERT INTO knowledge_articles(title,category,tags,content,created_by,created_at,updated_at)
-      VALUES(?,?,?,?,?,?,?)`, title, category, tags, content, ctx.user.id, stamp, stamp);
+    const result = run(`INSERT INTO knowledge_articles(title,category,tags,content,product_id,created_by,created_at,updated_at)
+      VALUES(?,?,?,?,?,?,?,?)`, title, category, tags, content, productId, ctx.user.id, stamp, stamp);
     ok(ctx, '知识条目已保存', '/knowledge?article=' + Number(result.lastInsertRowid));
   });
   router.post('/knowledge/:id', (ctx) => {
@@ -1726,11 +1790,14 @@ function registerRoutes(app, router) {
     const category = String(ctx.body.category || '').trim();
     const tags = String(ctx.body.tags || '').trim();
     const content = String(ctx.body.content || '').trim();
+    const productId = parseInt(ctx.body.product_id, 10) || null;
     if (!title || title.length > 180) return fail(ctx, '标题不能为空且不能超过180个字符', '/knowledge/' + article.id + '/edit');
     if (!knowledgeBase.CATEGORIES.includes(category)) return fail(ctx, '请选择有效的知识分类', '/knowledge/' + article.id + '/edit');
     if (!content || content.length > 60000) return fail(ctx, '正文不能为空且不能超过60000个字符', '/knowledge/' + article.id + '/edit');
     if (tags.length > 500) return fail(ctx, '标签不能超过500个字符', '/knowledge/' + article.id + '/edit');
-    run('UPDATE knowledge_articles SET title=?,category=?,tags=?,content=?,updated_at=? WHERE id=?', title, category, tags, content, nowStr(), article.id);
+    if (category === '产品资料' && !productId) return fail(ctx, '“产品资料”请先关联一个产品（价格、MOQ、交期以产品管理为准）', '/knowledge/' + article.id + '/edit');
+    if (productId && !get('SELECT id FROM products WHERE id=?', productId)) return fail(ctx, '关联的产品不存在', '/knowledge/' + article.id + '/edit');
+    run('UPDATE knowledge_articles SET title=?,category=?,tags=?,content=?,product_id=?,updated_at=? WHERE id=?', title, category, tags, content, productId, nowStr(), article.id);
     ok(ctx, '知识条目已更新', '/knowledge?article=' + article.id);
   });
   router.post('/settings/ai', (ctx) => {
@@ -1967,13 +2034,15 @@ function registerRoutes(app, router) {
 
   // ---------- 产品 Excel 导入模板下载 ----------
   router.get('/api/products/template.xlsx', async (ctx) => {
-    const example = [['china door lock', '不锈钢门锁', 'CDL-100', '银色', 'PCS', 'USD', 2.85, 1.2, '中国 China', 500, 100, 50, 10, 0.012, 0.35, '示例行，导入前请删除', '']];
+    const example = [['china door lock', '不锈钢门锁', 'CDL-100', '银色', 'PCS', 'USD', 2.85, 1.2, '中国 China', 500, 100, 50, 10, 0.012, 0.35, '锁体', '不锈钢', '拉丝', 500, 'PCS', 15, 5, '在售', '示例行，导入前请删除', '']];
     const buf = await excel.buildXlsx([
       { name: '产品导入', headers: PRODUCT_IMPORT_HEADERS, rows: example },
       { name: '填写说明', headers: ['说明'], rows: [
         ['请保留第一行表头。品名必填；其余列可留空（留空表示不填写 / 不修改）。'],
         ['导入规则：按“规格型号(货号)”匹配已有产品——相同货号则更新该产品资料；货号留空时按品名匹配；都匹配不到则自动新建。'],
         ['单位可填 PCS / SET / PAIR / CTN / KGS / M；币种可填 USD / CNY / EUR 等；产地留空默认为“中国 China”。'],
+        ['分类请填系统里的分类名称（锁体 / 把手 / 锁芯 / 合页 / 其他），填了不存在的名称会进“未分类”，导入后在产品管理里再分；材质、表面处理可自由填写，常用：不锈钢 / 锌合金 / 铜 / 铝合金，拉丝 / 镜面 / 电镀 / 喷涂 / 古铜 / 黑色。'],
+        ['MOQ 为最低起订量（数字）；状态只能填 在售 / 下架 / 停产，留空默认为“在售”。'],
         ['图片列（最后一列）：两种方式任选——①把产品图片直接“插入”到该行图片列，表格里能看到图即可；②在该列填写图片所在路径或网址，例如 D:\\产品图\\CDL-100.jpg 或 https://xxx.com/a.jpg。'],
         ['图片只在导入时新增或替换：若该行没填图片，系统保留原有图片。整张表所有图片合计请控制在 20MB 以内。'],
       ] },
@@ -2075,6 +2144,8 @@ function registerRoutes(app, router) {
       const name = String(r['品名'] || '').trim();
       if (!name) { errors.push('第 ' + rowNo + ' 行缺少品名'); continue; }
       const model = cell(r, ['规格型号', '货号']);
+      const categoryName = cell(r, ['分类', '产品分类']);
+      const categoryId = categoryName ? (get('SELECT id FROM product_categories WHERE name=?', categoryName) || {}).id || null : null;
       const data = {
         name,
         name_en: cell(r, ['英文品名', '英文名称']),
@@ -2092,6 +2163,14 @@ function registerRoutes(app, router) {
         volume: toNum(cell(r, ['单件体积(m³)', '单件体积', '体积', '体积(m³)'])),
         weight: toNum(cell(r, ['单件重量(kg)', '单件重量', '重量', '重量(kg)'])),
         notes: cell(r, ['备注', '说明']),
+        category_id: categoryId,
+        material: cell(r, ['材质']),
+        finish: cell(r, ['表面处理']),
+        moq: toNum(cell(r, ['MOQ', '最低起订量', '起订量'])),
+        moq_unit: cell(r, ['MOQ单位', '起订量单位']) || 'PCS',
+        lead_time_days: toNum(cell(r, ['大货交期(天)', '大货交期', '交期(天)', '交期'])),
+        sample_lead_time_days: toNum(cell(r, ['打样交期(天)', '打样交期'])),
+        status: normProductStatus(cell(r, ['状态'])),
       };
       let exist = null;
       if (model) exist = get('SELECT * FROM products WHERE model=?', model);
@@ -2118,6 +2197,14 @@ function registerRoutes(app, router) {
         if (cell(r, ['单件体积(m³)', '单件体积', '体积', '体积(m³)'])) upd.volume = data.volume;
         if (cell(r, ['单件重量(kg)', '单件重量', '重量', '重量(kg)'])) upd.weight = data.weight;
         if (cell(r, ['备注', '说明'])) upd.notes = data.notes;
+        if (categoryName && categoryId) upd.category_id = categoryId;
+        if (cell(r, ['材质'])) upd.material = data.material;
+        if (cell(r, ['表面处理'])) upd.finish = data.finish;
+        if (cell(r, ['MOQ', '最低起订量', '起订量'])) upd.moq = data.moq;
+        if (cell(r, ['MOQ单位', '起订量单位'])) upd.moq_unit = data.moq_unit;
+        if (cell(r, ['大货交期(天)', '大货交期', '交期(天)', '交期'])) upd.lead_time_days = data.lead_time_days;
+        if (cell(r, ['打样交期(天)', '打样交期'])) upd.sample_lead_time_days = data.sample_lead_time_days;
+        if (cell(r, ['状态'])) upd.status = data.status;
         updateProduct(exist.id, Object.assign({}, exist, upd));
         pid = exist.id;
         updated++;
@@ -2653,10 +2740,10 @@ function syncPackStock(body) {
     body.stock = String(Math.round(per * ctn * 10000) / 10000);
 }function insertProduct(b) {
   const t = nowStr();
-  const r = run('INSERT INTO products(name,name_en,model,color,unit,price,currency,origin,supplier_id,stock,stock_alert,cost_price,pcs_per_ctn,ctn_count,volume,weight,notes,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+  const r = run('INSERT INTO products(name,name_en,model,color,unit,price,currency,origin,supplier_id,stock,stock_alert,cost_price,pcs_per_ctn,ctn_count,volume,weight,notes,category_id,material,finish,moq,moq_unit,lead_time_days,sample_lead_time_days,status,specs,description,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
     String(b.name || '').trim(), String(b.name_en || '').trim(), String(b.model || '').trim(), String(b.color || '').trim(),
     b.unit || 'PCS', parseFloat(b.price) || 0, b.currency || 'USD', String(b.origin || '').trim(), parseInt(b.supplier_id, 10) || null, parseFloat(b.stock) || 0, parseFloat(b.stock_alert) || 0, parseFloat(b.cost_price) || 0, parseFloat(b.pcs_per_ctn) || 0, parseFloat(b.ctn_count) || 0, parseFloat(b.volume) || 0, parseFloat(b.weight) || 0,
-    String(b.notes || '').trim(), t, t);
+    String(b.notes || '').trim(), parseInt(b.category_id, 10) || null, String(b.material || '').trim(), String(b.finish || '').trim(), parseFloat(b.moq) || 0, String(b.moq_unit || 'PCS').trim() || 'PCS', parseInt(b.lead_time_days, 10) || 0, parseInt(b.sample_lead_time_days, 10) || 0, normProductStatus(b.status), normProductSpecs(b.specs), String(b.description || '').trim(), t, t);
   const id = Number(r.lastInsertRowid);
   if (b.image_data) {
     const img = saveUpload(b.image_data, 'products');
@@ -2666,10 +2753,10 @@ function syncPackStock(body) {
   return id;
 }
 function updateProduct(id, b) {
-  run('UPDATE products SET name=?,name_en=?,model=?,color=?,unit=?,price=?,currency=?,origin=?,supplier_id=?,stock=?,stock_alert=?,cost_price=?,pcs_per_ctn=?,ctn_count=?,volume=?,weight=?,notes=?,updated_at=? WHERE id=?',
+  run('UPDATE products SET name=?,name_en=?,model=?,color=?,unit=?,price=?,currency=?,origin=?,supplier_id=?,stock=?,stock_alert=?,cost_price=?,pcs_per_ctn=?,ctn_count=?,volume=?,weight=?,notes=?,category_id=?,material=?,finish=?,moq=?,moq_unit=?,lead_time_days=?,sample_lead_time_days=?,status=?,specs=?,description=?,updated_at=? WHERE id=?',
     String(b.name || '').trim(), String(b.name_en || '').trim(), String(b.model || '').trim(), String(b.color || '').trim(),
     b.unit || 'PCS', parseFloat(b.price) || 0, b.currency || 'USD', String(b.origin || '').trim(), parseInt(b.supplier_id, 10) || null, parseFloat(b.stock) || 0, parseFloat(b.stock_alert) || 0, parseFloat(b.cost_price) || 0, parseFloat(b.pcs_per_ctn) || 0, parseFloat(b.ctn_count) || 0, parseFloat(b.volume) || 0, parseFloat(b.weight) || 0,
-    String(b.notes || '').trim(), nowStr(), id);
+    String(b.notes || '').trim(), parseInt(b.category_id, 10) || null, String(b.material || '').trim(), String(b.finish || '').trim(), parseFloat(b.moq) || 0, String(b.moq_unit || 'PCS').trim() || 'PCS', parseInt(b.lead_time_days, 10) || 0, parseInt(b.sample_lead_time_days, 10) || 0, normProductStatus(b.status), normProductSpecs(b.specs), String(b.description || '').trim(), nowStr(), id);
   if (b.image_data) {
     const img = saveUpload(b.image_data, 'products');
     if (img) run('UPDATE products SET image=? WHERE id=?', img, id);

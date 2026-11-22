@@ -47,11 +47,16 @@ function listArticles(options) {
   const opts = options || {};
   const query = String(opts.query || '').trim().slice(0, 120);
   const category = CATEGORIES.includes(String(opts.category || '')) ? String(opts.category) : '';
+  const productId = parseInt(opts.product_id, 10) || 0;
   const where = [];
   const params = [];
   if (category) {
     where.push('a.category=?');
     params.push(category);
+  }
+  if (productId) {
+    where.push('a.product_id=?');
+    params.push(productId);
   }
   if (query) {
     const terms = query.split(/\s+/).filter(Boolean).slice(0, 8);
@@ -61,15 +66,17 @@ function listArticles(options) {
       params.push(like, like, like);
     }
   }
-  return all(`SELECT a.*,u.display_name AS author_name
+  return all(`SELECT a.*,u.display_name AS author_name,p.name AS product_name,p.model AS product_model
     FROM knowledge_articles a LEFT JOIN users u ON u.id=a.created_by
+    LEFT JOIN products p ON p.id=a.product_id
     ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
     ORDER BY a.updated_at DESC,a.id DESC LIMIT 300`, ...params);
 }
 
 function getArticle(id) {
-  return get(`SELECT a.*,u.display_name AS author_name
-    FROM knowledge_articles a LEFT JOIN users u ON u.id=a.created_by WHERE a.id=?`, id) || null;
+  return get(`SELECT a.*,u.display_name AS author_name,p.name AS product_name,p.model AS product_model
+    FROM knowledge_articles a LEFT JOIN users u ON u.id=a.created_by
+    LEFT JOIN products p ON p.id=a.product_id WHERE a.id=?`, id) || null;
 }
 
 function canEditArticle(article, user) {
@@ -99,7 +106,7 @@ function questionTerms(question) {
 function relevantArticles(question, limit) {
   const terms = questionTerms(question);
   if (!terms.length) return [];
-  const rows = all(`SELECT id,title,category,tags,content,updated_at
+  const rows = all(`SELECT id,title,category,tags,content,product_id,updated_at
     FROM knowledge_articles ORDER BY updated_at DESC,id DESC LIMIT 1000`);
   const ranked = rows.map(article => {
     const title = String(article.title || '').toLowerCase();
@@ -111,6 +118,9 @@ function relevantArticles(question, limit) {
       if (tags.includes(term)) score += term.length > 2 ? 6 : 3;
       if (content.includes(term)) score += term.length > 2 ? 2 : 1;
     }
+    // 已关联产品的“产品资料”降权一半：价格/MOQ/交期以 products 表为准，文章只作补充，
+    // 避免 AI 复述文章里的旧价；未关联的报价政策/工厂资料等不受影响。
+    if (score > 0 && article.category === '产品资料' && article.product_id) score *= 0.5;
     return { article, score };
   }).filter(item => item.score > 0);
   ranked.sort((a, b) => b.score - a.score || String(b.article.updated_at || '').localeCompare(String(a.article.updated_at || '')));
@@ -120,7 +130,8 @@ function relevantArticles(question, limit) {
 function contextForQuestion(question, limit) {
   return relevantArticles(question, limit).map(article => {
     const content = String(article.content || '').trim().slice(0, 5000);
-    return `【${article.category}｜${article.title}】\n${content}`;
+    const linkedNote = article.product_id ? '（已关联产品，价格/MOQ/交期以产品管理为准）' : '';
+    return `【${article.category}｜${article.title}】${linkedNote}\n${content}`;
   }).join('\n\n');
 }
 

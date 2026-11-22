@@ -1332,8 +1332,14 @@ function activityFormPage(ctx) {
 // ================= 产品 =================
 function productsPage(ctx) {
   const kw = ctx.query.search || '';
+  const catFilter = parseInt(ctx.query.category || '', 10) || 0;
+  const matFilter = String(ctx.query.material || '').trim();
+  const statusFilter = String(ctx.query.status || '').trim();
   const where = ['1=1']; const params = [];
   if (kw) { where.push('(name LIKE ? OR name_en LIKE ? OR model LIKE ? OR color LIKE ?)'); params.push('%' + kw + '%', '%' + kw + '%', '%' + kw + '%', '%' + kw + '%'); }
+  if (catFilter) { where.push('category_id=?'); params.push(catFilter); }
+  if (matFilter) { where.push('material LIKE ?'); params.push('%' + matFilter + '%'); }
+  if (statusFilter) { where.push("COALESCE(status,'在售')=?"); params.push(statusFilter); }
   let rows = all(`SELECT * FROM products WHERE ${where.join(' AND ')} ORDER BY id DESC`, ...params);
   const en = ctx.query.en || "";
   const sortParam = ctx.query.sort || "";
@@ -1357,6 +1363,14 @@ function productsPage(ctx) {
       return x.toLowerCase() < y.toLowerCase() ? -1 : 1;
     });
   }
+  const categories = all('SELECT * FROM product_categories ORDER BY sort_order, id');
+  const catName = {}; categories.forEach(c => { catName[c.id] = c.name; });
+  const materials = all("SELECT DISTINCT material FROM products WHERE material<>'' ORDER BY material").map(r => r.material);
+  const keepParams = (overrides) => {
+    const o = Object.assign({ sort: sortParam, en: en, search: kw, category: catFilter || '', material: matFilter, status: statusFilter }, overrides || {});
+    return Object.entries(o).filter(([, v]) => v !== '' && v !== undefined && v !== null).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&');
+  };
+  const baseQ = keepParams({});
   const allEn = all("SELECT name_en FROM products");
   const counts = {};
   allEn.forEach(function (p) { const k = normEn(p) || "__none__"; counts[k] = (counts[k] || 0) + 1; });
@@ -1369,7 +1383,8 @@ function productsPage(ctx) {
     const label = k === "" ? "全部" : (k === "__none__" ? "（未填英文品名）" : k);
     const cnt = k === "" ? allEn.length : counts[k];
     const active = (k === "" && en === "") || (k !== "" && en === k);
-    const url = "/products" + (k ? "?en=" + encodeURIComponent(k === "__none__" ? "__none__" : k) : "") + (kw ? "&search=" + encodeURIComponent(kw) : "");
+    const q = keepParams({ en: k });
+    const url = "/products" + (q ? "?" + q : "");
     return "<a class=\"btn btn-sm " + (active ? "btn-primary" : "btn-outline-secondary") + "\" href=\"" + url + "\">" + esc(label) + " (" + cnt + ")</a>";
   }).join(" ") + "</div>";
   const PAGE_SIZE = 15;
@@ -1378,10 +1393,10 @@ function productsPage(ctx) {
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const safePage = Math.min(curPage, pageCount);
   rows = rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-  const baseQ = (sortParam ? "sort=" + encodeURIComponent(sortParam) + "&" : "") + (en ? "en=" + encodeURIComponent(en === "__none__" ? "__none__" : en) : "") + (kw ? (en ? "&" : "") + "search=" + encodeURIComponent(kw) : "");
   const sortBarHtml = "<div class=\"d-flex gap-1 flex-wrap mb-2\">" + [["", "默认(按英文品名)"], ["stock_desc", "库存：高 → 低"], ["stock_asc", "库存：低 → 高"], ["low", "缺货优先"]].map(function (o) {
     const active = sortParam === o[0];
-    const url = "/products?" + (o[0] ? "sort=" + o[0] : "") + (o[0] && baseQ ? "&" + baseQ : (!o[0] && baseQ ? baseQ : ""));
+    const q = keepParams({ sort: o[0] });
+    const url = "/products" + (q ? "?" + q : "");
     return "<a class=\"btn btn-sm " + (active ? "btn-primary" : "btn-outline-secondary") + "\" href=\"" + url + "\">" + o[1] + "</a>";
   }).join(" ") + "</div>";
   const pagination = pageCount > 1 ? "<nav><ul class=\"pagination pagination-sm\">" + (function () {
@@ -1398,11 +1413,14 @@ function productsPage(ctx) {
       <div style="width:48px;height:48px;flex:0 0 48px;border-radius:8px;overflow:hidden;background:#f1f4f8;border:1px solid #e7ecf2;display:flex;align-items:center;justify-content:center">
         ${p.image ? `<img src="${esc(p.image)}" style="width:100%;height:100%;object-fit:cover" alt="">` : '<i class="bi bi-image text-secondary" style="font-size:18px"></i>'}
       </div>
-      <div><div class="fw-semibold"><a class="text-decoration-none" href="/stock/product/${p.id}/buyers">${esc(p.name)}</a></div>${p.name_en ? `<div class="text-muted small">${esc(p.name_en)}</div>` : ''}</div>
+      <div><div class="fw-semibold"><a class="text-decoration-none" href="/products/${p.id}">${esc(p.name)}</a>${p.status && p.status !== '在售' ? ` <span class="badge ${p.status === '停产' ? 'text-bg-danger' : 'text-bg-secondary'}">${esc(p.status)}</span>` : ''}</div>${p.name_en ? `<div class="text-muted small">${esc(p.name_en)}</div>` : ''}</div>
     </div></td>
     <td>${esc(p.model || '-')}</td>
+    <td>${esc(catName[p.category_id] || '未分类')}</td>
     <td class="text-center">${esc(p.color || '-')}</td>
     <td class="text-center">${esc(p.unit || 'PCS')}</td>
+    <td class="text-center">${Number(p.moq) ? numFmt(p.moq) + ' ' + esc(p.moq_unit || 'PCS') : '-'}</td>
+    <td class="text-center">${Number(p.lead_time_days) ? Number(p.lead_time_days) + ' 天' : '-'}</td>
     <td class="text-end">
       <div class="fw-bold">${numFmt(p.stock)} ${esc(p.unit || '')}</div>
       ${p.stock <= 0 ? '<span class="badge text-bg-danger">缺货</span>' : (p.stock <= (p.stock_alert || 0) ? '<span class="badge text-bg-warning">库存偏低</span>' : '<span class="badge text-bg-success">正常</span>')}
@@ -1424,7 +1442,7 @@ function productsPage(ctx) {
       <a class="btn btn-sm btn-outline-primary" href="/stock/product/${p.id}/buyers">客户采购</a> <a class="btn btn-sm btn-outline-primary" href="/quotes?product_id=${p.id}"><i class="bi bi-clock-history"></i> 历史报价</a> <a class="btn btn-sm btn-outline-primary" href="/products/${p.id}/edit?back=${encodeURIComponent(backTarget)}">编辑</a>
         <form class="d-inline" method="post" action="/products/${p.id}/copy"><input type="hidden" name="back" value="${esc(backTarget)}"><button class="btn btn-sm btn-outline-secondary" title="复制为新产品"><i class="bi bi-files"></i></button></form>
       <form class="d-inline" method="post" action="/products/${p.id}/delete" onsubmit="return confirm('确认删除该产品？')"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>
-    </td></tr>`).join('') || emptyRow(7, '没有产品，先去新建吧');
+    </td></tr>`).join('') || emptyRow(10, '没有产品，先去新建吧');
   const content = `
     ${pageHead('产品管理', '产品资料库（图片/货号/单价/进货价等），库存与流水请在「库存管理」查看', `<a class="btn btn-primary" href="/products/new"><i class="bi bi-plus-lg"></i> 新建产品</a>`)}
     ${card({ title: 'Excel 批量导入', body: `<div class="d-flex gap-2 flex-wrap align-items-center">
@@ -1446,12 +1464,15 @@ function productsPage(ctx) {
       <form class="row g-2 mb-3 align-items-center" method="get">
         <input type="hidden" name="en" value="${esc(en)}"><input type="hidden" name="sort" value="${esc(sortParam)}">
         <div class="col-md-4"><input class="form-control" name="search" value="${esc(kw)}" placeholder="搜索品名 / 型号 / 颜色"></div>
+        <div class="col-md-2"><select class="form-select" name="category" aria-label="按分类筛选"><option value="">全部分类</option>${categories.map(c => `<option value="${c.id}" ${catFilter === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></div>
+        <div class="col-md-2"><select class="form-select" name="material" aria-label="按材质筛选"><option value="">全部材质</option>${materials.map(m => `<option ${matFilter === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></div>
+        <div class="col-md-2"><select class="form-select" name="status" aria-label="按状态筛选"><option value="">全部状态</option>${['在售', '下架', '停产'].map(s => `<option ${statusFilter === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
         <div class="col-auto"><button class="btn btn-outline-primary"><i class="bi bi-search"></i> 搜索</button></div>
         <div class="col-auto"><a class="btn btn-outline-secondary" href="/products">重置</a></div>
         <div class="col-auto d-flex align-items-center gap-1"><span class="text-muted small">页码</span><select class="form-select form-select-sm" name="page" onchange="this.form.submit()" style="width:82px">${pageOptions}</select><span class="text-muted small">/ ${pageCount} 页</span></div>
       </form>
       <div class="table-responsive"><table class="table table-hover align-middle">
-        <thead><tr><th>产品名称</th><th>规格型号</th><th class="text-center">颜色</th><th class="text-center">单位</th><th class="text-end">库存</th><th class="text-end">进货价</th><th class="text-end">操作</th></tr></thead>
+        <thead><tr><th>产品名称</th><th>规格型号</th><th>分类</th><th class="text-center">颜色</th><th class="text-center">单位</th><th class="text-center">MOQ</th><th class="text-center">交期</th><th class="text-end">库存</th><th class="text-end">进货价</th><th class="text-end">操作</th></tr></thead>
         <tbody>${rowsHtml}</tbody></table></div>
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2"><span class="text-muted small">共 ${totalCount} 个产品 · 每页 15 · 第 ${safePage}/${pageCount} 页</span>${pagination}</div>` })}`;
   return page({ title: '产品管理', active: 'products', user: ctx.user, content, flash: ctx.flash() });
@@ -1464,6 +1485,17 @@ function productFormPage(ctx) {
   const action = p ? '/products/' + p.id + '/edit' : '/products/new';
   const backUrl = /^\/(?!\/)/.test(String(ctx.query.back || '')) ? String(ctx.query.back).replace(/[\r\n]/g, '') : '';
   const returnUrl = backUrl || '/products';
+  const categories = all('SELECT * FROM product_categories ORDER BY sort_order, id');
+  const SPEC_PRESETS = {
+    '锁体': [['锁体尺寸', '如 85mm'], ['孔距', '如 72mm'], ['适用门厚', '如 35-55mm'], ['锁舌材质', '如 不锈钢']],
+    '把手': [['长度', '如 128mm'], ['孔距', '如 96mm'], ['管径', '如 12mm']],
+    '锁芯': [['长度', '如 70mm'], ['偏心距', '如 30+10mm'], ['钥匙数量', '如 3把']],
+    '合页': [['尺寸', '如 4寸'], ['承重', '如 25kg'], ['开合角度', '如 180°']],
+    '其他': [['规格', ''], ['参数', '']],
+  };
+  let curSpecs = {};
+  try { curSpecs = JSON.parse(v.specs || '{}') || {}; } catch (e) { curSpecs = {}; }
+  if (!curSpecs || typeof curSpecs !== 'object' || Array.isArray(curSpecs)) curSpecs = {};
   const stockField = fld({ id: 'currentStock', label: '当前库存（自动计算）', name: 'stock', value: (p ? numFmt(v.stock) : ''), type: 'number', step: 'any', min: 0, readonly: true, help: '自动按：件数 × 装箱数 计算' });
   const syncStockScript = `<script>
     (function () {
@@ -1479,6 +1511,49 @@ function productFormPage(ctx) {
       per.addEventListener('input', sync);
       ctn.addEventListener('input', sync);
       sync();
+    })();
+  <\/script>`;
+  const specScript = `<script>
+    (function () {
+      var presets = ${JSON.stringify(SPEC_PRESETS)};
+      var catSel = document.getElementById('productCategory');
+      var box = document.getElementById('specFields');
+      var hidden = document.getElementById('specsJson');
+      if (!catSel || !box || !hidden) return;
+      var values = {};
+      try { values = JSON.parse(hidden.value || '{}') || {}; } catch (e) { values = {}; }
+      function catName() {
+        var opt = catSel.options[catSel.selectedIndex];
+        return opt ? opt.text : '其他';
+      }
+      function syncHidden() {
+        var out = {};
+        Object.keys(values).forEach(function (k) { if (String(values[k] || '').trim() !== '') out[k] = String(values[k]).trim(); });
+        hidden.value = JSON.stringify(out);
+      }
+      function build() {
+        var list = presets[catName()] || presets['其他'];
+        box.innerHTML = '';
+        list.forEach(function (kv) {
+          var key = kv[0], ph = kv[1];
+          var wrap = document.createElement('div');
+          wrap.className = 'col-md-3';
+          var lab = document.createElement('label');
+          lab.className = 'form-label';
+          lab.textContent = key;
+          var inp = document.createElement('input');
+          inp.className = 'form-control';
+          inp.placeholder = ph || '';
+          inp.value = values[key] || '';
+          inp.addEventListener('input', function () { values[key] = inp.value; syncHidden(); });
+          wrap.appendChild(lab);
+          wrap.appendChild(inp);
+          box.appendChild(wrap);
+        });
+        syncHidden();
+      }
+      catSel.addEventListener('change', build);
+      build();
     })();
   <\/script>`;
   const title = p ? '编辑产品' : '新建产品';
@@ -1514,6 +1589,14 @@ function productFormPage(ctx) {
             <div class="col-md-6">${fld({ label: '英文品名', name: 'name_en', value: v.name_en, placeholder: 'English Name' })}</div>
             <div class="col-md-3">${fld({ label: '规格型号', name: 'model', value: v.model })}</div>
             <div class="col-md-3">${fld({ label: '颜色', name: 'color', value: v.color, placeholder: '如 SS / 黑色 / 金色' })}</div>
+            <div class="col-md-3">${fld({ id: 'productCategory', label: '分类', name: 'category_id', value: v.category_id || '', type: 'select', options: [{ v: '', l: '未分类' }].concat(categories.map(c => ({ v: String(c.id), l: c.name }))) })}</div>
+            <div class="col-md-3"><label class="form-label" for="productMaterial">材质</label><input class="form-control" id="productMaterial" name="material" list="materialList" value="${esc(v.material || '')}" placeholder="如 不锈钢 / 锌合金"><datalist id="materialList"><option>不锈钢</option><option>锌合金</option><option>铜</option><option>铝合金</option><option>铁</option></datalist><div class="form-text">可直接填，不限于列表</div></div>
+            <div class="col-md-3"><label class="form-label" for="productFinish">表面处理</label><input class="form-control" id="productFinish" name="finish" list="finishList" value="${esc(v.finish || '')}" placeholder="如 拉丝 / 电镀"><datalist id="finishList"><option>拉丝</option><option>镜面</option><option>电镀</option><option>喷涂</option><option>古铜</option><option>黑色</option></datalist><div class="form-text">可直接填，不限于列表</div></div>
+            <div class="col-md-3">${fld({ label: 'MOQ（最低起订量）', name: 'moq', value: (p ? numFmt(v.moq) : ''), type: 'number', step: 'any', min: 0 })}</div>
+            <div class="col-md-3">${fld({ label: 'MOQ单位', name: 'moq_unit', value: v.moq_unit || 'PCS', type: 'select', options: ['PCS', 'SET', 'PAIR'].map(s => ({ v: s, l: s })) })}</div>
+            <div class="col-md-3">${fld({ label: '大货交期（天）', name: 'lead_time_days', value: (p ? v.lead_time_days : ''), type: 'number', step: '1', min: 0 })}</div>
+            <div class="col-md-3">${fld({ label: '打样交期（天）', name: 'sample_lead_time_days', value: (p ? v.sample_lead_time_days : ''), type: 'number', step: '1', min: 0 })}</div>
+            <div class="col-md-3">${fld({ label: '状态', name: 'status', value: v.status || '在售', type: 'select', options: ['在售', '下架', '停产'].map(s => ({ v: s, l: s })), help: '停产的产品不再进报价' })}</div>
             <div class="col-md-2">${fld({ label: '单位', name: 'unit', value: v.unit || 'PCS', options: ['PCS','SET','PAIR','CTN','KGS','M'].map(s => ({ v: s, l: s })), type: 'select' })}</div>
             <input type="hidden" name="origin" value="${esc(v.origin || '中国 China')}">
             <div class="col-md-3">${fld({ label: '进货价', name: 'cost_price', value: (p ? numFmt(v.cost_price) : ''), type: 'number', step: '0.001', min: 0, help: '采购/进货成本，可随时手动修改' })}</div>
@@ -1531,7 +1614,14 @@ function productFormPage(ctx) {
               <div class="form-text">支持 PNG / JPG，不超过 3MB；选择后自动预览，保存时生效。</div>
               ${clearBox}
             </div>
-            <div class="col-12">${fld({ label: '备注', name: 'notes', value: v.notes, help: '包装方式、起订量、可印Logo等' })}</div>
+            <div class="col-12">
+              <div class="form-label fw-semibold">类别专属参数</div>
+              <div id="specFields" class="row g-2"></div>
+              <input type="hidden" name="specs" id="specsJson" value='${esc(JSON.stringify(curSpecs))}'>
+              <div class="form-text">按所选分类显示对应参数（锁体：锁体尺寸/孔距；把手：长度/孔距；锁芯：长度/偏心距；合页：尺寸/承重）；换分类后已填的值会保留。</div>
+            </div>
+            <div class="col-12">${fld({ label: '产品描述', name: 'description', value: v.description, type: 'textarea', rows: 3, help: '中英双语销售文案，AI 回答和报价时引用；价格、MOQ、交期请填上面字段，不要写在这里' })}</div>
+            <div class="col-12">${fld({ label: '备注', name: 'notes', value: v.notes, help: '内部备注（包装方式、可印 Logo 等），不对外' })}</div>
             ${linkedSupHtml}
           </div>
         </div>
@@ -1539,6 +1629,7 @@ function productFormPage(ctx) {
       <div class="mt-4 d-flex gap-2"><button class="btn btn-primary"><i class="bi bi-check-lg"></i> 保存</button><a class="btn btn-outline-secondary" href="${returnUrl}">取消</a></div>
     </form>
     ${syncStockScript}
+    ${specScript}
     <script>
       document.getElementById('pImageFile').addEventListener('change', function () {
         const file = this.files && this.files[0];
@@ -1554,6 +1645,81 @@ function productFormPage(ctx) {
       });
     </script>` })}`;
   return page({ title, active: 'products', user: ctx.user, content, flash: ctx.flash() });
+}
+
+function productDetailPage(ctx) {
+  const p = get('SELECT p.*, c.name AS category_name FROM products p LEFT JOIN product_categories c ON c.id=p.category_id WHERE p.id=?', ctx.params.id);
+  if (!p) return notFoundPage(ctx, '产品不存在');
+  const tab = ['info', 'attachments', 'articles', 'suppliers', 'quotes'].includes(String(ctx.query.tab || '')) ? String(ctx.query.tab) : 'info';
+  const tabs = [['info', '资料'], ['attachments', '附件'], ['articles', '关联知识条目'], ['suppliers', '供应商报价'], ['quotes', '历史报价']];
+  const tabUrl = t => '/products/' + p.id + (t === 'info' ? '' : '?tab=' + t);
+  const tabsHtml = `<div class="d-flex gap-1 flex-wrap mb-3">${tabs.map(([k, label]) => `<a class="btn btn-sm ${tab === k ? 'btn-primary' : 'btn-outline-secondary'}" href="${tabUrl(k)}">${label}</a>`).join('')}</div>`;
+  const statusBadge = p.status === '停产' ? 'text-bg-danger' : (p.status === '下架' ? 'text-bg-secondary' : 'text-bg-success');
+  let tabHtml = '';
+  if (tab === 'info') {
+    let specs = {};
+    try { specs = JSON.parse(p.specs || '{}') || {}; } catch (e) { specs = {}; }
+    const specRows = Object.entries(specs).map(([k, v]) => `<tr><th style="width:160px">${esc(k)}</th><td>${esc(v)}</td></tr>`).join('');
+    const infoRows = [
+      ['分类', p.category_name || '未分类'], ['品名', p.name], ['英文品名', p.name_en || '-'], ['规格型号', p.model || '-'],
+      ['材质', p.material || '-'], ['表面处理', p.finish || '-'], ['颜色', p.color || '-'], ['单位', p.unit || 'PCS'],
+      ['参考单价', (p.currency || 'USD') + ' ' + numFmt(p.price)], ['进货价', (p.currency || 'USD') + ' ' + numFmt(p.cost_price)],
+      ['MOQ', Number(p.moq) ? numFmt(p.moq) + ' ' + (p.moq_unit || 'PCS') : '-'], ['大货交期', Number(p.lead_time_days) ? Number(p.lead_time_days) + ' 天' : '-'],
+      ['打样交期', Number(p.sample_lead_time_days) ? Number(p.sample_lead_time_days) + ' 天' : '-'],
+      ['状态', `<span class="badge ${statusBadge}">${esc(p.status || '在售')}</span>`],
+      ['库存', numFmt(p.stock) + ' ' + (p.unit || '') + '（预警 ' + numFmt(p.stock_alert) + '）'],
+      ['箱数 / 装箱数', (Number(p.pcs_per_ctn) || Number(p.ctn_count)) ? numFmt(p.pcs_per_ctn) + ' / ' + numFmt(p.ctn_count) : '-'],
+      ['单件体积 / 重量', (Number(p.volume) || Number(p.weight)) ? numFmt(p.volume) + ' m³ / ' + numFmt(p.weight) + ' kg' : '-'],
+      ['产地', p.origin || '-'], ['HS 编码', p.hs_code || '-'],
+    ];
+    tabHtml = `<div class="row g-3">
+      <div class="col-xl-3">${card({ title: '产品图片', body: `
+        ${p.image ? `<img src="${esc(p.image)}" alt="" style="width:100%;border-radius:10px;border:1px solid #dee2e6">` : '<div class="text-muted small">暂无图片，可在编辑页上传</div>'}
+        <div class="mt-3 d-grid gap-2"><a class="btn btn-outline-primary btn-sm" href="/products/${p.id}/edit">编辑产品</a><a class="btn btn-outline-secondary btn-sm" href="/stock/product/${p.id}/buyers">客户采购</a></div>` })}</div>
+      <div class="col-xl-9">
+        ${card({ title: '基本资料', body: `<div class="table-responsive"><table class="table table-sm align-middle mb-0"><tbody>${infoRows.map(([k, v]) => `<tr><th style="width:160px">${k}</th><td>${v}</td></tr>`).join('')}</tbody></table></div>` })}
+        ${specRows ? card({ title: '类别专属参数', body: `<div class="table-responsive"><table class="table table-sm align-middle mb-0"><tbody>${specRows}</tbody></table></div>` }) : ''}
+        ${p.description ? card({ title: '产品描述', body: `<div style="white-space:pre-wrap">${esc(p.description)}</div>` }) : ''}
+        ${p.notes ? card({ title: '内部备注', body: `<div class="small text-muted" style="white-space:pre-wrap">${esc(p.notes)}</div>` }) : ''}
+      </div>
+    </div>`;
+  } else if (tab === 'attachments') {
+    const atts = all('SELECT * FROM product_attachments WHERE product_id=? ORDER BY id DESC', p.id);
+    const attRows = atts.map(a => `<tr><td>${esc(a.kind || '图片')}</td><td>${esc(a.title || '-')}</td><td><a href="${esc(a.file_path)}" target="_blank" rel="noopener noreferrer">${esc(a.file_path)}</a></td><td class="text-muted small">${esc(String(a.created_at || '').slice(0, 16))}</td><td class="text-end"><form class="d-inline" method="post" action="/products/${p.id}/attachments/${a.id}/delete" onsubmit="return confirm('确认删除该附件？')"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form></td></tr>`).join('') || emptyRow(5, '还没有附件：产品图、尺寸图、检测报告、安装说明都可以挂在这里');
+    tabHtml = card({ title: '图片与附件', body: `
+      <form method="post" action="/products/${p.id}/attachments" enctype="multipart/form-data" class="row g-2 mb-3 align-items-end">
+        <div class="col-md-2"><label class="form-label">类型</label><select class="form-select" name="kind"><option>图片</option><option>尺寸图</option><option>检测报告</option><option>安装说明</option><option>证书</option></select></div>
+        <div class="col-md-3"><label class="form-label">标题</label><input class="form-control" name="title" placeholder="如：尺寸图 / SGS 报告" maxlength="120"></div>
+        <div class="col-md-4"><label class="form-label">上传文件（≤10MB）</label><input type="file" class="form-control" name="file"></div>
+        <div class="col-md-3"><label class="form-label">或填链接（/uploads/ 路径或网址）</label><input class="form-control" name="file_path" placeholder="/uploads/... 或 https://..."></div>
+        <div class="col-auto"><button class="btn btn-primary">添加附件</button></div>
+      </form>
+      <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>类型</th><th>标题</th><th>文件</th><th>添加时间</th><th class="text-end">操作</th></tr></thead><tbody>${attRows}</tbody></table></div>` });
+  } else if (tab === 'articles') {
+    const linked = all('SELECT * FROM knowledge_articles WHERE product_id=? ORDER BY updated_at DESC', p.id);
+    const linkRows = linked.map(a => `<tr><td><a href="/knowledge?article=${a.id}">${esc(a.title)}</a></td><td>${esc(a.category)}</td><td class="text-muted small">${esc(String(a.updated_at || '').slice(0, 10))}</td><td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="/knowledge/${a.id}/edit">编辑</a> <form class="d-inline" method="post" action="/products/${p.id}/unlink-article"><input type="hidden" name="article_id" value="${a.id}"><button class="btn btn-sm btn-outline-danger">取消关联</button></form></td></tr>`).join('') || emptyRow(4, '还没有关联的知识条目：把“怎么选、怎么装、注意事项”这类说明文字挂到这个产品上，价格/MOQ/交期以产品资料为准，不写进文章');
+    const unlinked = all("SELECT * FROM knowledge_articles WHERE category='产品资料' AND (product_id IS NULL OR product_id=0) ORDER BY updated_at DESC LIMIT 200");
+    tabHtml = card({ title: '关联知识条目', body: `
+      <form method="post" action="/products/${p.id}/link-article" class="row g-2 mb-3 align-items-end">
+        <div class="col-md-6"><label class="form-label">关联一篇“产品资料”文章</label><select class="form-select" name="article_id" required><option value="">— 请选择 —</option>${unlinked.map(a => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></div>
+        <div class="col-auto"><button class="btn btn-primary">关联</button></div>
+        <div class="col-auto"><a class="btn btn-outline-secondary" href="/knowledge/new?product_id=${p.id}&category=${encodeURIComponent('产品资料')}">新建关联文章</a></div>
+      </form>
+      <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>标题</th><th>分类</th><th>更新时间</th><th class="text-end">操作</th></tr></thead><tbody>${linkRows}</tbody></table></div>` });
+  } else if (tab === 'suppliers') {
+    const sps = all('SELECT sp.*, s.name AS supplier_name FROM supplier_products sp JOIN suppliers s ON s.id=sp.supplier_id WHERE sp.product_id=? ORDER BY s.name', p.id);
+    const spRows = sps.map(x => `<tr><td><a href="/suppliers/${x.supplier_id}">${esc(x.supplier_name)}</a></td><td>${esc(x.name)}${x.model ? '（' + esc(x.model) + '）' : ''}</td><td class="text-end">${esc(x.currency || 'CNY')} ${numFmt(x.price)}</td><td class="small">${esc(x.notes || '-')}</td><td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="/supplier-products/${x.id}/edit">编辑</a></td></tr>`).join('') || emptyRow(5, '还没有供应商报价：到「供应商 → 添加/编辑供应产品」里选择“对应我方产品”即可挂接');
+    tabHtml = card({ title: '供应商报价', body: `<div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>供应商</th><th>供应产品</th><th class="text-end">报价</th><th>备注</th><th class="text-end">操作</th></tr></thead><tbody>${spRows}</tbody></table></div>` });
+  } else if (tab === 'quotes') {
+    const qs = all('SELECT q.*, c.company_name FROM quote_history q LEFT JOIN customers c ON c.id=q.customer_id WHERE q.product_id=? ORDER BY q.quote_date DESC, q.id DESC LIMIT 100', p.id);
+    const qRows = qs.map(q => `<tr><td>${esc(q.quote_no || '-')}</td><td>${esc(q.company_name || '-')}</td><td class="text-end">${numFmt(q.quantity)} ${esc(q.unit || '')}</td><td class="text-end">${esc(q.currency || 'USD')} ${numFmt(q.unit_price)}</td><td class="text-end">${esc(q.currency || 'USD')} ${numFmt(q.amount)}</td><td>${esc(q.status || '-')}</td><td class="text-muted small">${esc(String(q.quote_date || '').slice(0, 10))}</td></tr>`).join('') || emptyRow(7, '还没有该产品的历史报价');
+    tabHtml = card({ title: '历史报价', body: `<div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>报价单号</th><th>客户</th><th class="text-end">数量</th><th class="text-end">单价</th><th class="text-end">金额</th><th>状态</th><th>日期</th></tr></thead><tbody>${qRows}</tbody></table></div>` });
+  }
+  const content = `
+    ${pageHead(p.name, `${p.name_en ? esc(p.name_en) + ' · ' : ''}${esc(p.category_name || '未分类')} · 货号 ${esc(p.model || '-')}`, `<a class="btn btn-outline-secondary" href="/products">返回产品列表</a> <a class="btn btn-primary" href="/products/${p.id}/edit">编辑产品</a>`)}
+    ${tabsHtml}
+    ${tabHtml}`;
+  return page({ title: p.name, active: 'products', user: ctx.user, content, flash: ctx.flash() });
 }
 
 // ================= 公共 =================
@@ -2308,7 +2474,7 @@ function miniStatCard(label, value) {
   return `<div class="card border-0 shadow-sm"><div class="card-body py-2 px-3"><div class="text-muted small">${label}</div><div class="h5 fw-bold mb-0">${value}</div></div></div>`;
 }
 
-module.exports = { dashboardPage, dashboardPipelineCustomers, customersPage, customerDetailPage, customerFormPage, contactFormPage, activityFormPage, productsPage, productFormPage, notFoundPage, suppliersPage, supplierFormPage, supplierDetailPage, supplierProductFormPage, stockMovementsPage, stockInventoryPage, followupsPage, productBuyersPage, poolPage, inquiriesPage, inquiryDetailPage };
+module.exports = { dashboardPage, dashboardPipelineCustomers, customersPage, customerDetailPage, customerFormPage, contactFormPage, activityFormPage, productsPage, productFormPage, productDetailPage, notFoundPage, suppliersPage, supplierFormPage, supplierDetailPage, supplierProductFormPage, stockMovementsPage, stockInventoryPage, followupsPage, productBuyersPage, poolPage, inquiriesPage, inquiryDetailPage };
 
 
 
