@@ -217,6 +217,7 @@ CREATE TABLE IF NOT EXISTS products(
   volume REAL DEFAULT 0,
   weight REAL DEFAULT 0,
   notes TEXT,
+  positioning TEXT DEFAULT '',
   created_at TEXT,
   updated_at TEXT
 );
@@ -777,6 +778,8 @@ function migrate() {
   ensureColumn('products', 'status', "TEXT DEFAULT '在售'");
   ensureColumn('products', 'specs', "TEXT DEFAULT '{}'");
   ensureColumn('products', 'description', "TEXT DEFAULT ''");
+  // 产品定位分类（2026-11-23）：''=未分类、'高端款'、'高流通款'；自动回复挑款按此字段选，未分类不参与自动挑款
+  ensureColumn('products', 'positioning', "TEXT DEFAULT ''");
   ensureColumn('knowledge_articles', 'product_id', "INTEGER");
   run('CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)');
   run('CREATE INDEX IF NOT EXISTS idx_knowledge_articles_product ON knowledge_articles(product_id)');

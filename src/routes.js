@@ -36,9 +36,12 @@ const knowledgeBase = require('./knowledgeBase');
 
 const FLASH_SAFE = { success: 1, danger: 1, info: 1, warning: 1 };
 
-const PRODUCT_IMPORT_HEADERS = ['品名*', '英文品名', '规格型号', '颜色', '单位', '币种', '参考单价', '进货价', '产地', '当前库存', '库存预警值', '箱数', '装箱数', '单件体积(m³)', '单件重量(kg)', '分类', '材质', '表面处理', 'MOQ', 'MOQ单位', '大货交期(天)', '打样交期(天)', '状态', '备注', '图片'];
+const PRODUCT_IMPORT_HEADERS = ['品名*', '英文品名', '规格型号', '颜色', '单位', '币种', '参考单价', '进货价', '产地', '当前库存', '库存预警值', '箱数', '装箱数', '单件体积(m³)', '单件重量(kg)', '分类', '材质', '表面处理', 'MOQ', 'MOQ单位', '大货交期(天)', '打样交期(天)', '状态', '定位', '备注', '图片'];
 const PRODUCT_STATUSES = ['在售', '下架', '停产'];
 function normProductStatus(s) { const v = String(s || '').trim(); return PRODUCT_STATUSES.includes(v) ? v : '在售'; }
+// 产品定位：''=未分类、'高端款'、'高流通款'；其他值按未分类处理
+const PRODUCT_POSITIONINGS = ['', '高端款', '高流通款'];
+function normProductPositioning(s) { const v = String(s || '').trim(); return PRODUCT_POSITIONINGS.includes(v) ? v : ''; }
 function normProductSpecs(s) {
   if (!s) return '{}';
   if (typeof s === 'object') { try { return JSON.stringify(s); } catch (e) { return '{}'; } }
@@ -2116,7 +2119,7 @@ function registerRoutes(app, router) {
 
   // ---------- 产品 Excel 导入模板下载 ----------
   router.get('/api/products/template.xlsx', async (ctx) => {
-    const example = [['china door lock', '不锈钢门锁', 'CDL-100', '银色', 'PCS', 'USD', 2.85, 1.2, '中国 China', 500, 100, 50, 10, 0.012, 0.35, '锁体', '不锈钢', '拉丝', 500, 'PCS', 15, 5, '在售', '示例行，导入前请删除', '']];
+    const example = [['china door lock', '不锈钢门锁', 'CDL-100', '银色', 'PCS', 'USD', 2.85, 1.2, '中国 China', 500, 100, 50, 10, 0.012, 0.35, '锁体', '不锈钢', '拉丝', 500, 'PCS', 15, 5, '在售', '高端款', '示例行，导入前请删除', '']];
     const buf = await excel.buildXlsx([
       { name: '产品导入', headers: PRODUCT_IMPORT_HEADERS, rows: example },
       { name: '填写说明', headers: ['说明'], rows: [
@@ -2125,6 +2128,7 @@ function registerRoutes(app, router) {
         ['单位可填 PCS / SET / PAIR / CTN / KGS / M；币种可填 USD / CNY / EUR 等；产地留空默认为“中国 China”。'],
         ['分类请填系统里的分类名称（锁体 / 把手 / 锁芯 / 合页 / 其他），填了不存在的名称会进“未分类”，导入后在产品管理里再分；材质、表面处理可自由填写，常用：不锈钢 / 锌合金 / 铜 / 铝合金，拉丝 / 镜面 / 电镀 / 喷涂 / 古铜 / 黑色。'],
         ['MOQ 为最低起订量（数字）；状态只能填 在售 / 下架 / 停产，留空默认为“在售”。'],
+        ['定位只能填 高端款 / 高流通款，留空为“未分类”；自动回复挑款只按定位选——高端精品客户只推高端款，大众流通客户只推高流通款，未分类的产品不参与自动挑款。'],
         ['图片列（最后一列）：两种方式任选——①把产品图片直接“插入”到该行图片列，表格里能看到图即可；②在该列填写图片所在路径或网址，例如 D:\\产品图\\CDL-100.jpg 或 https://xxx.com/a.jpg。'],
         ['图片只在导入时新增或替换：若该行没填图片，系统保留原有图片。整张表所有图片合计请控制在 20MB 以内。'],
       ] },
@@ -2253,6 +2257,7 @@ function registerRoutes(app, router) {
         lead_time_days: toNum(cell(r, ['大货交期(天)', '大货交期', '交期(天)', '交期'])),
         sample_lead_time_days: toNum(cell(r, ['打样交期(天)', '打样交期'])),
         status: normProductStatus(cell(r, ['状态'])),
+        positioning: normProductPositioning(cell(r, ['定位'])),
       };
       let exist = null;
       if (model) exist = get('SELECT * FROM products WHERE model=?', model);
@@ -2287,6 +2292,7 @@ function registerRoutes(app, router) {
         if (cell(r, ['大货交期(天)', '大货交期', '交期(天)', '交期'])) upd.lead_time_days = data.lead_time_days;
         if (cell(r, ['打样交期(天)', '打样交期'])) upd.sample_lead_time_days = data.sample_lead_time_days;
         if (cell(r, ['状态'])) upd.status = data.status;
+        if (cell(r, ['定位'])) upd.positioning = data.positioning;
         updateProduct(exist.id, Object.assign({}, exist, upd));
         pid = exist.id;
         updated++;
@@ -2822,10 +2828,10 @@ function syncPackStock(body) {
     body.stock = String(Math.round(per * ctn * 10000) / 10000);
 }function insertProduct(b) {
   const t = nowStr();
-  const r = run('INSERT INTO products(name,name_en,model,color,unit,price,currency,origin,supplier_id,stock,stock_alert,cost_price,pcs_per_ctn,ctn_count,volume,weight,notes,category_id,material,finish,moq,moq_unit,lead_time_days,sample_lead_time_days,status,specs,description,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+  const r = run('INSERT INTO products(name,name_en,model,color,unit,price,currency,origin,supplier_id,stock,stock_alert,cost_price,pcs_per_ctn,ctn_count,volume,weight,notes,category_id,material,finish,moq,moq_unit,lead_time_days,sample_lead_time_days,status,positioning,specs,description,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
     String(b.name || '').trim(), String(b.name_en || '').trim(), String(b.model || '').trim(), String(b.color || '').trim(),
     b.unit || 'PCS', parseFloat(b.price) || 0, b.currency || 'USD', String(b.origin || '').trim(), parseInt(b.supplier_id, 10) || null, parseFloat(b.stock) || 0, parseFloat(b.stock_alert) || 0, parseFloat(b.cost_price) || 0, parseFloat(b.pcs_per_ctn) || 0, parseFloat(b.ctn_count) || 0, parseFloat(b.volume) || 0, parseFloat(b.weight) || 0,
-    String(b.notes || '').trim(), parseInt(b.category_id, 10) || null, String(b.material || '').trim(), String(b.finish || '').trim(), parseFloat(b.moq) || 0, String(b.moq_unit || 'PCS').trim() || 'PCS', parseInt(b.lead_time_days, 10) || 0, parseInt(b.sample_lead_time_days, 10) || 0, normProductStatus(b.status), normProductSpecs(b.specs), String(b.description || '').trim(), t, t);
+    String(b.notes || '').trim(), parseInt(b.category_id, 10) || null, String(b.material || '').trim(), String(b.finish || '').trim(), parseFloat(b.moq) || 0, String(b.moq_unit || 'PCS').trim() || 'PCS', parseInt(b.lead_time_days, 10) || 0, parseInt(b.sample_lead_time_days, 10) || 0, normProductStatus(b.status), normProductPositioning(b.positioning), normProductSpecs(b.specs), String(b.description || '').trim(), t, t);
   const id = Number(r.lastInsertRowid);
   if (b.image_data) {
     const img = saveUpload(b.image_data, 'products');
@@ -2835,10 +2841,10 @@ function syncPackStock(body) {
   return id;
 }
 function updateProduct(id, b) {
-  run('UPDATE products SET name=?,name_en=?,model=?,color=?,unit=?,price=?,currency=?,origin=?,supplier_id=?,stock=?,stock_alert=?,cost_price=?,pcs_per_ctn=?,ctn_count=?,volume=?,weight=?,notes=?,category_id=?,material=?,finish=?,moq=?,moq_unit=?,lead_time_days=?,sample_lead_time_days=?,status=?,specs=?,description=?,updated_at=? WHERE id=?',
+  run('UPDATE products SET name=?,name_en=?,model=?,color=?,unit=?,price=?,currency=?,origin=?,supplier_id=?,stock=?,stock_alert=?,cost_price=?,pcs_per_ctn=?,ctn_count=?,volume=?,weight=?,notes=?,category_id=?,material=?,finish=?,moq=?,moq_unit=?,lead_time_days=?,sample_lead_time_days=?,status=?,positioning=?,specs=?,description=?,updated_at=? WHERE id=?',
     String(b.name || '').trim(), String(b.name_en || '').trim(), String(b.model || '').trim(), String(b.color || '').trim(),
     b.unit || 'PCS', parseFloat(b.price) || 0, b.currency || 'USD', String(b.origin || '').trim(), parseInt(b.supplier_id, 10) || null, parseFloat(b.stock) || 0, parseFloat(b.stock_alert) || 0, parseFloat(b.cost_price) || 0, parseFloat(b.pcs_per_ctn) || 0, parseFloat(b.ctn_count) || 0, parseFloat(b.volume) || 0, parseFloat(b.weight) || 0,
-    String(b.notes || '').trim(), parseInt(b.category_id, 10) || null, String(b.material || '').trim(), String(b.finish || '').trim(), parseFloat(b.moq) || 0, String(b.moq_unit || 'PCS').trim() || 'PCS', parseInt(b.lead_time_days, 10) || 0, parseInt(b.sample_lead_time_days, 10) || 0, normProductStatus(b.status), normProductSpecs(b.specs), String(b.description || '').trim(), nowStr(), id);
+    String(b.notes || '').trim(), parseInt(b.category_id, 10) || null, String(b.material || '').trim(), String(b.finish || '').trim(), parseFloat(b.moq) || 0, String(b.moq_unit || 'PCS').trim() || 'PCS', parseInt(b.lead_time_days, 10) || 0, parseInt(b.sample_lead_time_days, 10) || 0, normProductStatus(b.status), normProductPositioning(b.positioning), normProductSpecs(b.specs), String(b.description || '').trim(), nowStr(), id);
   if (b.image_data) {
     const img = saveUpload(b.image_data, 'products');
     if (img) run('UPDATE products SET image=? WHERE id=?', img, id);

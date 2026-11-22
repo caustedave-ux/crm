@@ -107,6 +107,15 @@ function initState() {
       prompt_version TEXT DEFAULT '',
       updated_at TEXT
     );
+    CREATE TABLE IF NOT EXISTS followup (
+      chat_key TEXT PRIMARY KEY,
+      followups_sent INTEGER DEFAULT 0,
+      last_followup_at TEXT DEFAULT '',
+      last_followup_text TEXT DEFAULT '',
+      closing_sent INTEGER DEFAULT 0,
+      not_interested_until TEXT DEFAULT '',
+      updated_at TEXT
+    );
   `);
   ensureStateColumn('qualification', 'confidence', 'REAL DEFAULT 0');
   ensureStateColumn('qualification', 'signals', "TEXT DEFAULT '{}'");
@@ -149,6 +158,46 @@ function metaGet(key, def) {
 function metaSet(key, value) {
   state.prepare('INSERT INTO meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value')
     .run(key, String(value));
+}
+
+/* ---------------- 跟进状态存取（state.db，不写主库） ---------------- */
+function getFollowup(chatKey) {
+  const r = state.prepare('SELECT * FROM followup WHERE chat_key=?').get(chatKey);
+  return r || null;
+}
+function saveFollowup(chatKey, data) {
+  state.prepare(`INSERT INTO followup(chat_key,followups_sent,last_followup_at,last_followup_text,closing_sent,not_interested_until,updated_at)
+    VALUES(?,?,?,?,?,?,?)
+    ON CONFLICT(chat_key) DO UPDATE SET
+      followups_sent=excluded.followups_sent, last_followup_at=excluded.last_followup_at,
+      last_followup_text=excluded.last_followup_text, closing_sent=excluded.closing_sent,
+      not_interested_until=excluded.not_interested_until, updated_at=excluded.updated_at`).run(
+    chatKey, Number(data.followupsSent) || 0, data.lastFollowupAt || '', data.lastFollowupText || '',
+    data.closingSent ? 1 : 0, data.notInterestedUntil || '', nowStr());
+}
+/** 客户发来新消息 → 新一轮静默重新计，跟进次数清零；拒接抑制期保留 */
+function resetFollowupEpisode(chatKey) {
+  const cur = getFollowup(chatKey);
+  saveFollowup(chatKey, {
+    followupsSent: 0, lastFollowupAt: '', lastFollowupText: '', closingSent: false,
+    notInterestedUntil: cur ? (cur.not_interested_until || '') : '',
+  });
+}
+/** 客户明确说不感兴趣 → 14 天内不再跟进（只抑制跟进，不删记录、不影响回复新消息） */
+function setNotInterested(chatKey, days) {
+  const cur = getFollowup(chatKey) || {};
+  const until = new Date(Date.now() + Math.max(1, Number(days) || 14) * 86400000);
+  const p = n => String(n).padStart(2, '0');
+  const untilStr = until.getFullYear() + '-' + p(until.getMonth() + 1) + '-' + p(until.getDate()) + ' ' +
+    p(until.getHours()) + ':' + p(until.getMinutes()) + ':' + p(until.getSeconds());
+  saveFollowup(chatKey, {
+    followupsSent: Number(cur.followups_sent) || 0,
+    lastFollowupAt: cur.last_followup_at || '',
+    lastFollowupText: cur.last_followup_text || '',
+    closingSent: !!cur.closing_sent,
+    notInterestedUntil: untilStr,
+  });
+  return untilStr;
 }
 
 /* ---------------- 主库只读连接 ---------------- */
@@ -250,6 +299,40 @@ function getLastMsg(accountId, jid) {
     .get(accountId, jid) || null;
 }
 
+/** 该会话最后一条客户消息（from_me=0），跟进轮次据此算静默时长 */
+function getLastCustomerMsg(accountId, jid) {
+  return crm.prepare('SELECT id, text, ts FROM wa_messages WHERE account_id=? AND chat_jid=? AND from_me=0 ORDER BY id DESC LIMIT 1')
+    .get(accountId, jid) || null;
+}
+
+/**
+ * 人工是否已接手该会话（跟进轮次专用）。
+ * 规则：最后一条我方消息是我方自动回复的，不算接手；否则算人工接手，跟进停下。
+ * “是我方自动回复”的判断：文本与 sent_log 里该会话的已发草稿能对上，
+ * 或消息时间在最近一次自动发送后 5 分钟内（刚同步回来的我方消息）。
+ */
+function humanTookOver(chat, chatKey) {
+  const last = getLastMsg(chat.account_id, chat.jid);
+  if (!last || Number(last.from_me) !== 1) return false;
+  const text = String(last.text || '').slice(0, 120);
+  if (text) {
+    try {
+      const drafts = state.prepare("SELECT draft FROM sent_log WHERE chat_key=? AND action='sent' AND COALESCE(draft,'')<>'' ORDER BY id DESC LIMIT 20").all(chatKey);
+      for (const d of drafts) {
+        const dt = String(d.draft || '').slice(0, 120);
+        if (dt && (dt.startsWith(text) || text.startsWith(dt))) return false;
+      }
+    } catch (e) {}
+  }
+  const lastAuto = lastAutoReplyAt(chatKey);
+  if (lastAuto) {
+    const t = logic.parseTs(lastAuto);
+    const now = Date.now();
+    if (t !== null && now - t < 5 * 60 * 1000) return false;
+  }
+  return true;
+}
+
 function lastAutoReplyAt(chatKey) {
   return metaGet('last_reply:' + chatKey, '');
 }
@@ -286,6 +369,9 @@ function recordLog(row) {
 async function processChat(item) {
   const chatKey = item.account_id + ':' + item.chat_jid;
   const msgId = item.last_customer_id;
+  // 客户发来新消息 → 新一轮静默重新计；明确说不感兴趣 → 14 天内不再跟进
+  resetFollowupEpisode(chatKey);
+  if (logic.isRefusal(item.text || '')) setNotInterested(chatKey, 14);
   const chat = getChat(item.account_id, item.chat_jid);
 
   // 会话不存在 / 属于其他账号 → 跳过
@@ -406,6 +492,11 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
       log('INFO', name + ' 命中敏感词（供判定参考）：' + hitSensitive.join('、'));
     }
     log('JUDGE', name + ' → 精准度=' + decision.precision + ' 置信度=' + Number(decision.confidence || 0).toFixed(2) + ' 目的=' + decision.purpose + ' 风险=' + ((decision.riskFlags || verdict.riskFlags || []).join(',') || '无') + ' AI尝试=' + (judge.attempts || 1) + ' 依据=' + verdict.evidence);
+    // AI 判定客户明确无采购意向 → 14 天内不再跟进
+    if ((decision.riskFlags || verdict.riskFlags || []).includes('no_purchase_intent')) {
+      setNotInterested(chatKey, 14);
+      log('INFO', name + ' 明确无采购意向，14 天内不再跟进');
+    }
   }
 
   // 根据决策分流
@@ -527,14 +618,18 @@ function buildJudgeContext(item, chat, hitSensitive) {
   return { customerText: item.text, transcript, customerProfile: profile };
 }
 
-/** 统一投递：观察模式只记不发；真实模式逐条发送并二次确认 */
-async function deliver(chat, chatKey, msgId, sends, summary, tag) {
+/** 统一投递：观察模式只记不发；真实模式逐条发送并二次确认
+ * 唯一发送出口：v1 回复、v2 追问、v2 素材包、跟进轮次全部走这里。
+ * opts.skipHumanCheck=true 仅跟进轮次用（跟进前已单独做人工接手判断；最后一条
+ * 我方消息可能是上轮自动追问，不能按“人工已回”拦截）。置顶检查永远不跳过。
+ */
+async function deliver(chat, chatKey, msgId, sends, summary, tag, opts) {
   if (!cfg.enabled) {
     recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'dry', reason: '观察模式未发送' + (tag ? '｜' + tag : ''), draft: summary });
     log('OBSERVE', (chat.name || item_jid(chat)) + ' → [' + (tag || 'msg') + '] ' + String(summary || '').slice(0, 120));
     return { sent: false, dry: true };
   }
-  // 发送前二次确认：置顶/人工已回则放弃
+  // 发送前二次确认：置顶/人工已回则放弃（每次发送前重新读库，不用缓存的旧状态）
   const freshChat = getChat(chat.account_id, chat.jid);
   if (logic.isPinned(freshChat)) {
     recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'skip', reason: '发送前被置顶，放弃' });
@@ -542,14 +637,25 @@ async function deliver(chat, chatKey, msgId, sends, summary, tag) {
     return { sent: false, skipped: true };
   }
   const freshLast = getLastMsg(chat.account_id, chat.jid);
-  if (logic.humanReplied(freshLast) && Number(freshLast.id) > msgId) {
-    recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'skip', reason: '发送前人工已回复，放弃' });
-    log('INFO', (chat.name || chat.jid) + ' 发送前人工已回复，放弃');
-    return { sent: false, skipped: true };
+  if (!opts || !opts.skipHumanCheck) {
+    if (logic.humanReplied(freshLast) && Number(freshLast.id) > msgId) {
+      recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'skip', reason: '发送前人工已回复，放弃' });
+      log('INFO', (chat.name || chat.jid) + ' 发送前人工已回复，放弃');
+      return { sent: false, skipped: true };
+    }
   }
 
   let sentCount = 0, sentTexts = 0, sentFiles = 0, lastErr = '';
   for (let i = 0; i < sends.length; i++) {
+    // 多条素材包逐条发：每条发送前都重新读库查置顶，客户中途被置顶就停下不再发
+    if (i > 0) {
+      const recheck = getChat(chat.account_id, chat.jid);
+      if (logic.isPinned(recheck)) {
+        recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'skip', reason: '素材包发送中被置顶，剩余 ' + (sends.length - i) + ' 条放弃' });
+        log('INFO', (chat.name || chat.jid) + ' 素材包发送中被置顶，剩余放弃');
+        break;
+      }
+    }
     const s = sends[i];
     let r = s.type === 'file' ? await sendFile(chat.id, s.path, '') : await sendText(chat.id, s.text);
     let ok = r.status === 200 && r.body && r.body.ok === true;
@@ -671,6 +777,115 @@ async function draftOf(chatId) {
   return { ok: false, error: b.error || ('HTTP ' + r.status) };
 }
 
+/* ---------------- 主动跟进轮次（只跟进未置顶会话） ---------------- */
+let inFollowup = false;
+async function followupTick() {
+  const fcfg = cfg.followup || {};
+  if (!fcfg.enabled) return;
+  if (inFollowup) return;
+  const checkMin = Math.max(1, Number(fcfg.checkMinutes) || 15);
+  const lastPass = metaGet('last_followup_pass', '');
+  if (lastPass) {
+    const t = logic.parseTs(lastPass);
+    if (t !== null && Date.now() - t < checkMin * 60 * 1000) return;
+  }
+  inFollowup = true;
+  try {
+    metaSet('last_followup_pass', nowStr());
+    const rows = state.prepare(`SELECT chat_key, status, language, risk_flags, updated_at FROM qualification WHERE status IN ('pending','qualified')`).all();
+    for (const q of rows) {
+      if (!running) break;
+      try { await processFollowup(q, fcfg); }
+      catch (e) { log('ERROR', '跟进会话异常 ' + q.chat_key + '：' + (e && e.message)); }
+    }
+  } finally {
+    inFollowup = false;
+  }
+}
+
+async function processFollowup(q, fcfg) {
+  const chatKey = q.chat_key;
+  const parts = String(chatKey).split(':');
+  const accountId = Number(parts[0]);
+  const jid = parts.slice(1).join(':');
+  if (!accountId || !jid) return;
+  const chat = getChat(accountId, jid);
+  if (!chat) return;
+  // 置顶客户绝不跟进（每次重新读库，不用缓存状态）
+  if (logic.isPinned(chat)) return;
+  if (cfg.skipGroups && Number(chat.is_group) === 1) return;
+  if (cookieUserId && !ownsChat(chat)) return;
+  if (cfg.requireCustomerBound && !chat.customer_id) return;
+  // 只跟进自动回复已经接手过的会话（之前发过自动消息），没碰过的不要主动打扰
+  const engaged = state.prepare("SELECT COUNT(*) AS n FROM sent_log WHERE chat_key=? AND action='sent'").get(chatKey);
+  if (!engaged || Number(engaged.n) === 0) return;
+  // 拒接抑制期内不跟进
+  const fu = getFollowup(chatKey) || {};
+  if (fu.not_interested_until && String(fu.not_interested_until) > nowStr()) return;
+  // AI 判过明确无采购意向且在 14 天内 → 不跟进
+  try {
+    const flags = JSON.parse(q.risk_flags || '[]');
+    if (flags.includes('no_purchase_intent')) {
+      const upd = logic.parseTs(q.updated_at || '');
+      if (upd !== null && Date.now() - upd < 14 * 86400000) return;
+    }
+  } catch (e) {}
+  // 人工已接手 → 停下
+  if (humanTookOver(chat, chatKey)) return;
+  const lastCustomer = getLastCustomerMsg(accountId, jid);
+  if (!lastCustomer) return;
+  const silence = logic.silenceHours(lastCustomer.ts, Date.now());
+  const lastFuAt = fu.last_followup_at || '';
+  const silenceSinceFu = lastFuAt ? logic.silenceHours(lastFuAt, Date.now()) : null;
+  const due = logic.followupDue({
+    followupsSent: Number(fu.followups_sent) || 0,
+    closingSent: !!fu.closing_sent,
+    silenceHours: silence,
+    silenceSinceFollowupHours: silenceSinceFu,
+  }, fcfg);
+  if (!due.due) return;
+  // 与回复共用同一套冷却和每天限额
+  const quotaHit = logic.quotaExceeded(sentToday(), cfg.dailyLimit) ||
+    (!chatSentToday(chatKey) && Number(cfg.dailyUniqueCustomers) > 0 && sentCustomersToday() >= Number(cfg.dailyUniqueCustomers));
+  const decision = logic.chooseDecision({
+    pinned: logic.isPinned(chat),
+    human: false,
+    cooling: logic.isCoolingDown(lastAutoReplyAt(chatKey), Date.now(), cfg.cooldownMinutes),
+    quota: quotaHit,
+    sensitive: [],
+  });
+  if (decision.action !== 'send') {
+    log('INFO', '跟进跳过 ' + (chat.name || jid) + '：' + decision.reason);
+    return;
+  }
+  // 生成跟进内容：角度轮换 + 避开已发过的内容
+  const angle = due.kind === 'closing' ? 'closing' : (Number(fu.followups_sent) === 0 ? 'new' : 'offer');
+  const ctx = buildJudgeContext({ account_id: accountId, chat_jid: jid, text: lastCustomer.text }, chat, []);
+  const gen = await require('./qualify').generateFollowup({
+    customerProfile: ctx.customerProfile,
+    transcript: ctx.transcript,
+    language: q.language || 'en',
+    angle,
+    previousTexts: fu.last_followup_text ? [fu.last_followup_text] : [],
+  });
+  if (!gen.ok) {
+    recordLog({ msgDbId: lastCustomer.id, chatKey, chatName: chat.name, action: 'error', reason: '跟进内容生成失败：' + gen.error });
+    log('ERROR', '跟进内容生成失败 ' + (chat.name || jid) + '：' + gen.error);
+    return;
+  }
+  const delivered = await deliver(chat, chatKey, lastCustomer.id, [{ type: 'text', text: gen.text }], gen.text, 'followup:' + angle, { skipHumanCheck: true });
+  if (delivered && delivered.sent) {
+    saveFollowup(chatKey, {
+      followupsSent: due.kind === 'closing' ? (Number(fu.followups_sent) || 0) : (Number(fu.followups_sent) || 0) + 1,
+      lastFollowupAt: nowStr(),
+      lastFollowupText: gen.text,
+      closingSent: due.kind === 'closing' ? true : !!fu.closing_sent,
+      notInterestedUntil: fu.not_interested_until || '',
+    });
+    log('SENT', (chat.name || jid) + ' → 跟进[' + angle + ']：' + due.reason);
+  }
+}
+
 /* ---------------- 主循环 ---------------- */
 async function tick() {
   if (inTick) return;
@@ -737,7 +952,8 @@ async function main() {
   } catch (e) { log('WARN', '无法连接主系统 ' + cfg.crmBaseUrl + '：' + e.message); }
 
   await tick();
-  const timer = setInterval(() => { if (running) tick(); }, Math.max(5, Number(cfg.pollSeconds) || 15) * 1000);
+  await followupTick();
+  const timer = setInterval(() => { if (running) { tick(); followupTick(); } }, Math.max(5, Number(cfg.pollSeconds) || 15) * 1000);
 
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);

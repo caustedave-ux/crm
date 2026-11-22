@@ -38,7 +38,7 @@ function buildContext(user, question, knowledgeMatches) {
     L.push('【客户】' + cus.slice(0, 200).map(c => `${c.company_name}（${c.country || '-'}，状态${c.status || '-'}，分层${c.customer_tier || '待计算'}，贡献值${c.tier_score || 0}，分层原因${c.tier_reason || '-'}，联系人${c.contact_person || '-'}，电话${c.phone || '-'}，邮箱${c.email || '-'}）`).join('；'));
   }
   if (prods.length) {
-    L.push('【产品】' + prods.slice(0, 200).map(p => `${p.name}（货号${p.model || '-'}，分类${p.category_name || '未分类'}，材质${p.material || '-'}，表面处理${p.finish || '-'}，单价${p.currency || 'USD'}${money(p.price)}，MOQ${Number(p.moq) ? Number(p.moq) + (p.moq_unit || 'PCS') : '未填'}，大货交期${Number(p.lead_time_days) ? Number(p.lead_time_days) + '天' : '未填'}，状态${p.status || '在售'}，库存${Number(p.stock) || 0}${p.unit || ''}，进货价${money(p.cost_price)}，库存预警${Number(p.stock_alert) || 0}）`).join('；'));
+    L.push('【产品】' + prods.slice(0, 200).map(p => `${p.name}（货号${p.model || '-'}，分类${p.category_name || '未分类'}，定位${p.positioning || '未分类'}，材质${p.material || '-'}，表面处理${p.finish || '-'}，单价${p.currency || 'USD'}${money(p.price)}，MOQ${Number(p.moq) ? Number(p.moq) + (p.moq_unit || 'PCS') : '未填'}，大货交期${Number(p.lead_time_days) ? Number(p.lead_time_days) + '天' : '未填'}，状态${p.status || '在售'}，库存${Number(p.stock) || 0}${p.unit || ''}，进货价${money(p.cost_price)}，库存预警${Number(p.stock_alert) || 0}）`).join('；'));
   }
   if (low.length) L.push('【库存偏低/缺货】' + low.map(p => `${p.name}：现有 ${Number(p.stock) || 0}，预警 ${Number(p.stock_alert) || 0}`).join('；'));
   if (supps.length) L.push('【供应商】' + supps.map(s => `${s.name}（主营：${s.main_products || '见供应产品'}，付款${s.payment_terms || '-'}）`).join('；'));
@@ -54,7 +54,7 @@ function buildContext(user, question, knowledgeMatches) {
   }
   if (quotes.length) L.push('【历史报价】' + quotes.map(q => `${q.quote_no}（${q.product_name || '-'}，${q.quantity || 0}${q.unit || ''}，${q.currency || 'USD'}${money(q.amount)}，${q.status || '-'}，${q.quote_date || '-'}）`).join('；'));
   if (acts.length) L.push('【最近跟进】' + acts.slice(0, 50).map(a => `${a.subject || ''}（客户ID${a.customer_id}，${a.type || ''}，下次${a.next_follow_date || '-'}）`).join('；'));
-  L.push('【规则】对用户问题请优先引用以上数据回答；数据不足时明确说明“数据库里没有找到”。数字带币种请照抄单据币种。价格、MOQ、交期以【产品】结构化数据为准，知识库文章里的数字仅作参考，缺失项标“待确认”，不编数字。回答用简体中文，简明。');
+  L.push('【规则】对用户问题请优先引用以上数据回答；数据不足时明确说明“数据库里没有找到”。数字带币种请照抄单据币种。价格、MOQ、交期以【产品】结构化数据为准，知识库文章里的数字仅作参考，缺失项标“待确认”，不编数字。挑款规则：客户定位高端精品只推荐定位=高端款的产品，客户定位大众流通只推荐定位=高流通款的产品，定位为空（未分类）的产品不参与自动挑款；没有对应定位的产品时明确说明，不要用其他定位的产品代替。回答用简体中文，简明。');
   return L.join('\n');
 }
 

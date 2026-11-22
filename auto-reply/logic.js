@@ -37,6 +37,78 @@ function quotaExceeded(sentToday, dailyLimit) {
   return Number(sentToday) >= limit;
 }
 
+/** 解析 'YYYY-MM-DD HH:MM:SS' 时间戳（wa_messages.ts / nowStr 同款格式），非法返回 null */
+function parseTs(ts) {
+  const s = String(ts || '').trim();
+  if (!s) return null;
+  const t = Date.parse(s.replace(' ', 'T'));
+  return Number.isFinite(t) ? t : null;
+}
+
+/** 静默时长（小时）：距最后一条客户消息多久没回音；时间戳非法返回 null */
+function silenceHours(lastTs, nowMs) {
+  const t = parseTs(lastTs);
+  if (t === null) return null;
+  const h = (Number(nowMs) - t) / 3600000;
+  return h < 0 ? 0 : h;
+}
+
+/** 客户明确拒绝：不感兴趣 / 不需要 / 别再联系等。只用于“14 天内不再跟进”，不删任何记录 */
+const REFUSAL_RE = /不感兴趣|没兴趣|不需要了|别再发|不要再联系|不用了|请勿打扰|not interested|no longer interested|do not contact|don't contact|stop messaging|no thanks/i;
+function isRefusal(text) {
+  return REFUSAL_RE.test(String(text || ''));
+}
+
+/**
+ * 主动跟进是否到点了（纯函数）。
+ * state: { followupsSent 已跟进次数, closingSent 收尾是否已发,
+ *          silenceHours 距最后一条客户消息的静默小时数,
+ *          silenceSinceFollowupHours 距上次跟进的小时数（无跟进记录为 null） }
+ * cfg: { minSilenceHours, maxSilenceHours, maxFollowups, sendClosing }
+ * 返回 { due, kind: 'followup'|'closing'|null, reason }
+ * 规则：首跟静默须落在 [min, max]（24–72h，太早不催、太晚不翻旧账）；
+ * 第 2 次跟进距上次跟进满 min 小时；满 maxFollowups 次后只发一次礼貌收尾。
+ */
+function followupDue(state, cfg) {
+  const s = state || {};
+  const min = Number((cfg && cfg.minSilenceHours) || 24);
+  const max = Number((cfg && cfg.maxSilenceHours) || 72);
+  const maxN = Number((cfg && cfg.maxFollowups) || 2);
+  const sent = Number(s.followupsSent) || 0;
+  if (s.closingSent) return { due: false, kind: null, reason: '收尾已发，不再打扰' };
+  if (sent >= maxN) {
+    if (!(cfg && cfg.sendClosing)) return { due: false, kind: null, reason: '跟进次数已达上限，收尾开关关闭' };
+    const gap = s.silenceSinceFollowupHours;
+    if (gap === null || gap === undefined) return { due: false, kind: null, reason: '无上次跟进时间，无法发收尾' };
+    if (gap < min) return { due: false, kind: null, reason: '距上次跟进不足 ' + min + ' 小时' };
+    return { due: true, kind: 'closing', reason: '跟进 ' + maxN + ' 次无回复，发礼貌收尾' };
+  }
+  if (sent === 0) {
+    const h = s.silenceHours;
+    if (h === null || h === undefined) return { due: false, kind: null, reason: '无客户消息时间，无法判断静默' };
+    if (h < min) return { due: false, kind: null, reason: '静默不足 ' + min + ' 小时，不催' };
+    if (h > max) return { due: false, kind: null, reason: '静默超过 ' + max + ' 小时，不翻旧账' };
+    return { due: true, kind: 'followup', reason: '静默 ' + Math.round(h) + ' 小时，第 1 次跟进' };
+  }
+  const gap = s.silenceSinceFollowupHours;
+  if (gap === null || gap === undefined) return { due: false, kind: null, reason: '无上次跟进时间' };
+  if (gap < min) return { due: false, kind: null, reason: '距上次跟进不足 ' + min + ' 小时' };
+  return { due: true, kind: 'followup', reason: '距上次跟进 ' + Math.round(gap) + ' 小时，第 ' + (sent + 1) + ' 次跟进' };
+}
+
+/**
+ * 要目录的新客户转人工原因（只用于 purpose=catalog 且非老客户）。
+ * 报了采购量 / 答了 2 轮问题 / 要样品或视频看厂 → 人工接手给适配报价，不再自动追问。
+ * 返回原因字符串，不满足返回 null。
+ */
+function catalogHandoffReason(signals, rounds) {
+  const s = signals || {};
+  if (s.quantityGiven) return '客户已报采购量，转人工给适配报价';
+  if (s.wantsSampleOrTour) return '客户要样品或视频看厂，转人工';
+  if (Number(rounds) >= 2) return '客户已回答 2 轮问题，转人工跟进';
+  return null;
+}
+
 /**
  * 综合决策。返回 { action, reason }
  * action: 'send' 发送 | 'skip' 静默跳过 | 'hold' 拦截待人工
@@ -158,12 +230,33 @@ function decideQualification(verdict, current, cfg) {
     }
     return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, reason: 'AI 判低精准但缺少明确排除证据或置信度不足，转人工' };
   }
-  // 确认精准 → 直接发素材
+  // 老客户要目录/报价/现货：不走三个问题，直接给资料（unknown 也直接给，不追问；low 已在上面处理）
+  if (signals.existingCustomer && ['catalog', 'quote', 'stock'].includes(purpose)) {
+    return { action: 'send_material', status: 'qualified', precision, purpose, confidence, riskFlags, reason: '老客户，直接发素材' };
+  }
+  // 确认精准 → 直接发素材（但要目录的新客户例外，见下）
   if (precision === 'high') {
+    // 要目录的新客户：绝不直接发全套目录。先看是否该转人工，否则追问（一次一问）
+    if (purpose === 'catalog') {
+      const handoff = catalogHandoffReason(signals, rounds);
+      if (handoff) {
+        return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, reason: handoff };
+      }
+      if (rounds < maxRounds) {
+        return { action: 'ask', status: 'pending', precision, purpose, confidence, riskFlags, ask_rounds: rounds + 1, reason: '要目录的新客户不直接发全套，追问第 ' + (rounds + 1) + ' 轮' };
+      }
+      return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, reason: '追问 ' + maxRounds + ' 轮仍无法判定，转人工' };
+    }
     return { action: 'send_material', status: 'qualified', precision, purpose, confidence, riskFlags, reason: '高置信度，按目的分发素材' };
   }
-  // 信息不足 → 追问，但不超过上限
+  // 信息不足 → 追问，但不超过上限（要目录的新客户同样不直接发全套）
   if (rounds < maxRounds) {
+    if (purpose === 'catalog' && !signals.existingCustomer) {
+      const handoff = catalogHandoffReason(signals, rounds);
+      if (handoff) {
+        return { action: 'hold', status: 'review', precision, purpose, confidence, riskFlags, reason: handoff };
+      }
+    }
     return { action: 'ask', status: 'pending', precision, purpose, confidence, riskFlags, ask_rounds: rounds + 1, reason: '信息不足，追问第 ' + (rounds + 1) + ' 轮' };
   }
   // 追问到上限仍不明 → 转人工
@@ -192,4 +285,5 @@ function parseVerdict(text) {
 module.exports = {
   isPinned, humanReplied, isSensitive, isCoolingDown, quotaExceeded, chooseDecision,
   normalizePrecision, normalizePurpose, normalizeConfidence, normalizeRiskFlags, hasBlockingRisk, strongSignalCount, HARD_STOP_RE, decideQualification, isQualified, parseVerdict,
+  parseTs, silenceHours, isRefusal, followupDue, catalogHandoffReason,
 };

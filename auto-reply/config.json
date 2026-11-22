@@ -76,5 +76,20 @@
     "dailyFiles": 300,
     "_dailyFiles说明": "每天最多自动发送多少个文件/图片；超过后高意向客户转人工，避免 WhatsApp 风控。"
   },
-  "_qualify说明": "v2 资格判定配置。核心逻辑：AI 判精准度→精准才发素材。"
+  "_qualify说明": "v2 资格判定配置。核心逻辑：AI 判精准度→精准才发素材。",
+  "followup": {
+    "enabled": true,
+    "_enabled说明": "主动跟进总开关。true=自动跟进未置顶的静默客户；false=只回复新消息，不主动跟进。置顶客户永远不跟进，与本开关无关。",
+    "minSilenceHours": 24,
+    "_minSilenceHours说明": "跟进间隔（小时）：客户最后一条消息距今至少这么久才跟进。刚发消息 2–4 小时内的不要催，默认 24 小时。",
+    "maxSilenceHours": 72,
+    "_maxSilenceHours说明": "首跟窗口上限（小时）：静默超过这么久就不首跟，避免翻旧账。默认 72 小时。",
+    "maxFollowups": 2,
+    "_maxFollowups说明": "每个客户每轮静默最多跟进几次（不含收尾）。默认 2 次，两次没回就停。",
+    "sendClosing": true,
+    "_sendClosing说明": "跟进满次数仍无回复后，是否再发一条礼貌收尾（给客户台阶），发完不再打扰。true=发，false=不发。",
+    "checkMinutes": 15,
+    "_checkMinutes说明": "跟进轮次每隔多少分钟扫描一次候选客户。默认 15 分钟。"
+  },
+  "_followup说明": "主动跟进配置：只跟进未置顶会话；与回复共用同一套冷却和每天限额；跟进内容由 DeepSeek 按破冰打法生成，每次带新价值。"
 }

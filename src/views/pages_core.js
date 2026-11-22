@@ -1449,11 +1449,14 @@ function productsPage(ctx) {
   const catFilter = parseInt(ctx.query.category || '', 10) || 0;
   const matFilter = String(ctx.query.material || '').trim();
   const statusFilter = String(ctx.query.status || '').trim();
+  const posFilter = String(ctx.query.positioning || '').trim();
   const where = ['1=1']; const params = [];
   if (kw) { where.push('(name LIKE ? OR name_en LIKE ? OR model LIKE ? OR color LIKE ?)'); params.push('%' + kw + '%', '%' + kw + '%', '%' + kw + '%', '%' + kw + '%'); }
   if (catFilter) { where.push('category_id=?'); params.push(catFilter); }
   if (matFilter) { where.push('material LIKE ?'); params.push('%' + matFilter + '%'); }
   if (statusFilter) { where.push("COALESCE(status,'在售')=?"); params.push(statusFilter); }
+  if (posFilter === '__none__') { where.push("COALESCE(positioning,'')=''"); }
+  else if (posFilter) { where.push('positioning=?'); params.push(posFilter); }
   let rows = all(`SELECT * FROM products WHERE ${where.join(' AND ')} ORDER BY id DESC`, ...params);
   const en = ctx.query.en || "";
   const sortParam = ctx.query.sort || "";
@@ -1481,7 +1484,7 @@ function productsPage(ctx) {
   const catName = {}; categories.forEach(c => { catName[c.id] = c.name; });
   const materials = all("SELECT DISTINCT material FROM products WHERE material<>'' ORDER BY material").map(r => r.material);
   const keepParams = (overrides) => {
-    const o = Object.assign({ sort: sortParam, en: en, search: kw, category: catFilter || '', material: matFilter, status: statusFilter }, overrides || {});
+    const o = Object.assign({ sort: sortParam, en: en, search: kw, category: catFilter || '', material: matFilter, status: statusFilter, positioning: posFilter }, overrides || {});
     return Object.entries(o).filter(([, v]) => v !== '' && v !== undefined && v !== null).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&');
   };
   const baseQ = keepParams({});
@@ -1531,6 +1534,7 @@ function productsPage(ctx) {
     </div></td>
     <td>${esc(p.model || '-')}</td>
     <td>${esc(catName[p.category_id] || '未分类')}</td>
+    <td class="text-center">${p.positioning ? `<span class="badge ${p.positioning === '高端款' ? 'text-bg-primary' : 'text-bg-success'}">${esc(p.positioning)}</span>` : '<span class="text-muted">未分类</span>'}</td>
     <td class="text-center">${esc(p.color || '-')}</td>
     <td class="text-center">${esc(p.unit || 'PCS')}</td>
     <td class="text-center">${Number(p.moq) ? numFmt(p.moq) + ' ' + esc(p.moq_unit || 'PCS') : '-'}</td>
@@ -1556,7 +1560,7 @@ function productsPage(ctx) {
       <a class="btn btn-sm btn-outline-primary" href="/stock/product/${p.id}/buyers">客户采购</a> <a class="btn btn-sm btn-outline-primary" href="/quotes?product_id=${p.id}"><i class="bi bi-clock-history"></i> 历史报价</a> <a class="btn btn-sm btn-outline-primary" href="/products/${p.id}/edit?back=${encodeURIComponent(backTarget)}">编辑</a>
         <form class="d-inline" method="post" action="/products/${p.id}/copy"><input type="hidden" name="back" value="${esc(backTarget)}"><button class="btn btn-sm btn-outline-secondary" title="复制为新产品"><i class="bi bi-files"></i></button></form>
       <form class="d-inline" method="post" action="/products/${p.id}/delete" onsubmit="return confirm('确认删除该产品？')"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>
-    </td></tr>`).join('') || emptyRow(10, '没有产品，先去新建吧');
+    </td></tr>`).join('') || emptyRow(11, '没有产品，先去新建吧');
   const content = `
     ${pageHead('产品管理', '产品资料库（图片/货号/单价/进货价等），库存与流水请在「库存管理」查看', `<a class="btn btn-primary" href="/products/new"><i class="bi bi-plus-lg"></i> 新建产品</a>`)}
     ${card({ title: 'Excel 批量导入', body: `<div class="d-flex gap-2 flex-wrap align-items-center">
@@ -1581,12 +1585,13 @@ function productsPage(ctx) {
         <div class="col-md-2"><div class="d-flex gap-1"><select class="form-select" name="category" aria-label="按分类筛选"><option value="">全部分类</option>${categories.map(c => `<option value="${c.id}" ${catFilter === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>${addCategoryBtnHtml}</div></div>
         <div class="col-md-2"><select class="form-select" name="material" aria-label="按材质筛选"><option value="">全部材质</option>${materials.map(m => `<option ${matFilter === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></div>
         <div class="col-md-2"><select class="form-select" name="status" aria-label="按状态筛选"><option value="">全部状态</option>${['在售', '下架', '停产'].map(s => `<option ${statusFilter === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+        <div class="col-md-2"><select class="form-select" name="positioning" aria-label="按定位筛选"><option value="">全部定位</option>${['高端款', '高流通款'].map(s => `<option ${posFilter === s ? 'selected' : ''}>${s}</option>`).join('')}<option value="__none__" ${posFilter === '__none__' ? 'selected' : ''}>未分类</option></select></div>
         <div class="col-auto"><button class="btn btn-outline-primary"><i class="bi bi-search"></i> 搜索</button></div>
         <div class="col-auto"><a class="btn btn-outline-secondary" href="/products">重置</a></div>
         <div class="col-auto d-flex align-items-center gap-1"><span class="text-muted small">页码</span><select class="form-select form-select-sm" name="page" onchange="this.form.submit()" style="width:82px">${pageOptions}</select><span class="text-muted small">/ ${pageCount} 页</span></div>
       </form>
       <div class="table-responsive"><table class="table table-hover align-middle">
-        <thead><tr><th>产品名称</th><th>规格型号</th><th>分类</th><th class="text-center">颜色</th><th class="text-center">单位</th><th class="text-center">MOQ</th><th class="text-center">交期</th><th class="text-end">库存</th><th class="text-end">进货价</th><th class="text-end">操作</th></tr></thead>
+        <thead><tr><th>产品名称</th><th>规格型号</th><th>分类</th><th class="text-center">定位</th><th class="text-center">颜色</th><th class="text-center">单位</th><th class="text-center">MOQ</th><th class="text-center">交期</th><th class="text-end">库存</th><th class="text-end">进货价</th><th class="text-end">操作</th></tr></thead>
         <tbody>${rowsHtml}</tbody></table></div>
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2"><span class="text-muted small">共 ${totalCount} 个产品 · 每页 15 · 第 ${safePage}/${pageCount} 页</span>${pagination}</div>
       ${addCategoryModalHtml(categories, backTarget)}` })}`;
@@ -1718,6 +1723,7 @@ function productFormPage(ctx) {
             <div class="col-md-3">${fld({ label: '大货交期（天）', name: 'lead_time_days', value: (p ? v.lead_time_days : ''), type: 'number', step: '1', min: 0 })}</div>
             <div class="col-md-3">${fld({ label: '打样交期（天）', name: 'sample_lead_time_days', value: (p ? v.sample_lead_time_days : ''), type: 'number', step: '1', min: 0 })}</div>
             <div class="col-md-3">${fld({ label: '状态', name: 'status', value: v.status || '在售', type: 'select', options: ['在售', '下架', '停产'].map(s => ({ v: s, l: s })), help: '停产的产品不再进报价' })}</div>
+            <div class="col-md-3">${fld({ label: '定位', name: 'positioning', value: v.positioning || '', type: 'select', options: [{ v: '', l: '未分类' }, { v: '高端款', l: '高端款' }, { v: '高流通款', l: '高流通款' }], help: '自动回复挑款按定位选：高端精品客户只推高端款，大众流通客户只推高流通款，未分类不参与自动挑款' })}</div>
             <div class="col-md-2">${fld({ label: '单位', name: 'unit', value: v.unit || 'PCS', options: ['PCS','SET','PAIR','CTN','KGS','M'].map(s => ({ v: s, l: s })), type: 'select' })}</div>
             <input type="hidden" name="origin" value="${esc(v.origin || '中国 China')}">
             <div class="col-md-3">${fld({ label: '进货价', name: 'cost_price', value: (p ? numFmt(v.cost_price) : ''), type: 'number', step: '0.001', min: 0, help: '采购/进货成本，可随时手动修改' })}</div>

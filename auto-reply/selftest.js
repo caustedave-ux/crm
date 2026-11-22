@@ -177,6 +177,83 @@ t('解析带前后杂字', () => {
 });
 t('非法文本 → null', () => assert.strictEqual(L.parseVerdict('不是JSON'), null));
 
+console.log('== 静默时长与拒接识别 ==');
+t('静默 30 小时', () => assert.strictEqual(L.silenceHours('2026-11-16 14:00:00', Date.parse('2026-11-17T20:00:00')), 30));
+t('时间戳非法 → null', () => assert.strictEqual(L.silenceHours('不是时间', Date.now()), null));
+t('空时间戳 → null', () => assert.strictEqual(L.silenceHours('', Date.now()), null));
+t('中文不感兴趣 → 拒接', () => assert.strictEqual(L.isRefusal('不感兴趣，谢谢'), true));
+t('英文 not interested → 拒接', () => assert.strictEqual(L.isRefusal('Not interested, thanks'), true));
+t('普通问价不是拒接', () => assert.strictEqual(L.isRefusal('请问这个多少钱'), false));
+
+console.log('== 跟进判定 followupDue ==');
+const fcfg = { minSilenceHours: 24, maxSilenceHours: 72, maxFollowups: 2, sendClosing: true };
+t('静默 30 小时首跟 → due', () => {
+  const d = L.followupDue({ followupsSent: 0, closingSent: false, silenceHours: 30, silenceSinceFollowupHours: null }, fcfg);
+  assert.strictEqual(d.due, true); assert.strictEqual(d.kind, 'followup');
+});
+t('静默 5 小时 → 不催', () => {
+  const d = L.followupDue({ followupsSent: 0, closingSent: false, silenceHours: 5, silenceSinceFollowupHours: null }, fcfg);
+  assert.strictEqual(d.due, false);
+});
+t('静默 100 小时 → 不翻旧账', () => {
+  const d = L.followupDue({ followupsSent: 0, closingSent: false, silenceHours: 100, silenceSinceFollowupHours: null }, fcfg);
+  assert.strictEqual(d.due, false);
+});
+t('第 1 次跟进后 5 小时 → 不催', () => {
+  const d = L.followupDue({ followupsSent: 1, closingSent: false, silenceHours: 40, silenceSinceFollowupHours: 5 }, fcfg);
+  assert.strictEqual(d.due, false);
+});
+t('第 1 次跟进后 30 小时 → 第 2 次', () => {
+  const d = L.followupDue({ followupsSent: 1, closingSent: false, silenceHours: 60, silenceSinceFollowupHours: 30 }, fcfg);
+  assert.strictEqual(d.due, true); assert.strictEqual(d.kind, 'followup');
+});
+t('跟进 2 次后 → 发收尾', () => {
+  const d = L.followupDue({ followupsSent: 2, closingSent: false, silenceHours: 90, silenceSinceFollowupHours: 30 }, fcfg);
+  assert.strictEqual(d.due, true); assert.strictEqual(d.kind, 'closing');
+});
+t('收尾已发 → 不再打扰', () => {
+  const d = L.followupDue({ followupsSent: 2, closingSent: true, silenceHours: 90, silenceSinceFollowupHours: 30 }, fcfg);
+  assert.strictEqual(d.due, false);
+});
+t('收尾开关关闭 → 满次数就停', () => {
+  const d = L.followupDue({ followupsSent: 2, closingSent: false, silenceHours: 90, silenceSinceFollowupHours: 30 }, { ...fcfg, sendClosing: false });
+  assert.strictEqual(d.due, false);
+});
+
+console.log('== v2.3 目录规则：不直接发全套、老客户直给、报量转人工 ==');
+t('要目录的新客户判精准 → 追问，不发全套', () => {
+  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { existingCustomer: false } }, null, cfg2);
+  assert.strictEqual(d.action, 'ask');
+});
+t('要目录的老客户判精准 → 直接发素材', () => {
+  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { existingCustomer: true } }, null, cfg2);
+  assert.strictEqual(d.action, 'send_material');
+});
+t('要目录的老客户信息不足 → 也不追问，直接发素材', () => {
+  const d = L.decideQualification({ precision: 'unknown', purpose: 'catalog', confidence: 0.3, signals: { existingCustomer: true } }, null, cfg2);
+  assert.strictEqual(d.action, 'send_material');
+});
+t('要目录的新客户报了采购量 → 转人工', () => {
+  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { quantityGiven: true } }, null, cfg2);
+  assert.strictEqual(d.action, 'hold'); assert.strictEqual(d.status, 'review');
+});
+t('要目录的新客户答了 2 轮 → 转人工', () => {
+  const d = L.decideQualification({ precision: 'unknown', purpose: 'catalog', confidence: 0.3, signals: {} }, { ask_rounds: 2 }, cfg2);
+  assert.strictEqual(d.action, 'hold'); assert.strictEqual(d.status, 'review');
+});
+t('要样品/视频看厂 → 转人工', () => {
+  const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { wantsSampleOrTour: true } }, null, cfg2);
+  assert.strictEqual(d.action, 'hold'); assert.strictEqual(d.status, 'review');
+});
+t('报价客户报了采购量 → 仍按原来发素材（目录规则只管 catalog）', () => {
+  const d = L.decideQualification({ precision: 'high', purpose: 'quote', confidence: 0.91, signals: { quantityGiven: true } }, null, cfg2);
+  assert.strictEqual(d.action, 'send_material');
+});
+t('现货高精准追问 2 轮 → 仍发素材', () => {
+  const d = L.decideQualification({ precision: 'high', purpose: 'stock', confidence: 0.9, signals: {} }, { ask_rounds: 2 }, cfg2);
+  assert.strictEqual(d.action, 'send_material');
+});
+
 console.log('== WhatsApp 总开关与置顶硬规则 ==');
 const waPage = fs.readFileSync(path.join(__dirname, '..', 'src', 'views', 'pages_wa.js'), 'utf8');
 const routes = fs.readFileSync(path.join(__dirname, '..', 'src', 'routes.js'), 'utf8');
@@ -202,5 +279,35 @@ t('中国采购经验可构成高精准证据', () => assert(qualify.includes('�
 t('资格追问最多 3 轮', () => assert.strictEqual(Number(cfg.qualify.maxQualifyRounds), 3));
 t('回复采用自然 WhatsApp 销售口吻', () => assert(qualify.includes('像真实外贸业务员在 WhatsApp 上聊天') && qualify.includes('每次只问 1 个最关键的问题')));
 t('回复禁止模板式连续确认', () => assert(qualify.includes('不要写“为了准确报价请确认以下内容”')));
+
+console.log('== v2.9 置顶保护补漏 + 跟进轮次 + 破冰打法 ==');
+const icebreakers = fs.readFileSync(path.join(__dirname, 'icebreakers.md'), 'utf8');
+t('发送只走 deliver 一个出口', () => {
+  const calls = (worker.match(/await send(Text|File)\(/g) || []).length;
+  assert.strictEqual(calls, 4); // 初次 + 限速重试，各在 deliver 循环里 1 处
+  assert(worker.includes('唯一发送出口'));
+});
+t('素材包逐条发送前重新查置顶', () => assert(worker.includes('素材包发送中被置顶') && worker.includes('logic.isPinned(recheck)')));
+t('跟进轮次只扫描 pending/qualified 且未置顶', () => assert(worker.includes("status IN ('pending','qualified')") && worker.includes('置顶客户绝不跟进')));
+t('跟进前判断人工是否接手', () => assert(worker.includes('humanTookOver(chat, chatKey)')));
+t('跟进与回复共用冷却和每天限额', () => assert(worker.includes('与回复共用同一套冷却和每天限额')));
+t('客户新消息重置跟进轮次', () => assert(worker.includes('resetFollowupEpisode(chatKey)')));
+t('明确拒接 14 天内不再跟进', () => assert(worker.includes('setNotInterested(chatKey, 14)')));
+t('跟进状态表存在', () => assert(worker.includes('CREATE TABLE IF NOT EXISTS followup')));
+t('跟进配置项齐全', () => {
+  assert.strictEqual(cfg.followup.enabled, true);
+  assert.strictEqual(Number(cfg.followup.minSilenceHours), 24);
+  assert.strictEqual(Number(cfg.followup.maxSilenceHours), 72);
+  assert.strictEqual(Number(cfg.followup.maxFollowups), 2);
+  assert.strictEqual(cfg.followup.sendClosing, true);
+});
+t('破冰打法文件有场景标签行', () => assert(/^- \[catalog\] /m.test(icebreakers) && /^- \[followup\] /m.test(icebreakers) && /^- \[closing\] /m.test(icebreakers)));
+t('挑款按 positioning 字段，不按材质推断', () => {
+  assert(icebreakers.includes('positioning') && icebreakers.includes('高端款') && icebreakers.includes('高流通款'));
+  assert(!icebreakers.includes('不锈钢、铜') && !icebreakers.includes('锌合金、走量款'));
+  assert(qualify.includes('positioning'));
+});
+t('qualify 接入破冰打法并能生成跟进', () => assert(qualify.includes('icebreakers.md') && qualify.includes('generateFollowup') && qualify.includes('icebreakerLines')));
+t('判定提示词按场景只取 1–2 条打法', () => assert(qualify.includes('icebreakerLines(sceneOfText(ctx.customerText), 2)')));
 
 if (!process.exitCode) console.log('\n全部 ' + pass + ' 项通过 ✓');
