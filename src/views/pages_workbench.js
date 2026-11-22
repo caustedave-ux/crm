@@ -36,14 +36,14 @@ function homePage(ctx) {
     .wb-hero{text-align:center;position:relative;padding:26px 0 18px;}
     .wb-hero:before{content:"";position:absolute;right:4%;top:-20px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle at 40% 40%,rgba(120,170,210,.18),rgba(120,170,210,0) 68%);pointer-events:none;}
     .wb-badge{display:inline-flex;align-items:center;gap:7px;padding:6px 15px;border:1px solid #cfe0ef;background:#f4f9ff;color:#2c5d86;border-radius:20px;font-size:12px;font-weight:600;}
-    .wb-title{font-size:40px;line-height:1.25;font-weight:800;letter-spacing:-1px;margin:18px 0 10px;color:#16233a;}
+    .wb-title{font-size:40px;line-height:1.25;font-weight:800;letter-spacing:-1px;margin:18px 0 10px;color:#f1f1f8;}
     .wb-title em{font-style:normal;background:linear-gradient(90deg,#1f8a6d,#2f6fb0);-webkit-background-clip:text;background-clip:text;color:transparent;}
-    .wb-sub{color:#7a8698;font-size:15px;margin-bottom:26px;}
+    .wb-sub{color:#a9a3bd;font-size:15px;margin-bottom:26px;}
     .wb-input-card{max-width:940px;margin:0 auto 26px;background:#fff;border:1px solid #e3e9ef;border-radius:16px;box-shadow:0 12px 34px rgba(30,50,80,.07);padding:18px 20px;text-align:left;}
-    .wb-input-hint{font-size:12px;color:#94a0b0;margin-bottom:9px;}
+    .wb-input-hint{font-size:12px;color:#7a8698;margin-bottom:9px;}
     .wb-input-hint b{color:#5a6c82;font-weight:600;}
     #wbInput{width:100%;border:0;outline:0;resize:none;font-size:15px;line-height:1.6;color:#25324a;min-height:64px;background:transparent;}
-    #wbInput::placeholder{color:#aab4c2;}
+    #wbInput::placeholder{color:#8a95a5;}
     .wb-input-foot{display:flex;align-items:center;gap:8px;border-top:1px solid #eef1f5;padding-top:12px;margin-top:8px;}
     .wb-mini{padding:5px 11px;border:1px solid #dbe3ea;background:#fff;border-radius:8px;font-size:12px;color:#5b6879;cursor:pointer;}
     .wb-mini:hover{background:#f4f8f6;border-color:#bcd8c8;color:#16624a;}
@@ -56,12 +56,12 @@ function homePage(ctx) {
     .wb-skill:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(30,50,80,.09);border-color:#bcd8c8;}
     .wb-skill .ic{width:34px;height:34px;border-radius:9px;background:#eef5f1;color:#1f7a5e;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:11px;}
     .wb-skill .t{font-weight:700;color:#20304a;font-size:14px;margin-bottom:4px;}
-    .wb-skill .s{font-size:11px;color:#9aa5b4;line-height:1.45;}
+    .wb-skill .s{font-size:11px;color:#7a8698;line-height:1.45;}
     .wb-skill .go{position:absolute;right:12px;top:12px;color:#c3ccd7;font-size:12px;}
     .wb-answer{max-width:940px;margin:22px auto 0;background:#fff;border:1px solid #dfe8f1;border-radius:14px;padding:18px 20px;display:none;}
     .wb-answer h6{color:#2f6fb0;font-size:13px;margin:0 0 10px;font-weight:700;}
     .wb-answer .txt{white-space:pre-wrap;font-size:14px;line-height:1.8;color:#34425a;}
-    .wb-note{text-align:center;color:#aab4c2;font-size:11px;margin-top:22px;}
+    .wb-note{text-align:center;color:#9a9ab0;font-size:11px;margin-top:22px;}
   </style>
   <div class="wb-wrap workbench-2">
     ${wbStatCards}
@@ -123,11 +123,11 @@ function mapPage(ctx) {
     .wb-map-wrap{height:calc(100vh - 150px);min-height:560px;display:grid;grid-template-columns:290px 1fr;gap:0;border:1px solid #e3e9ef;border-radius:14px;overflow:hidden;background:#fff;}
     .wb-map-side{border-right:1px solid #e9edf2;overflow:auto;padding:14px;}
     .wb-map-side h6{font-size:13px;color:#6b7688;margin:0 0 4px;font-weight:700;}
-    .wb-map-side .sub{font-size:11px;color:#a0aab8;margin-bottom:12px;}
+    .wb-map-side .sub{font-size:11px;color:#6b7688;margin-bottom:12px;}
     .wb-country{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1px solid #e8edf2;border-radius:9px;margin-bottom:7px;cursor:pointer;text-decoration:none;color:#243149;}
     .wb-country:hover{background:#f3f8f5;border-color:#bcd8c8;}
     .wb-country .n{font-weight:600;font-size:13px;}
-    .wb-country .c{font-size:11px;color:#8b97a8;}
+    .wb-country .c{font-size:11px;color:#6b7688;}
     .wb-country .pill{background:#1f7a5e;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;}
     #wbMap{width:100%;height:100%;min-height:560px;background:#eef3f7;}
     .wb-map-tip{position:absolute;left:12px;bottom:12px;z-index:5;background:rgba(255,255,255,.94);border:1px solid #dde5ec;border-radius:8px;padding:7px 11px;font-size:11px;color:#6b7688;}
@@ -135,7 +135,7 @@ function mapPage(ctx) {
   </style>
   <div class="wb-wrap">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div><h4 style="margin:0;font-weight:800;color:#16233a">客户开发地图</h4><div class="text-muted" style="font-size:12px">按国家聚合显示客户 ${points.reduce((a,p)=>a+p.customers.length,0)} 家、线索 ${points.reduce((a,p)=>a+p.leads.length,0)} 条 · 点击国家查看名单</div></div>
+      <div><h4 style="margin:0;font-weight:800;color:#f1f1f8">客户开发地图</h4><div class="text-muted" style="font-size:12px">按国家聚合显示客户 ${points.reduce((a,p)=>a+p.customers.length,0)} 家、线索 ${points.reduce((a,p)=>a+p.leads.length,0)} 条 · 点击国家查看名单</div></div>
       <a class="btn btn-sm btn-outline-secondary" href="/leadgen" target="_blank" rel="noopener"><i class="bi bi-funnel"></i> 去获客挖掘</a>
     </div>
     ${configured ? '' : `<div class="alert alert-info py-2 small">地图需配置腾讯地图 Key（海外底图为非默认场景，需自行申请）。请到 <a href="https://lbs.qq.com/dev/console/application/mine" target="_blank" rel="noopener">腾讯位置服务控制台</a> 申请 Key（开通 WebServiceAPI / JavaScript GL），再到 <a href="/settings">系统设置</a> 填入。当前显示占位符，地图不会加载。</div>`}
@@ -158,7 +158,7 @@ function mapPage(ctx) {
   (function(){
     var pts=window.__WB_MAP_POINTS__||[]; var map=null, markers=[];
     function init(){
-      if(typeof TMap==='undefined'){document.getElementById('wbMap').innerHTML='<div style="padding:40px;text-align:center;color:#8a95a5">地图 SDK 未加载。请先在设置中配置腾讯地图 Key。</div>';return;}
+      if(typeof TMap==='undefined'){document.getElementById('wbMap').innerHTML='<div style="padding:40px;text-align:center;color:#5b6879">地图 SDK 未加载。请先在设置中配置腾讯地图 Key。</div>';return;}
       map=new TMap.Map(document.getElementById('wbMap'),{zoom:3,center:new TMap.LatLng(28,60)});
       var geo=pts.filter(function(p){return p.lat!==null&&p.lng!==null;}).map(function(p,i){
         return {id:String(i),styleId:'dot',position:new TMap.LatLng(p.lat,p.lng),properties:p};
@@ -182,7 +182,7 @@ function mapPage(ctx) {
         var p=pts.find(function(x){return x.country===a.dataset.country;}); if(p)showInfo(p);
       });
     });
-    if(window._TMapKey) init(); else document.getElementById('wbMap').innerHTML='<div style="padding:40px;text-align:center;color:#8a95a5;line-height:2">未配置腾讯地图 Key<br><span style="font-size:12px">左侧国家列表与统计仍可使用；配置 Key 后自动显示地图</span></div>';
+    if(window._TMapKey) init(); else document.getElementById('wbMap').innerHTML='<div style="padding:40px;text-align:center;color:#5b6879;line-height:2">未配置腾讯地图 Key<br><span style="font-size:12px">左侧国家列表与统计仍可使用；配置 Key 后自动显示地图</span></div>';
   })();
   </script>`;
   return page({ title: '客户开发地图', active: 'workbench', user: ctx.user, content });
@@ -193,7 +193,7 @@ function composePage(ctx) {
   const content = `
   <div class="wb-wrap">
     <div style="max-width:860px;margin:0 auto">
-      <h4 style="font-weight:800;color:#16233a;margin-bottom:4px">写开发信</h4>
+      <h4 style="font-weight:800;color:#f1f1f8;margin-bottom:4px">写开发信</h4>
       <div class="text-muted small" style="margin-bottom:18px">基于客户资料与产品，让 AI 生成可直接发送的开发信</div>
       <div class="card neo-card"><div class="card-body">
         <div class="row g-3">
@@ -204,7 +204,7 @@ function composePage(ctx) {
           <div class="col-12"><button class="btn btn-primary" id="cGen"><i class="bi bi-stars"></i> 生成开发信</button></div>
         </div>
         <div id="cResult" style="display:none;margin-top:20px;border-top:1px dashed #e3e9ef;padding-top:18px">
-          <div class="d-flex justify-content-between align-items-center mb-2"><b style="color:#2f6fb0;font-size:13px">生成结果</b><button class="btn btn-sm btn-outline-secondary" id="cCopy"><i class="bi bi-clipboard"></i> 复制全文</button></div>
+          <div class="d-flex justify-content-between align-items-center mb-2"><b style="color:#7fb3e8;font-size:13px">生成结果</b><button class="btn btn-sm btn-outline-secondary" id="cCopy"><i class="bi bi-clipboard"></i> 复制全文</button></div>
           <div class="mb-2"><label class="form-label small">主题 Subject</label><input class="form-control" id="cSubject"></div>
           <label class="form-label small">正文</label><textarea class="form-control" id="cBody" rows="14"></textarea>
         </div>

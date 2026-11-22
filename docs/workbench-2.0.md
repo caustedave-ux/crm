@@ -188,3 +188,35 @@ WhatsApp 页顶部原来有两块可折叠的设置区，占地方又和聊天�
 没动的地方：左边会话列表、右边 AI 助手栏、页面最右边紫色滚动条（上次加的）都保持不动；备注和广告卡片的功能都在；数据库、后端路由、WhatsApp 连接、自动回复逻辑、轮询/发送脚本均未改。
 
 验证（真实 Chromium 渲染，视口 1617×824；临时种子库 + 最小依赖桩，验证完已清）：修复前消息区 120px、只看 2 条、输入框 53px 且被顶出视口；修复后消息区 560px、**一次看到 6 条气泡（约 14 行文字）**、输入框 71px（打 5 行字长到 110px）、发送按钮始终完整可见；页签 0–48px、客户头 48–113px、左右栏 top 80px 都贴住；矮窗口 1617×600 下同样 6 条可见、输入框贴底；窄屏 800×824 下消息区 363px（44vh）、5 条可见、输入框完整可见。`npm run check` 与 `npm run test:wa`（见下节）。
+
+## 深色背景上的黑色文字修复（2026-11-22）
+
+背景：用户说“系统内有些文字还是黑色，在紫色背景下看不见”。
+
+根因（静态排查 + 真实 Chromium 逐元素对比度实测，视口 1617×824；临时种子库 + 最小依赖桩，验证完已清）：
+
+- **表格文字纯黑**：Bootstrap 的 `.table > :not(caption) > * > *` 用 `--bs-table-color`（默认 `--bs-emphasis-color:#000`）直接给 td 上色，2.0 的 `.workbench-2 .table { color: ... }` 只改了 table 本身、盖不到 td。客户、产品、设置三页的表格全是 #000 字压在 #191323 背景上，对比度 1.16。
+- **表单 label 深灰**：全局 `.form-label { color:#4b4e55 }`，在深色卡片和深色登录卡片上对比度 2.17，写开发信、设置、登录页全中招。
+- **地图国家名反白**：`.workbench-2 a`（0,1,1）优先级高于 `.wb-country`（0,1,0），把白色地图面板里的国家名链接染成浅色 #f1f1f8，白底白字对比度 1.12。
+- **星标地图面板是深色**：`.starmap-panel` 在 style.css 里被 `!important` 锁成深色 #191323，但 `src/views/pages_map.js` 内联 `<style>` 里的 `.sm-*` 还是白色主题的深色字（#1a2233 等），客户名、单据名在深色面板上看不见；悬停背景 #f4f6fa 也是浅色。
+- **占位符**：仪表盘待办输入框、知识库搜索框是非 `.form-control` 的裸 input，`.form-control::placeholder` 盖不到，#757575 压在 #3b3b3b 上（2.43）。
+- **白色卡片上的浅灰次要文字也偏淡**：工作台输入框占位符 #aab4c2、技能副标题 #9aa5b4、输入提示 #94a0b0、地图侧栏说明 #a0aab8、地图未配置提示 #8a95a5、国家统计 #8b97a8，白底对比度 2.1–2.96。
+
+改动（只改颜色，不改布局和结构）：
+
+- `static/css/style.css`：
+  - `.workbench-2 .table` 补 `--bs-table-color: var(--wb2-text)`（#f1f1f8）——表格文字改走变量，td 才能吃到。
+  - `.workbench-2 .form-label` 与 `.login-body .form-label` → #d5d2e0。
+  - `.workbench-2 input::placeholder, .workbench-2 textarea::placeholder` → #9a9ab0（盖裸 input）。
+  - `.workbench-2 .wb-map-wrap a` → #243149（白面板里的链接恢复深色字）。
+  - `.workbench-2 .doc-paper a, .workbench-2 .wb-answer a` → #0d6efd（白纸、白答案卡里的链接恢复蓝色）。
+  - `body.workbench-2` 加 `color-scheme: dark`（原生日期选择器图标、滚动条按深色渲染）。
+  - 2.0 深色文字补丁块：描边按钮在深色卡片上提亮（success #4ade80、danger #f87171、warning #fbbf24、info #67e8f9，边框 #2e2e44、悬停 #262638）；文字工具类提亮（`.text-secondary` #a9a3bd、`.text-success` #4ade80、`.text-danger` #f87171、`.text-primary` #8ab4f8）；`.form-select` 下拉箭头换浅色（stroke %23c4b5fd）；侧栏分组标题、页脚 #6b6b85 → #8b8ba3；`.wa-fold>summary` #0d6efd → #7fb3e8。
+  - 白色孤岛反向修正（深色规则漏进白容器时拉回来）：`.doc-paper` 里的 `.text-muted`、`.text-secondary`、`.text-success`、`.text-danger`、`.text-primary` 恢复浅色主题值（#6c757d、#198754 等），`.list-group-item .text-muted` → #6c757d。
+  - 删掉了之前误加的 `.starmap-panel .btn-outline-*` 白底规则——面板实际是深色，2.0 描边按钮（浅字 #d1d1e0）才是对的。
+- `src/views/pages_workbench.js`：`.wb-title` #16233a → #f1f1f8；`.wb-sub` #7a8698 → #a9a3bd；`.wb-note` #aab4c2 → #9a9ab0；地图、写开发信 h4 行内 #16233a → #f1f1f8；“生成结果” #2f6fb0 → #7fb3e8；白卡片次要文字加深：`#wbInput::placeholder` #aab4c2 → #8a95a5、`.wb-skill .s` #9aa5b4 → #7a8698、`.wb-input-hint` #94a0b0 → #7a8698、`.wb-map-side .sub` #a0aab8 → #6b7688、`.wb-country .c` #8b97a8 → #6b7688、地图未配置提示 #8a95a5 → #5b6879。
+- `src/views/pages_map.js`：星标面板整套改深色——面板 #191323、标题/客户名/单据名 #eee7f4、次要文字 #b9aec8、边框 #40324f/#463752、悬停 #251a34；ECharts 提示 #999 → #c9c9d4。
+
+没动的地方：白色单据纸（`.doc-paper`）、打印页、PDF 导出的黑色文字是故意留白的，没动；WhatsApp 收到的消息气泡（#f1f3f5 底 + #212529 字）、`.text-bg-light` 徽章、图片占位符、`.wb-answer h6`（白卡片上的 #2f6fb0）都没动；布局、结构、路由、数据库均未改。
+
+验证（真实 Chromium 渲染，视口 1617×824；临时种子库 + 最小依赖桩，验证完已清）：逐元素算对比度，13 页（登录、仪表盘、工作台、地图、写开发信、客户、产品、报价、WhatsApp 会话、设置、知识库、统计、单据）从 28 处对比度 <3.0 降到 1 处，唯一 1 处是工作台标题渐变字（`color:transparent` + 背景裁剪渐变，审计误报，肉眼可见）。抽查值：表格字 #f1f1f8、登录/写开发信/设置 label #d5d2e0、地图国家名 #243149、星标面板 #191323 底 + #eee7f4 字 + #b9aec8 次要文字、描边按钮 success #4ade80 / danger #f87171、白纸 muted #6c757d。`npm run check` 全部通过（88 条），`npm run test:wa` 全部通过。

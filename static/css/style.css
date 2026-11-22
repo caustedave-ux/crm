@@ -439,7 +439,7 @@ textarea.form-control { min-height: auto; }
 .wa-chip-model{background:#ede7f6;border-color:#d9d0ea;color:#4a3b7a}
 .wa-chip-biz{background:#e3f2fd;border-color:#cbe3f7;color:#14507a}
 .wa-summary{background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px}
-.wa-fold>summary{cursor:pointer;color:#0d6efd;font-size:12px;margin:4px 0}
+.wa-fold>summary{cursor:pointer;color:#7fb3e8;font-size:12px;margin:4px 0}
 
 /* =========================================================================
    视觉层 · 纸墨台账（Editorial Ledger）
@@ -1604,7 +1604,7 @@ a:hover { color: #c18bff; }
   background: var(--wb2-bg);
   color: var(--wb2-text);
 }
-.workbench-2 body, body.workbench-2 { background: var(--wb2-bg); color: var(--wb2-text); }
+.workbench-2 body, body.workbench-2 { background: var(--wb2-bg); color: var(--wb2-text); color-scheme: dark; }
 .workbench-2 .topbar {
   background: linear-gradient(90deg, #1a0b2e 0%, #2d1b4e 55%, #1e1e2e 100%);
   border-bottom: 1px solid var(--wb2-line);
@@ -1617,7 +1617,7 @@ a:hover { color: #c18bff; }
 .workbench-2 .global-search input::placeholder { color: #9a9ab0; }
 .workbench-2 .global-search input:focus { border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,.18); background: rgba(255,255,255,.12); }
 .workbench-2 .sidebar { background: #171725; border-right: 1px solid var(--wb2-line); color: #9a9ab0; box-shadow: none; }
-.workbench-2 .sidebar-section-label { color: #6b6b85; }
+.workbench-2 .sidebar-section-label { color: #8b8ba3; }
 .workbench-2 .sidebar-nav .nav-link { color: #b8b8cc; }
 .workbench-2 .sidebar-nav .nav-link:hover { background: #262638; color: #fff; transform: none; }
 .workbench-2 .sidebar-nav .nav-link.active { background: linear-gradient(90deg, #7c3aed, #a855f7); color: #fff; box-shadow: 0 6px 18px rgba(124,58,237,.35); }
@@ -1630,7 +1630,7 @@ a:hover { color: #c18bff; }
 .workbench-2 .card-header { background: transparent !important; border-bottom: 1px solid var(--wb2-line); }
 .workbench-2 .card-heading, .workbench-2 .page-title { color: var(--wb2-text); }
 .workbench-2 .page-subtitle, .workbench-2 .text-muted { color: var(--wb2-muted) !important; }
-.workbench-2 .table { color: var(--wb2-text); --bs-table-bg: transparent; --bs-table-striped-bg: #262638; --bs-table-hover-bg: #2e2e44; }
+.workbench-2 .table { color: var(--wb2-text); --bs-table-color: var(--wb2-text); --bs-table-bg: transparent; --bs-table-striped-bg: #262638; --bs-table-hover-bg: #2e2e44; }
 .workbench-2 .table thead th { background: #262638 !important; border-bottom-color: var(--wb2-line); color: #9a9ab0; }
 .workbench-2 .table > :not(caption) > * > * { border-bottom-color: var(--wb2-line); }
 .workbench-2 .form-control, .workbench-2 .form-select, .workbench-2 .input-group-text {
@@ -1649,12 +1649,36 @@ a:hover { color: #c18bff; }
 .workbench-2 .stat-label { color: #d1d1e0; }
 .workbench-2 .stat-sub { color: var(--wb2-muted); }
 .workbench-2 .stat-icon { background: #262638 !important; border-color: var(--wb2-line) !important; color: #a855f7 !important; }
-.workbench-2 .sidebar-foot { border-top-color: var(--wb2-line); color: #6b6b85; }
+.workbench-2 .sidebar-foot { border-top-color: var(--wb2-line); color: #8b8ba3; }
 .workbench-2 .neo-dropdown { background: #1e1e2e; border-color: var(--wb2-line); }
 .workbench-2 .neo-dropdown .dropdown-item { color: #e5e5f0; }
 .workbench-2 .neo-dropdown .dropdown-item:hover { background: #262638; color: #fff; }
 .workbench-2 .modal-content { background: #1e1e2e; border-color: var(--wb2-line); color: var(--wb2-text); }
 .workbench-2 .alert { background: #262638; color: var(--wb2-text); border-color: var(--wb2-line); }
+
+/* 2.0 深色文字补丁（2026-11-22）：Bootstrap 默认的深色文字/描边按钮在深色底上看不见或太暗，提亮；白色纸面（单据/地图面板）反向恢复浅色版 */
+.workbench-2 .btn-outline-success { color: #4ade80; border-color: var(--wb2-line); background: transparent; }
+.workbench-2 .btn-outline-danger { color: #f87171; border-color: var(--wb2-line); background: transparent; }
+.workbench-2 .btn-outline-warning { color: #fbbf24; border-color: var(--wb2-line); background: transparent; }
+.workbench-2 .btn-outline-info { color: #67e8f9; border-color: var(--wb2-line); background: transparent; }
+.workbench-2 .btn-outline-success:hover, .workbench-2 .btn-outline-danger:hover,
+.workbench-2 .btn-outline-warning:hover, .workbench-2 .btn-outline-info:hover { background: #262638; color: #fff; border-color: #a855f7; }
+.workbench-2 .text-secondary { color: #a9a3bd !important; }
+.workbench-2 .text-success { color: #4ade80 !important; }
+.workbench-2 .text-danger { color: #f87171 !important; }
+.workbench-2 .text-primary { color: #8ab4f8 !important; }
+.workbench-2 .form-select { --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23c4b5fd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e"); }
+/* 白色纸面里的描边按钮与灰字恢复浅色版（白底上深色字才看得见） */
+.workbench-2 .form-label, .login-body .form-label { color: #d5d2e0; }
+.workbench-2 input::placeholder, .workbench-2 textarea::placeholder { color: #9a9ab0; }
+.workbench-2 .wb-map-wrap a { color: #243149; }
+.workbench-2 .doc-paper a, .workbench-2 .wb-answer a { color: #0d6efd; }
+.doc-paper .text-muted { color: #6c757d !important; }
+.doc-paper .text-secondary { color: #6c757d !important; }
+.doc-paper .text-success { color: #198754 !important; }
+.doc-paper .text-danger { color: #dc3545 !important; }
+.doc-paper .text-primary { color: #0d6efd !important; }
+.list-group-item .text-muted { color: #6c757d !important; }
 
 /* 2.0 通用：统计卡 + 迷你折线 */
 .workbench-2 .wb2-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
