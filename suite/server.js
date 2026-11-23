@@ -82,7 +82,7 @@ router.get('/maps-js', async ctx => {
     ctx.res.end('// 未配置 Google Places API Key');
     return;
   }
-  const url = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&loading=async&callback=initMapsSuite';
+  const url = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&loading=async&libraries=places&callback=initMapsSuite';
   const r = await fetchUrl(url, { throttle: false, retries: 0 });
   if (!r.ok || !r.text) {
     console.error('[获客工作台] 地图脚本代理加载失败：', r.status || '', r.error || '');
@@ -95,12 +95,22 @@ router.get('/maps-js', async ctx => {
 });
 
 router.post('/api/maps/search', ctx => {
-  const keyword = String(ctx.body.keyword || '').trim();
+  // 多关键词：body 接受 {keywords: [...]}，同时兼容旧的 {keyword: '...'}。
+  // 关键词去空、去重（大小写不敏感），1–5 个。
+  let keywords;
+  if (Array.isArray(ctx.body.keywords)) {
+    keywords = tasks.normalizeKeywords(ctx.body.keywords);
+  } else if (typeof ctx.body.keyword === 'string' && ctx.body.keyword.trim()) {
+    keywords = [ctx.body.keyword.trim()];
+  } else {
+    keywords = [];
+  }
+  if (!keywords.length) return ctx.res.json(400, { ok: false, error: '请至少填写 1 个关键词，例如 locksmith' });
+  if (keywords.length > 5) return ctx.res.json(400, { ok: false, error: '一次最多提交 5 个关键词' });
   const location = String(ctx.body.location || '').trim();
   const radiusKm = ctx.body.radiusKm === '' || ctx.body.radiusKm == null ? null : Number(ctx.body.radiusKm);
   let maxResults = Number(ctx.body.maxResults) || 20;
   maxResults = Math.min(places.MAX_RESULTS, Math.max(1, Math.floor(maxResults)));
-  if (!keyword) return ctx.res.json(400, { ok: false, error: '请填写关键词，例如 locksmith' });
   if (radiusKm != null && !(radiusKm > 0 && radiusKm <= places.MAX_RADIUS_KM)) {
     return ctx.res.json(400, { ok: false, error: '半径请填 1-' + places.MAX_RADIUS_KM + ' 公里' });
   }
@@ -112,14 +122,38 @@ router.post('/api/maps/search', ctx => {
   if (!places.hasApiKey()) {
     return ctx.res.json(400, { ok: false, error: '未配置 Google Places API Key，去数据源设置里填写', code: 'NO_API_KEY', settings_url: '/settings' });
   }
-  let t;
+  let batch;
   try {
-    t = tasks.createTask({ keyword, location, radiusKm, maxResults });
+    batch = tasks.createMapBatch({ keywords, location, radiusKm, maxResults });
   } catch (e) {
     return ctx.res.json(400, { ok: false, error: (e && e.message) || '新建任务失败' });
   }
-  const taskId = t && (t.id || t.task_id);
-  ctx.res.json(200, { ok: true, task_id: taskId });
+  // 单关键词时也建批次、返回 batch_id 与 task_ids（前端统一按批次走）；
+  // task_id 保留作旧前端兼容。
+  ctx.res.json(200, { ok: true, batch_id: batch.batch_id, task_ids: batch.task_ids, task_id: batch.task_ids[0] });
+});
+
+// ── 关键词批次 ──
+// 注意：/api/batches/latest 必须在 /api/batches/:id 之前注册，否则 "latest"
+// 会被当成 :id 参数匹配走。
+router.get('/api/batches/latest', ctx => {
+  const latest = tasks.getLatestMapBatch();
+  if (!latest) return ctx.res.json(200, { ok: true, batch: null });
+  const detail = tasks.getMapBatchDetail(latest.id);
+  ctx.res.json(200, {
+    ok: true,
+    batch: {
+      id: latest.id, keywords: latest.keywords, location: latest.location,
+      radius_km: latest.radius_km, max_results: latest.max_results,
+      created_at: latest.created_at, status: detail ? detail.batch.status : 'queued',
+    },
+  });
+});
+
+router.get('/api/batches/:id', ctx => {
+  const detail = tasks.getMapBatchDetail(Number(ctx.params.id));
+  if (!detail) return ctx.res.json(404, { ok: false, error: '批次不存在' });
+  ctx.res.json(200, { ok: true, ...detail });
 });
 
 // ── 任务流（经 tasks.js）──

@@ -426,6 +426,35 @@ function searchHandler(pages) {
   ok(boom.status === 500 && !/secret-boom-marker/.test(boom.body) && /服务器内部错误/.test(boom.body), 'L7：500 只给通用文案，不吐堆栈');
   await new Promise(res => srv9.close(res));
 
+  console.log('\n[10] places：collectLeads onProgress 实时进度回调');
+  const progress = [];
+  const r10 = await places.collectLeads(
+    { keyword: 'locksmith', location: 'Lagos, Nigeria', maxResults: 20 },
+    {
+      fetchImpl: makeMock((url) => {
+        if (url.includes(':searchText')) return jsonRes(200, { places: [searchPlace(4001), searchPlace(4002), searchPlace(4003)] });
+        if (url.includes('/v1/places/')) { const pid = decodeURIComponent(url.split('/v1/places/')[1]); return jsonRes(200, detailsFor('places/' + pid)); }
+        throw new Error('unexpected url ' + url);
+      }),
+      onProgress: (p) => progress.push({ ...p }),
+    });
+  ok(r10.found === 3, 'onProgress 场景：3 家商家正常采集');
+  ok(progress.length === 3, 'onProgress：每查完一家详情调一次，共 3 次');
+  ok(progress.map(p => p.detailed).join(',') === '1,2,3', 'onProgress：detailed 依次为 1、2、3');
+  ok(progress.every(p => p.total === 3), 'onProgress：total 为本次搜索到的商家数 3');
+  ok(progress.map(p => p.name).join('|') === 'Test Shop 4001|Test Shop 4002|Test Shop 4003', 'onProgress：name 为刚查完的那家商家名，按顺序');
+  // 不传 onProgress 时不影响采集（向后兼容）。
+  const r10b = await places.collectLeads(
+    { keyword: 'locksmith', location: 'Lagos, Nigeria', maxResults: 20 },
+    {
+      fetchImpl: makeMock((url) => {
+        if (url.includes(':searchText')) return jsonRes(200, { places: [searchPlace(4011)] });
+        if (url.includes('/v1/places/')) { const pid = decodeURIComponent(url.split('/v1/places/')[1]); return jsonRes(200, detailsFor('places/' + pid)); }
+        throw new Error('unexpected url ' + url);
+      }),
+    });
+  ok(r10b.found === 1 && r10b.inserted === 1, '不传 onProgress 时采集不受影响');
+
   db.close();
   cleanup();
   console.log(`\n===== 结果：${pass} 通过 / ${fail} 失败 =====`);

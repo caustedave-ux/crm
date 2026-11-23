@@ -243,6 +243,7 @@ function estimateCalls({ maxResults, radiusKm, location }) {
 /**
  * 采集编排：定位（如需）→ 翻页搜索 → 逐家查详情 → 按 importer 去重规则入库。
  * 返回汇总 { batch_id, found, inserted, duplicates, skipped, truncated, center, calls, results }。
+ * opts.onProgress 可选：每查完一家详情调一次 onProgress({ detailed, total, name })。
  * truncated：翻页中途失败时为 true（已拿到的页数已入库）；center：定位到的城市中心坐标。
  * results 每项：{ place_id, name, address, phone, website, rating, user_rating_count, status, lead_id, types, lat, lng, error? }（types/lat/lng 供行业归类与地图打点；详情无坐标时用搜索结果的坐标回退）
  * status: new（新增入库）/ duplicate（重复跳过）/ failed（详情失败未入库）。
@@ -264,6 +265,13 @@ async function collectLeads(input, opts = {}) {
   }
 
   const calls = { geocode: 0, search: 0, details: 0 };
+  // 实时进度回调（可选，向后兼容）：每查完一家详情后调一次
+  // onProgress({ detailed, total, name })，供任务侧写 done/current_name。
+  const onProgress = opts && typeof opts.onProgress === 'function' ? opts.onProgress : null;
+  function reportProgress(detailed, total, name) {
+    if (!onProgress) return;
+    try { onProgress({ detailed, total, name }); } catch {}
+  }
   let center = null;
   if (radiusKm && location) {
     center = await geocodeLocation(location, { fetchImpl });
@@ -311,6 +319,8 @@ async function collectLeads(input, opts = {}) {
         status: 'failed', error: e && e.message ? String(e.message) : '详情查询失败',
       });
     }
+    // 刚查完的这家（成功或失败都算查完）：detailed 计数 = 已查详情数。
+    reportProgress(detailed.length, places.length, detailed[detailed.length - 1].name || '');
   }
 
   // 按 importer 去重规则预判每家是新增还是重复（域名优先，无域名用规范化公司名），

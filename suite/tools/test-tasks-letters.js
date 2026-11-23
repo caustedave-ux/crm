@@ -303,6 +303,49 @@ function waitFor(fn, timeoutMs = 15000) {
   ok(done6.status === 'done', 'L3：认领回来的任务能正常跑完');
   ok(tasks.getTask(t6.id).center_lat === 6.45 && tasks.getTask(t6.id).center_lng === 3.39, 'L3：任务存了服务端定位的中心坐标（供地图页直接用）');
 
+  console.log('\n[12] 多关键词批次：5 个关键词同批次、顺序一致、runner 按顺序跑完');
+  scenario = 'success';
+  const batch5 = tasks.createMapBatch({ keywords: ['locksmith', 'hardware', 'furniture', 'door', 'hinge'], location: 'Lagos, Nigeria', radiusKm: 10, maxResults: 20 });
+  ok(batch5.batch_id && batch5.task_ids.length === 5, '一次提交 5 个关键词生成 5 个任务');
+  const batchRows = tasks.listMapBatchTasks(batch5.batch_id);
+  ok(batchRows.length === 5 && batchRows.every(t => t.map_batch_id === batch5.batch_id), '5 个任务 map_batch_id 相同');
+  ok(batchRows.map(t => t.keyword).join(',') === 'locksmith,hardware,furniture,door,hinge', '任务顺序与关键词顺序一致（id ASC）');
+  ok(batchRows.every(t => t.results_json === undefined), '批次任务列表不含 results_json 大字段');
+  const meta5 = tasks.getMapBatch(batch5.batch_id);
+  ok(meta5 && meta5.keywords.join(',') === 'locksmith,hardware,furniture,door,hinge' && meta5.location === 'Lagos, Nigeria' && meta5.radius_km === 10 && meta5.max_results === 20, 'getMapBatch 返回批次行 + 解析后的 keywords/location/radius/maxResults');
+  ok(tasks.getLatestMapBatch() && tasks.getLatestMapBatch().id === batch5.batch_id, 'getLatestMapBatch 返回最近一个 maps 批次');
+  ok(tasks.getMapBatch(999999) === null && tasks.getMapBatchDetail(999999) === null, '不存在的批次 getMapBatch/getMapBatchDetail 返回 null');
+  throwsSync(() => tasks.createMapBatch({ keywords: [] }), /至少填写 1 个/, '0 个关键词建批次抛中文错');
+  throwsSync(() => tasks.createMapBatch({ keywords: ['a', 'b', 'c', 'd', 'e', 'f'] }), /一次最多提交 5 个/, '6 个关键词建批次抛中文错');
+  ok(tasks.normalizeKeywords(['Locksmith', 'locksmith', '  ', 'Hardware', 'HARDWARE']).join(',') === 'Locksmith,Hardware', '关键词去空、大小写不敏感去重（保留首次写法与顺序）');
+  const stop3 = tasks.startRunner();
+  await waitFor(() => {
+    const s = batch5.task_ids.map(id => tasks.getTask(id).status);
+    return s.every(x => x === 'done') || null;
+  });
+  tasks.stopRunner();
+  ok(batch5.task_ids.every(id => tasks.getTask(id).status === 'done'), 'runner 把 5 个任务全部跑完');
+  const startedSeq = batch5.task_ids.map(id => tasks.getTask(id).started_at);
+  ok(startedSeq.every((s, i) => i === 0 || s >= startedSeq[i - 1]), 'runner 按任务顺序跑：started_at 随关键词顺序单调不减');
+  const detail5 = tasks.getMapBatchDetail(batch5.batch_id);
+  ok(detail5 && detail5.batch.status === 'done', '批次详情 status：全部 done→done');
+  ok(detail5.tasks.map(t => t.keyword).join(',') === 'locksmith,hardware,furniture,door,hinge', '批次详情 tasks 顺序与关键词顺序一致');
+  ok(detail5.batch.parsed === detail5.tasks.reduce((a, t) => a + t.done, 0)
+    && detail5.batch.total === detail5.tasks.reduce((a, t) => a + t.total, 0)
+    && detail5.batch.parsed === 15 && detail5.batch.total === 15, '批次详情 parsed/total = 各任务 done/total 之和（5×3）');
+  ok(detail5.tasks.every(t => t.results.length === 3), '批次详情每任务 results 为解析后的 results_json（各 3 条）');
+  ok(typeof detail5.batch.elapsed_seconds === 'number' && detail5.batch.elapsed_seconds >= 0, '批次详情 elapsed_seconds 为非负秒数');
+  const expectLeads = batch5.task_ids.reduce((a, id) => {
+    const bid = tasks.getTask(id).batch_id;
+    return a + (bid == null ? 0 : get('SELECT COUNT(*) c FROM leads WHERE batch_id=?', bid).c);
+  }, 0);
+  ok(detail5.leads_count === expectLeads, '批次详情 leads_count = 各任务导入批次的 leads 条数之和');
+  const first5 = tasks.getTask(batch5.task_ids[0]);
+  const calls5 = JSON.parse(first5.calls_json || '{}');
+  ok(calls5.geocode === 1 && calls5.search === 1 && calls5.details === 3 && calls5.total === 5, '任务完成后 calls_json 有正确值（定位 1 + 搜索 1 + 详情 3 = 5）');
+  ok(first5.current_name == null, '任务完成后 current_name 置 NULL');
+  ok(batch5.task_ids.every(id => tasks.getTask(id).calls_json && tasks.getTask(id).current_name == null), '批次内每个任务 calls_json/current_name 均正确');
+
   console.log(`\n通过 ${pass} 项，失败 ${fail} 项`);
   for (const f of [tmp, tmp + '-wal', tmp + '-shm']) { try { fs.unlinkSync(f); } catch {} }
   process.exitCode = fail ? 1 : 0;

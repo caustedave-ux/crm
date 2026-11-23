@@ -135,18 +135,175 @@ function normalizeMaxResults(maxResults) {
   return Math.min(MAX_RESULTS, Math.max(1, n));
 }
 
-/** 新建采集任务：插入一行 status='queued' 并返回任务行。 */
-function createTask({ keyword, location, radiusKm, maxResults }) {
+/** 新建采集任务：插入一行 status='queued' 并返回任务行。mapBatchId 可选：写入 map_batch_id（关键词批次归属）。 */
+function createTask({ keyword, location, radiusKm, maxResults, mapBatchId }) {
   const kw = String(keyword || '').trim();
   if (!kw) throw new Error('请填写关键词，例如 locksmith。');
   const loc = String(location || '').trim();
   const radius = normalizeRadius(radiusKm);
   const max = normalizeMaxResults(maxResults);
+  const mapBatch = mapBatchId == null || mapBatchId === '' ? null : Number(mapBatchId);
   const r = run(
-    'INSERT INTO tasks(keyword,location,radius_km,max_results,status,total,done,created_at) VALUES(?,?,?,?,?,?,?,?)',
-    kw, loc, radius, max, 'queued', 0, 0, now()
+    'INSERT INTO tasks(keyword,location,radius_km,max_results,status,total,done,map_batch_id,created_at) VALUES(?,?,?,?,?,?,?,?,?)',
+    kw, loc, radius, max, 'queued', 0, 0, mapBatch, now()
   );
   return getTask(Number(r.lastInsertRowid));
+}
+
+/** 关键词去空、去重（大小写不敏感，保留首次出现的写法与顺序），返回清洗后的数组。 */
+function normalizeKeywords(keywords) {
+  const list = Array.isArray(keywords) ? keywords : [];
+  const seen = new Set();
+  const out = [];
+  for (const k of list) {
+    const kw = String(k == null ? '' : k).trim();
+    if (!kw) continue;
+    const lower = kw.toLowerCase();
+    if (seen.has(lower)) continue;
+    seen.add(lower);
+    out.push(kw);
+  }
+  return out;
+}
+
+/**
+ * 新建多关键词批次：在 batches 表插一行（source='maps'，note=JSON 字符串
+ * {keywords, location, radiusKm, maxResults}，row_count=关键词数），再按
+ * 关键词顺序为每个关键词调 createTask 建任务并写 map_batch_id。
+ * 返回 { batch_id, task_ids }。关键词 0 个或超过 5 个抛中文错。
+ */
+function createMapBatch({ keywords, location, radiusKm, maxResults }) {
+  const kws = normalizeKeywords(keywords);
+  if (!kws.length) throw new Error('请至少填写 1 个关键词。');
+  if (kws.length > 5) throw new Error('一次最多提交 5 个关键词。');
+  const loc = String(location || '').trim();
+  const radius = normalizeRadius(radiusKm);
+  const max = normalizeMaxResults(maxResults);
+  const note = JSON.stringify({ keywords: kws, location: loc, radiusKm: radius, maxResults: max });
+  const b = run(
+    'INSERT INTO batches(filename,source,note,row_count,created_at) VALUES(?,?,?,?,?)',
+    '', 'maps', note, kws.length, now()
+  );
+  const batchId = Number(b.lastInsertRowid);
+  const taskIds = [];
+  for (const kw of kws) {
+    const t = createTask({ keyword: kw, location: loc, radiusKm: radius, maxResults: max, mapBatchId: batchId });
+    taskIds.push(t.id);
+  }
+  return { batch_id: batchId, task_ids: taskIds };
+}
+
+/** 解析 batches.note 里的 JSON meta（解析失败时用空对象兜底，不抛错）。 */
+function parseBatchNote(note) {
+  try {
+    const m = JSON.parse(String(note || ''));
+    return m && typeof m === 'object' ? m : {};
+  } catch { return {}; }
+}
+
+/**
+ * 取一个关键词批次：返回批次行 + 解析后的 keywords 等 meta。
+ * 返回 { id, filename, source, note, row_count, created_at, keywords, location, radius_km, max_results }，不存在返回 null。
+ */
+function getMapBatch(id) {
+  const row = get("SELECT * FROM batches WHERE id=? AND source='maps'", Number(id));
+  if (!row) return null;
+  const meta = parseBatchNote(row.note);
+  const keywords = Array.isArray(meta.keywords) ? meta.keywords : [];
+  return {
+    id: row.id,
+    filename: row.filename,
+    source: row.source,
+    note: row.note,
+    row_count: row.row_count,
+    created_at: row.created_at,
+    keywords,
+    location: typeof meta.location === 'string' ? meta.location : '',
+    radius_km: meta.radiusKm == null ? null : meta.radiusKm,
+    max_results: meta.maxResults == null ? null : meta.maxResults,
+  };
+}
+
+/**
+ * 列出某批次的任务行（按 id ASC，即关键词顺序；不含 results_json 大字段）。
+ * 每行含 id/keyword/location/radius_km/max_results/status/total/done/batch_id/
+ * map_batch_id/error/center_lat/center_lng/calls_json/current_name/created_at/started_at/finished_at。
+ */
+function listMapBatchTasks(batchId) {
+  return all('SELECT id, keyword, location, radius_km, max_results, status, total, done, batch_id, map_batch_id, error, center_lat, center_lng, calls_json, current_name, created_at, started_at, finished_at FROM tasks WHERE map_batch_id=? ORDER BY id ASC', Number(batchId));
+}
+
+/** 返回最近一个 source='maps' 的批次摘要（getMapBatch 的形状），没有返回 null。 */
+function getLatestMapBatch() {
+  const row = get("SELECT * FROM batches WHERE source='maps' ORDER BY id DESC LIMIT 1");
+  return row ? getMapBatch(row.id) : null;
+}
+
+/** 按任务状态算批次状态：全部 done→done；全部 failed→failed；任一 running/organizing→running；其余（全 queued）→queued。 */
+function calcBatchStatus(taskRows) {
+  const list = taskRows || [];
+  if (!list.length) return 'queued';
+  if (list.every(t => t.status === 'done')) return 'done';
+  if (list.every(t => t.status === 'failed')) return 'failed';
+  if (list.some(t => t.status === 'running' || t.status === 'organizing')) return 'running';
+  // 剩余混合态：有任务已终结（done/failed）但还有 queued 在排队，批次仍在推进中。
+  if (list.some(t => t.status === 'done' || t.status === 'failed')) return 'running';
+  return 'queued';
+}
+
+/**
+ * 批次详情聚合（供 GET /api/batches/:id 与 /latest 复用）：
+ * 返回 null（批次不存在）或 { batch:{id,keywords,location,radius_km,max_results,created_at,status,elapsed_seconds,parsed,total},
+ * tasks:[{id,keyword,status,total,done,started_at,finished_at,error,center_lat,center_lng,current_name,calls,results}], leads_count }。
+ * tasks 按 id ASC；results 是解析后的 results_json（无结果时 []）；calls 是解析后的
+ * calls_json（无时 null）；parsed/total 为各任务 done/total 之和；elapsed_seconds 为
+ * 批次 created_at 到现在的秒数（已终结时到最后一个任务的 finished_at）；
+ * leads_count 为本批次各任务的导入批次 id（tasks.batch_id）对应的 leads 条数之和（batch_id 为空时不计）。
+ */
+function getMapBatchDetail(batchId) {
+  const batch = getMapBatch(batchId);
+  if (!batch) return null;
+  const rows = listMapBatchTasks(batch.id);
+  const status = calcBatchStatus(rows);
+  let parsed = 0, total = 0, leadsCount = 0;
+  let lastFinishedAt = null;
+  const tasks = rows.map(r => {
+    parsed += Number(r.done) || 0;
+    total += Number(r.total) || 0;
+    if (r.finished_at && (!lastFinishedAt || r.finished_at > lastFinishedAt)) lastFinishedAt = r.finished_at;
+    if (r.batch_id != null) {
+      const c = get('SELECT COUNT(*) c FROM leads WHERE batch_id=?', r.batch_id);
+      leadsCount += c ? Number(c.c) || 0 : 0;
+    }
+    let calls = null;
+    try { const p = JSON.parse(r.calls_json || ''); if (p && typeof p === 'object') calls = p; } catch {}
+    let results = [];
+    const full = getTask(r.id);
+    try { const p = JSON.parse((full && full.results_json) || '[]'); if (Array.isArray(p)) results = p; } catch {}
+    return {
+      id: r.id, keyword: r.keyword, status: r.status, total: r.total, done: r.done,
+      started_at: r.started_at, finished_at: r.finished_at, error: r.error,
+      center_lat: r.center_lat, center_lng: r.center_lng, current_name: r.current_name,
+      calls, results,
+    };
+  });
+  const createdMs = Date.parse(batch.created_at);
+  let endMs = Date.now();
+  if ((status === 'done' || status === 'failed') && lastFinishedAt) {
+    const fMs = Date.parse(lastFinishedAt);
+    if (Number.isFinite(fMs)) endMs = fMs;
+  }
+  const elapsedSeconds = Number.isFinite(createdMs) ? Math.max(0, Math.floor((endMs - createdMs) / 1000)) : 0;
+  return {
+    batch: {
+      id: batch.id, keywords: batch.keywords, location: batch.location,
+      radius_km: batch.radius_km, max_results: batch.max_results,
+      created_at: batch.created_at, status, elapsed_seconds: elapsedSeconds,
+      parsed, total,
+    },
+    tasks,
+    leads_count: leadsCount,
+  };
 }
 
 function getTask(id) {
@@ -157,7 +314,7 @@ function getTask(id) {
 function listTasks(limit = 20) {
   const n = Math.min(100, Math.max(1, Math.floor(Number(limit) || 20)));
   // 列表不带 results_json（结果原文只在单个任务详情里返回，避免列表响应过大）
-  return all('SELECT id, keyword, location, radius_km, max_results, status, total, done, batch_id, error, center_lat, center_lng, created_at, started_at, finished_at FROM tasks ORDER BY created_at DESC, id DESC LIMIT ?', n);
+  return all('SELECT id, keyword, location, radius_km, max_results, status, total, done, batch_id, map_batch_id, error, center_lat, center_lng, current_name, created_at, started_at, finished_at FROM tasks ORDER BY created_at DESC, id DESC LIMIT ?', n);
 }
 
 /**
@@ -213,7 +370,12 @@ async function runTask(id, opts = {}) {
       radiusKm: task.radius_km,
       maxResults: task.max_results,
     };
-    const callOpts = {};
+    const callOpts = {
+      // 实时进度：每查完一家详情，done=已查详情数，current_name=刚查完的那家商家名。
+      onProgress: ({ detailed, name }) => {
+        run('UPDATE tasks SET done=?, current_name=? WHERE id=?', detailed, name || null, task.id);
+      },
+    };
     if (opts.fetchImpl) {
       input.fetchImpl = opts.fetchImpl; // 兼容 input 内读取 fetchImpl 的实现
       callOpts.fetchImpl = opts.fetchImpl; // places.js 的标准签名是 (input, opts)
@@ -226,13 +388,16 @@ async function runTask(id, opts = {}) {
     // 服务端定位到的城市中心坐标存下来，供地图页直接用（L3，不再让浏览器重算）。
     const centerLat = res && res.center && typeof res.center.lat === 'number' ? res.center.lat : null;
     const centerLng = res && res.center && typeof res.center.lng === 'number' ? res.center.lng : null;
-    run("UPDATE tasks SET batch_id=?, total=?, results_json=?, status='organizing', center_lat=?, center_lng=? WHERE id=?", batchId, found, JSON.stringify(res.results || []), centerLat, centerLng, task.id);
+    const callsJson = res && res.calls ? JSON.stringify(res.calls) : null;
+    run("UPDATE tasks SET batch_id=?, total=?, results_json=?, status='organizing', center_lat=?, center_lng=?, calls_json=?, current_name=NULL WHERE id=?", batchId, found, JSON.stringify(res.results || []), centerLat, centerLng, callsJson, task.id);
     const organized = organizeStep(task, res.results || []);
     run("UPDATE tasks SET status='done', done=?, finished_at=? WHERE id=?", organized, now(), task.id);
     return getTask(id);
   } catch (e) {
     const msg = toFriendlyMessage(e);
-    run("UPDATE tasks SET status='failed', error=?, finished_at=? WHERE id=?", msg, now(), task.id);
+    // 失败时 calls_json 拿不到（collectLeads 抛错前不返回 calls），保持 NULL 不写；
+    // current_name 清掉，不让右侧栏一直显示一家已停的商家。
+    run("UPDATE tasks SET status='failed', error=?, finished_at=?, current_name=NULL WHERE id=?", msg, now(), task.id);
     const err = new Error(msg);
     if (e && e.code) err.code = e.code;
     throw err;
@@ -246,7 +411,7 @@ function retryTask(id) {
   if (task.status !== 'failed') {
     throw new Error('只有失败的任务可以重试，当前状态为「' + (STATUS_LABEL[task.status] || task.status) + '」。');
   }
-  run("UPDATE tasks SET status='queued', done=0, total=0, error=NULL, batch_id=NULL, results_json=NULL, started_at=NULL, finished_at=NULL WHERE id=?", task.id);
+  run("UPDATE tasks SET status='queued', done=0, total=0, error=NULL, batch_id=NULL, results_json=NULL, calls_json=NULL, current_name=NULL, started_at=NULL, finished_at=NULL WHERE id=?", task.id);
   return getTask(id);
 }
 
@@ -303,6 +468,13 @@ module.exports = {
   createTask,
   getTask,
   listTasks,
+  createMapBatch,
+  getMapBatch,
+  listMapBatchTasks,
+  getLatestMapBatch,
+  getMapBatchDetail,
+  calcBatchStatus,
+  normalizeKeywords,
   startRunner,
   stopRunner,
   reclaimStaleTasks,

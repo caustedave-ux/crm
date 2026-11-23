@@ -166,7 +166,21 @@ function dashboardPage() {
   return layout({ title: '概览', active: 'dashboard', content });
 }
 
-// ── 地图采集 ──
+// ── 地图采集（单屏重做：顶部表单 + 中间大地图/右侧 AI 执行流 + 底部关键词时间线）──
+// DOM 约定（与 static/maps.js 对齐）：
+// 容器 #mapsSingle（data-latest-batch-id：最近批次 id，后端 getLatestMapBatch 提供；
+//   未提供时为空，前端再试 GET /api/batches/latest）。
+// 表单 #mapsForm[data-has-key]：#mapsKeywords（多行文本框，一行一个关键词，最多 5 个）、
+//   #mapsKwCount（已填 n / 5 个）、.preset-kw / .preset-loc、#mapsLocation、#mapsRadius、
+//   #mapsMax、#mapsProxyText、#mapsEstimate、#mapsRefreshBtn、#mapsRunBtn、#mapsError。
+// 地图 #mapsMap（高约 560px）、#mapsPlaceSearch（地点搜索框）、#mapsMapList（叠加商家列表）、
+//   #mapsMapFallback、#mapsMapNote、#mapsActions。
+// 右侧 AI 执行流 #aiFlowPanel：#aiTaskList、#aiCurrentCard、#aiLeadsList、#aiCallsLog。
+// 底部时间线 #mapsTimelineBar：#tlCounter、#tlNodes、#tlParsed、#tlContext。
+// 后端契约：POST /api/maps/search {keywords:[...]} → {ok, batch_id, task_ids}；
+//   GET /api/batches/latest、GET /api/batches/:id → {ok, batch, tasks, leads_count}。
+// 分类 chips 不做（本次范围外：截图顶部的分类 chips 是另一套筛选体系，
+//   与现有按关键词采集的后端没有对应字段，做出来是摆设，等后端有分类字段再补）。
 function mapsPage() {
   const key = String(getSetting('google_places_key', '') || '').trim();
   const hasKey = !!key;
@@ -177,57 +191,87 @@ function mapsPage() {
   const scripts = ['/static/maps.js'];
   if (hasKey) scripts.push('/maps-js');
   // M3：代理缺失时页面上明确警告，不要等采集失败了才发现。
-  const proxyWarn = proxyStatus().warning;
+  const proxy = proxyStatus();
+  const proxyWarn = proxy.warning;
+  const proxyText = proxy.proxyUrl ? ('代理：' + proxy.proxyUrl + (proxy.willUseProxy ? '（采集中走代理）' : '（代理未生效，直连）')) : '代理：未配置（直连 Google）';
+  // 最近一个批次：后端提供 getLatestMapBatch（tasks.js）时取其 id；未提供时输出空，
+  // 前端加载后再试 GET /api/batches/latest。取不到也不报错，页面显示空态。
+  let latestBatchId = '';
+  try {
+    const tasksMod = require('./tasks');
+    if (tasksMod && typeof tasksMod.getLatestMapBatch === 'function') {
+      const b = tasksMod.getLatestMapBatch();
+      if (b && b.id != null) latestBatchId = String(b.id);
+    }
+  } catch (e) { /* 后端批次接口未就绪：留空，前端走空态 */ }
   const content = `
   ${pageHead('地图采集', '用 Google Places API 按关键词 + 城市批量找海外商家，采回即进线索库',
     `<a class="btn btn-outline-secondary btn-sm" href="/leads"><i class="bi bi-collection"></i> 查看线索</a>`)}
   ${hasKey ? '' : `<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> <b>未配置 Google Places API Key，地图采集暂不可用。</b>请先到<a href="/settings">数据源设置</a>填写 Google Places API Key（Key 只保存在本机设置里，不会写进代码或日志）。</div>`}
   ${proxyWarn ? `<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> <b>代理提示：</b>${esc(proxyWarn)}</div>` : ''}
-  <div class="row g-3"><div class="col-lg-5">
-    <div class="card panel"><div class="card-header panel-header"><span><i class="bi bi-geo-alt"></i> 采集条件</span></div><div class="card-body">
+  <div id="mapsSingle" data-latest-batch-id="${esc(latestBatchId)}">
+    <div class="card panel maps-form-card"><div class="card-header panel-header"><span><i class="bi bi-geo-alt"></i> 采集条件</span><span class="small text-muted">一行一个关键词，最多 5 个</span></div><div class="card-body">
       <form id="mapsForm" data-has-key="${hasKey ? '1' : '0'}">
-        <div class="mb-3"><label class="form-label fw-semibold">关键词</label>
-          <input class="form-control" name="keyword" id="mapsKeyword" placeholder="例如 locksmith" required>
-          <div class="mt-2">${kwPresets.map(k => `<button type="button" class="btn btn-sm btn-outline-secondary preset-kw" data-kw="${k}">${k}</button>`).join(' ')}</div>
+        <div class="maps-form-grid">
+          <div>
+            <label class="form-label fw-semibold" for="mapsKeywords">关键词 <span class="small text-muted fw-normal" id="mapsKwCount">已填 0 / 5 个</span></label>
+            <textarea class="form-control font-monospace" name="keywords" id="mapsKeywords" rows="3" placeholder="locksmith&#10;door hardware&#10;hardware store">locksmith</textarea>
+            <div class="mt-2">${kwPresets.map(k => `<button type="button" class="btn btn-sm btn-outline-secondary preset-kw" data-kw="${k}">${k}</button>`).join(' ')}</div>
+          </div>
+          <div>
+            <label class="form-label fw-semibold" for="mapsLocation">城市 / 地区</label>
+            <input class="form-control" name="location" id="mapsLocation" placeholder="例如 Lagos, Nigeria">
+            <div class="mt-2">${locPresets.map(l => `<button type="button" class="btn btn-sm btn-outline-secondary preset-loc" data-loc="${esc(l)}">${esc(l)}</button>`).join(' ')}</div>
+            <div class="form-text">城市用于拼搜索词（“关键词 in 城市”）；填了半径时还会先定位，再按半径圈定范围。半径需配合城市使用，只填半径不填城市时半径会被忽略。</div>
+          </div>
+          <div>
+            <div class="row g-2">
+              <div class="col-6"><label class="form-label small">半径（公里，可选）</label><input class="form-control" type="number" min="1" max="50" name="radiusKm" id="mapsRadius" placeholder="留空不限半径"></div>
+              <div class="col-6"><label class="form-label small">最多条数 / 词</label><input class="form-control" type="number" min="1" max="60" name="maxResults" id="mapsMax" value="20"></div>
+            </div>
+            <div class="small text-muted mt-2" id="mapsProxyText">${esc(proxyText)}</div>
+            <div class="alert alert-info small mt-2 mb-0" id="mapsEstimate">预估调用：1 个关键词 × 每词约 21 次 = 合计约 21 次（未填半径，不定位）。</div>
+          </div>
         </div>
-        <div class="mb-3"><label class="form-label fw-semibold">城市 / 地区</label>
-          <input class="form-control" name="location" id="mapsLocation" placeholder="例如 Lagos, Nigeria">
-          <div class="mt-2">${locPresets.map(l => `<button type="button" class="btn btn-sm btn-outline-secondary preset-loc" data-loc="${esc(l)}">${esc(l)}</button>`).join(' ')}</div>
-          <div class="form-text">城市用于拼搜索词（“关键词 in 城市”）；填了半径时还会先定位，再按半径圈定范围。半径需配合城市使用，只填半径不填城市时半径会被忽略。</div>
+        <div class="d-flex gap-2 mt-3 flex-wrap">
+          <button type="button" class="btn btn-outline-secondary" id="mapsRefreshBtn"><i class="bi bi-arrow-clockwise"></i> 刷新地图</button>
+          <button type="submit" class="btn btn-primary" id="mapsRunBtn" ${hasKey ? '' : 'disabled'}><i class="bi bi-search"></i> 开始采集商家</button>
+          ${hasKey ? '' : '<span class="form-text align-self-center">配好 Key 后即可使用。</span>'}
         </div>
-        <div class="row g-2">
-          <div class="col-6"><label class="form-label small">半径（公里，可选）</label><input class="form-control" type="number" min="1" max="50" name="radiusKm" id="mapsRadius" placeholder="留空不限半径"></div>
-          <div class="col-6"><label class="form-label small">最多条数</label><input class="form-control" type="number" min="1" max="60" name="maxResults" id="mapsMax" value="20"></div>
-        </div>
-        <div class="alert alert-info small mt-3 mb-3" id="mapsEstimate">预估调用：搜索 1 次 + 详情 20 次（未填半径，不定位）。</div>
-        <button type="submit" class="btn btn-primary w-100" id="mapsRunBtn" ${hasKey ? '' : 'disabled'}><i class="bi bi-search"></i> 开始采集</button>
-        ${hasKey ? '' : '<div class="form-text mt-2">配好 Key 后即可使用。</div>'}
+        <div id="mapsError" class="mt-2"></div>
+        <div class="small text-muted mt-2">费用说明：走官方 Places API (New)，不是爬虫。Text Search Pro 每月免费 5,000 次，超出后 $32 / 1,000 次；Place Details Pro 每月免费 5,000 次，超出后 $17 / 1,000 次；Geocoding 每月免费 10,000 次。按“搜一次 20 家、每家查 1 次详情”算，免费额度够每月采约 5,000 家，超出才收费，建议在 Google Cloud 控制台设预算上限。</div>
       </form>
     </div></div>
-    <div class="card panel mt-3"><div class="card-header panel-header">费用说明</div><div class="card-body small">
-      <p class="mb-1">走官方 Places API (New)，不是爬虫：每次搜索与详情调用都计费，但每月有免费额度——</p>
-      <ul class="mb-1">
-        <li>Text Search Pro：每月免费 5,000 次，超出后 $32 / 1,000 次</li>
-        <li>Place Details Pro：每月免费 5,000 次，超出后 $17 / 1,000 次</li>
-        <li>Geocoding：每月免费 10,000 次</li>
-      </ul>
-      <p class="mb-0 text-muted">按“搜一次 20 家、每家查 1 次详情”算，免费额度够每月采约 5,000 家。超出才收费，建议在 Google Cloud 控制台设预算上限。</p>
-    </div></div>
-  </div><div class="col-lg-7">
-    <div class="card panel mb-3"><div class="card-header panel-header"><span><i class="bi bi-map"></i> 地图</span><span class="small text-muted" id="mapsMapNote">${hasKey ? '采回商家后打点显示' : '配好 Key 后加载地图'}</span></div><div class="card-body">
-      <div id="mapsMap" style="height:320px;border-radius:8px;overflow:hidden;background:#eef0ea;"><div class="text-muted small p-3">${hasKey ? '地图加载中…' : '未配置 Key，地图不加载；采集功能不受影响，仍可只看列表。'}</div></div>
-      <div id="mapsMapFallback" class="small text-muted mt-2" style="display:none">地图脚本加载失败（网络或 Key 权限问题），已降级为只显示列表，不影响采集。</div>
-    </div></div>
-    <div class="card panel"><div class="card-header panel-header"><span><i class="bi bi-list-ul"></i> 采集结果</span><span class="small text-muted" id="mapsSummary"></span></div><div class="card-body">
-      <div id="mapsProgress" style="display:none"><div class="d-flex justify-content-between small mb-1"><span id="mapsProgressLabel">采集中…</span><span id="mapsProgressPct"></span></div><div class="progress"><div id="mapsProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div></div><div class="small text-muted mt-2">任务已入队，后台搜索 + 逐家查详情 + AI 整理，60 条约需 1 分钟左右，请勿关闭页面。</div></div>
-      <div id="mapsError" class="mt-2"></div>
-      <div id="mapsResult" class="mt-2"><div class="text-muted small">尚未采集。填好左侧条件后点“开始采集”，结果会出现在这里。</div></div>
-      <div id="mapsActions" class="mt-3" style="display:none">
-        <a class="btn btn-outline-secondary btn-sm" href="/leads">查看线索</a>
-        <a class="btn btn-outline-secondary btn-sm" href="/tasks">查看任务流</a>
+    <div class="maps-mid">
+      <div class="card panel maps-map-card"><div class="card-header panel-header"><span><i class="bi bi-map"></i> 地图</span><span class="small text-muted" id="mapsMapNote">${hasKey ? '采回商家后打点显示' : '配好 Key 后加载地图'}</span></div><div class="card-body p-2">
+        <div class="maps-map-wrap">
+          <div id="mapsMap"><div class="text-muted small p-3">${hasKey ? '地图加载中…' : '未配置 Key，地图不加载；采集功能不受影响，仍可只看列表。'}</div></div>
+          <input id="mapsPlaceSearch" class="form-control maps-place-search" type="text" placeholder="搜索地点，定位并移动半径圈…" autocomplete="off">
+          <div id="mapsMapList" class="maps-map-list" style="display:none"><div class="maps-map-list-head">已采商家 <span id="mapsMapListCount"></span></div><div id="mapsMapListItems"></div></div>
+        </div>
+        <div id="mapsMapFallback" class="small text-muted mt-2 px-1" style="display:none">地图脚本加载失败（网络或 Key 权限问题），已降级为只显示列表，不影响采集。</div>
+        <div id="mapsActions" class="mt-2 px-1" style="display:none">
+          <a class="btn btn-outline-secondary btn-sm" href="/leads">查看线索</a>
+          <a class="btn btn-outline-secondary btn-sm" href="/tasks">查看任务流</a>
+        </div>
+      </div></div>
+      <aside class="ai-flow" id="aiFlowPanel" aria-label="AI 执行流">
+        <div class="ai-flow-title"><i class="bi bi-stars"></i> AI 执行流 <span class="ai-flow-sub" id="aiFlowBatch"></span></div>
+        <div class="ai-flow-section"><div class="ai-flow-label">任务列表</div><div id="aiTaskList"><div class="ai-flow-empty">尚未发起采集。</div></div></div>
+        <div class="ai-flow-section"><div class="ai-flow-label">当前任务</div><div id="aiCurrentCard"><div class="ai-flow-empty">暂无进行中的任务。</div></div></div>
+        <div class="ai-flow-section ai-flow-grow"><div class="ai-flow-label">已采商家 <span id="aiLeadsCount"></span></div><div id="aiLeadsList"><div class="ai-flow-empty">暂无已采商家。</div></div></div>
+        <div class="ai-flow-section"><div class="ai-flow-label">API 调用日志</div><div id="aiCallsLog"><div class="ai-flow-empty">暂无调用记录。</div></div></div>
+      </aside>
+    </div>
+    <div class="maps-timeline" id="mapsTimelineBar">
+      <div class="maps-tl-counter" id="tlCounter">— / —</div>
+      <div class="maps-tl-nodes" id="tlNodes"><div class="maps-tl-empty">尚未发起采集</div></div>
+      <div class="maps-tl-right">
+        <div class="maps-tl-parsed" id="tlParsed">已解析 — / — 条 · 用时 --:--</div>
+        <div class="maps-tl-context" id="tlContext">—</div>
       </div>
-    </div></div>
-  </div></div>`;
+    </div>
+  </div>`;
   return layout({ title: '地图采集', active: 'maps', content, scripts });
 }
 

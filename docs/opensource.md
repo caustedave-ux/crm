@@ -575,3 +575,5 @@
 - 不搬：旧核验引擎（`verify.js`、`sources.js`、`socialReader.js`、`workflow.js`、pipeline-demo、`exporter.js`）；`/verify`、`/api/verify`、`/api/verify-all`、`/api/maps/verify-batch` 已去掉，导出功能 V1 先不做。
 
 **验证**：`node --check` 全部通过；`node tools/selftest.js` 41/41 通过；`npm test`（含 B 的 `tools/test-tasks-letters.js`）72/72 通过；临时端口 + 临时库拉起服务真渲染 `/`、`/maps`、`/tasks`、`/leads`、`/letters`、`/settings`，确认无 Key 态与页面结构，以及建任务、开发信渲染/标记已发送的端到端接口。
+
+- 2026-11-23 采集主界面按参考图重做单屏：无新增依赖、不引入新库——布局为现有栈上的定制实现（Bootstrap 5 + Google Maps JS 经服务端 `/maps-js` 代理加载 + `node:sqlite`）；改动：`src/tasks.js`（`createMapBatch`/`getMapBatchDetail`，复用 `batches` 表 + `tasks.map_batch_id`/`calls_json`/`current_name` 三个轻量字段）、`src/places.js`（`collectLeads` 加可选 `onProgress` 回调）、`src/views.js`（`mapsPage` 一屏三区：表单/560px 大地图 + 右侧 AI 执行流栏/底部关键词时间线）、`static/maps.js`（多关键词提交、2 秒轮询批次、地点搜索 Autocomplete、地图叠加列表）、`static/app.css`（追加样式）。分类 chips 未做：现有按关键词采集的后端没有对应分类字段，做出来只是摆设。

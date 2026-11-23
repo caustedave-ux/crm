@@ -92,3 +92,66 @@ a:hover{color:var(--neo-green)}
 .tl-sub{font-size:11px;color:var(--neo-muted);margin-top:2px}
 .tl-line{flex:1;height:2px;background:#e7e1d5;margin-top:17px;min-width:24px}
 #mapsMap{min-height:320px}
+
+/* 地图采集单屏重做（/maps）：顶部表单 + 中间大地图/右侧 AI 执行流 + 底部时间线。
+   右侧栏与底部时间线用深色，与截图一致；分类 chips 本次不做。 */
+.maps-single{display:flex;flex-direction:column;gap:14px}
+.maps-form-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:18px}
+.maps-mid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:stretch}
+.maps-map-card .card-body{padding:8px}
+.maps-map-wrap{position:relative}
+#mapsMap{height:560px;min-height:560px;border-radius:8px;overflow:hidden;background:#eef0ea}
+.maps-place-search{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:min(480px,78%);z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.maps-map-list{position:absolute;top:12px;left:12px;width:250px;max-height:520px;overflow-y:auto;z-index:5;background:rgba(255,253,250,.97);border:1px solid var(--neo-line);border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.maps-map-list-head{position:sticky;top:0;background:#faf8f3;font-weight:600;font-size:12px;padding:8px 10px;border-bottom:1px solid var(--neo-line)}
+.maps-map-list-item{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #f0ede5;padding:8px 10px;font-size:13px;cursor:pointer;color:var(--neo-ink)}
+.maps-map-list-item:hover{background:#f0ede5}
+/* 右侧 AI 执行流：深色卡片 */
+.ai-flow{background:#211f1c;color:#f2efe9;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:14px;min-height:560px}
+.ai-flow a{color:#ffd54a}
+.ai-flow-title{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+.ai-flow-sub{font-weight:400;font-size:12px;color:#b8b2a6}
+.ai-flow-label{font-size:11px;letter-spacing:1px;color:#b8b2a6;text-transform:uppercase;margin-bottom:6px}
+.ai-flow-section{border-top:1px solid rgba(255,255,255,.12);padding-top:10px}
+.ai-flow-section:first-of-type{border-top:0;padding-top:0}
+.ai-flow-grow{flex:1;min-height:120px}
+.ai-flow-empty{font-size:12px;color:#b8b2a6}
+.ai-task-row{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.ai-task-row:last-child{border-bottom:0}
+.ai-task-no{font-weight:700;color:#ffd54a;white-space:nowrap}
+.ai-task-kw{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.ai-task-prog{color:#b8b2a6;white-space:nowrap;font-size:11px}
+.ai-task-time{color:#b8b2a6;white-space:nowrap;font-size:11px}
+.ai-task-error{font-size:11px;color:#ff9a9a;padding:2px 0 6px}
+.ai-current-head{display:flex;align-items:center;gap:8px;font-size:13px}
+.ai-current-line{font-size:12px;color:#d8d2c6;margin-top:6px}
+.ai-current-name{color:#ffd54a}
+.ai-lead-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.ai-lead-row:last-child{border-bottom:0}
+.ai-lead-name{font-weight:600}
+.ai-lead-brief{width:100%;color:#b8b2a6;font-size:11px}
+.ai-log-row{font-size:12px;color:#d8d2c6;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.ai-log-row:last-child{border-bottom:0}
+/* 底部关键词时间线：深色条，已完成蓝色、当前黄色、待跑灰色、失败红色 */
+.maps-timeline{background:#1d1c1a;color:#f2efe9;border-radius:10px;padding:14px 20px;display:flex;align-items:center;gap:20px}
+.maps-tl-counter{font-size:24px;font-weight:700;color:#ffc107;white-space:nowrap}
+.maps-tl-nodes{flex:1;display:flex;align-items:flex-start;overflow-x:auto;padding:4px 0}
+.maps-tl-empty{color:#b8b2a6;font-size:13px}
+.mtl-node{flex:0 0 auto;text-align:center;min-width:110px}
+.mtl-dot{width:34px;height:34px;border-radius:50%;margin:0 auto 6px;display:grid;place-items:center;font-weight:700;font-size:13px;background:#6c757d;color:#fff}
+.mtl-node.mtl-done .mtl-dot{background:#2f7bff;color:#fff}
+.mtl-node.mtl-current .mtl-dot{background:#ffc107;color:#1b1a17}
+.mtl-node.mtl-failed .mtl-dot{background:#dc3545;color:#fff}
+.mtl-label{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;margin:0 auto}
+.mtl-sub{font-size:11px;color:#b8b2a6;margin-top:2px}
+.mtl-line{flex:1;height:2px;background:#4a463f;margin-top:17px;min-width:24px}
+.maps-tl-right{text-align:right;white-space:nowrap}
+.maps-tl-parsed{font-weight:600;font-size:14px}
+.maps-tl-context{font-size:12px;color:#b8b2a6;margin-top:4px}
+@media(max-width:1100px){
+  .maps-form-grid{grid-template-columns:1fr}
+  .maps-mid{grid-template-columns:1fr}
+  .ai-flow{min-height:0}
+  .maps-timeline{flex-wrap:wrap}
+  .maps-tl-right{text-align:left}
+}

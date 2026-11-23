@@ -276,6 +276,14 @@ ensureColumn('leads', 'recommend_score', 'INTEGER DEFAULT 0');
 // 不再让浏览器端 Geocoder 重算一次。
 ensureColumn('tasks', 'center_lat', 'REAL');
 ensureColumn('tasks', 'center_lng', 'REAL');
+// 多关键词批次（轻量归属字段，不另起大表）：
+// map_batch_id 指向 batches 表里 source='maps' 的一行（关键词批次归属；
+// 注意 tasks.batch_id 仍是 collectLeads 内部 importLeads 建的导入批次 id，
+// 两者不要混用）；calls_json 存 collectLeads 返回的 calls 计数 JSON；
+// current_name 是当前正在查详情的商家名，供右侧栏实时显示，任务完成时置 NULL。
+ensureColumn('tasks', 'map_batch_id', 'INTEGER');
+ensureColumn('tasks', 'calls_json', 'TEXT');
+ensureColumn('tasks', 'current_name', 'TEXT');
 
 // 默认配置（沿用旧 db.js 的默认设置写法）
 // 注意：旧核验引擎的设置项（google_cse_key、serpapi_key、jina_*、
