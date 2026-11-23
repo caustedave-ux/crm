@@ -12,26 +12,26 @@ function starmapPage(ctx) {
       .starmap-wrap{position:relative;display:grid;grid-template-columns:1fr 340px;gap:14px;height:calc(100vh - 150px);min-height:560px;}
       .starmap-stage{position:relative;background:#0b1020;border-radius:14px;overflow:hidden;box-shadow:inset 0 0 40px rgba(0,0,0,.5);}
       #smChart{width:100%;height:100%;}
-      .starmap-legend{position:absolute;left:12px;bottom:12px;background:rgba(8,12,24,.72);border:1px solid #2a3556;border-radius:8px;padding:6px 10px;font-size:12px;color:#9fb2d8;z-index:3;}
+      .starmap-legend{position:absolute;left:12px;bottom:12px;background:rgba(8,12,24,.72);border:1px solid #2a3556;border-radius:8px;padding:6px 10px;font-size:13px;color:#9fb2d8;z-index:3;}
       .starmap-panel{background:#191323;border:1px solid #3b2c4c;border-radius:14px;overflow:auto;padding:16px;color:#e9e1f1;}
-      .sm-empty{color:#b9aec8;text-align:center;padding:40px 10px;font-size:14px;line-height:1.8;}
-      .sm-cust-name{font-size:17px;font-weight:700;color:#eee7f4;word-break:break-word;}
-      .sm-cust-meta{font-size:13px;color:#b9aec8;margin:4px 0 10px;}
+      .sm-empty{color:#b9aec8;text-align:center;padding:40px 10px;font-size:15px;line-height:1.8;}
+      .sm-cust-name{font-size:18px;font-weight:700;color:#eee7f4;word-break:break-word;}
+      .sm-cust-meta{font-size:14px;color:#b9aec8;margin:4px 0 10px;}
       .sm-sec{border-top:1px dashed #463752;margin-top:10px;padding-top:10px;}
-      .sm-sec-title{font-size:13px;color:#b9aec8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
-      .sm-fu{font-size:14px;color:#eee7f4;margin-bottom:8px;padding-left:8px;border-left:3px solid #6c8cff;}
-      .sm-fu .d{font-size:12px;color:#b9aec8;}
-      .sm-doc{display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:6px 8px;border-radius:6px;text-decoration:none;color:#eee7f4;}
+      .sm-sec-title{font-size:14px;color:#b9aec8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+      .sm-fu{font-size:15px;color:#eee7f4;margin-bottom:8px;padding-left:8px;border-left:3px solid #6c8cff;}
+      .sm-fu .d{font-size:13px;color:#b9aec8;}
+      .sm-doc{display:flex;justify-content:space-between;align-items:center;font-size:15px;padding:6px 8px;border-radius:6px;text-decoration:none;color:#eee7f4;}
       .sm-doc:hover{background:#251a34;}
       .sm-doc .t{color:#eee7f4;word-break:break-all;}
-      .sm-doc .s{color:#b9aec8;font-size:12px;white-space:nowrap;margin-left:8px;}
+      .sm-doc .s{color:#b9aec8;font-size:13px;white-space:nowrap;margin-left:8px;}
       .sm-go{display:inline-block;margin-top:8px;}
-      .sm-list-title{font-weight:700;font-size:16px;margin-bottom:2px;color:#eee7f4;}
-      .sm-list-sub{font-size:13px;color:#b9aec8;margin-bottom:10px;}
+      .sm-list-title{font-weight:700;font-size:17px;margin-bottom:2px;color:#eee7f4;}
+      .sm-list-sub{font-size:14px;color:#b9aec8;margin-bottom:10px;}
       .sm-cust-row{display:block;padding:8px 10px;border:1px solid #40324f;border-radius:8px;margin-bottom:6px;text-decoration:none;color:#eee7f4;cursor:pointer;}
       .sm-cust-row:hover{background:#251a34;border-color:#654582;}
-      .sm-cust-row .n{font-weight:600;font-size:14px;word-break:break-word;}
-      .sm-cust-row .m{font-size:12px;color:#b9aec8;}
+      .sm-cust-row .n{font-weight:600;font-size:15px;word-break:break-word;}
+      .sm-cust-row .m{font-size:13px;color:#b9aec8;}
       .sm-back{width:100%;}
       @media(max-width:900px){.starmap-wrap{grid-template-columns:1fr;height:auto;}.starmap-stage{height:60vh;}}
     </style>
@@ -103,7 +103,7 @@ function starmapPage(ctx) {
       function renderCountryList (country, arr) {
         var rows = arr.map(function (c) {
           var ws = c.weeksSince == null ? '无跟进' : (c.weeksSince === 0 ? '本周跟进' : c.weeksSince + ' 周未跟进');
-          var tag = c.weeksSince != null && c.weeksSince >= 4 ? ' <span class="badge text-bg-danger" style="font-size:11px">超期</span>' : '';
+          var tag = c.weeksSince != null && c.weeksSince >= 4 ? ' <span class="badge text-bg-danger" style="font-size:12px">超期</span>' : '';
           return '<div class="sm-cust-row" data-id="' + c.id + '">' +
             '<div class="n">' + escHtml(c.name || ('#' + c.id)) + tag + '</div>' +
             '<div class="m">累计成交 ' + fmtAmt(c.amount) + ' · ' + ws + '</div></div>';
@@ -162,7 +162,7 @@ function starmapPage(ctx) {
           tooltip: {
             trigger: 'item',
             formatter: function (p) {
-              if (p.data && p.data._arr) return p.name + '：' + p.data.value + ' 家客户<br><span style="font-size:12px;color:#c9c9d4">点击查看</span>';
+              if (p.data && p.data._arr) return p.name + '：' + p.data.value + ' 家客户<br><span style="font-size:13px;color:#c9c9d4">点击查看</span>';
               return p.name;
             }
           },

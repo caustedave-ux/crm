@@ -145,7 +145,7 @@ function accountCard(ctx, back) {
     body += `<div class="mt-3 p-3 rounded-3" style="background:#f6f9ff;border:1px solid #dbe7ff">
       <div class="text-center">
         <div class="small text-muted mb-1">在手机 WhatsApp 里输入这串配对码（有效期约 60 秒）</div>
-        <div class="fw-bold" style="font-size:34px;letter-spacing:4px">${esc(v.pairCode)}</div>
+        <div class="fw-bold" style="font-size:36px;letter-spacing:4px">${esc(v.pairCode)}</div>
         <div class="small ${left > 10 ? 'text-muted' : 'text-danger'} mt-1">${left > 0 ? '剩余约 ' + left + ' 秒' : '可能已过期，重新点一次「生成配对码」'}</div>
         <div class="small text-muted mt-2">手机：WhatsApp → 设置 → 已关联的设备 → 关联设备 → <b>改用手机号码连接</b> → 输入上面这串码</div>
         <div class="small text-muted mt-1">注意：手机号要填<b>带国家码、不要 +、不要前导 0</b>（例如 86 138 6896 5673 要填 <code>8613800138000</code>）</div>
@@ -307,7 +307,7 @@ function chatAvatarHtml(chat, eager) {
 function chatListHtml(chats, activeId, hrefFor, backUrl) {
   if (!chats.length) return `<div class="text-muted small py-3">
     没有符合条件的会话。<br>
-    <span style="font-size:13px">清空搜索或切换筛选试试，或等待客户发来新消息。</span>
+    <span style="font-size:14px">清空搜索或切换筛选试试，或等待客户发来新消息。</span>
   </div>`;
   const back = String(backUrl || '/whatsapp/session');
   const isPinned = c => String(c.pinned_at || '').trim() !== '';

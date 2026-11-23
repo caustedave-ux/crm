@@ -947,7 +947,7 @@ function customerDetailPage(ctx) {
         <div class="fw-semibold"><span class="badge text-bg-light border me-1">${esc(a.type || '其他')}</span>${esc(a.subject || '')} ${priorityBadge(a.priority)}${a.archived ? ' <span class="badge text-bg-success">已完成</span>' : ''}</div>
         ${a.type === 'WhatsApp'
           ? waRender.renderActivity(a, waSummaries[a.id])
-            + (waSummaries[a.id] ? '' : `<form method="post" action="/whatsapp/activity/${a.id}/summary" class="d-inline"><button class="btn btn-sm btn-link p-0" style="font-size:13px">生成要点摘要</button></form>`)
+            + (waSummaries[a.id] ? '' : `<form method="post" action="/whatsapp/activity/${a.id}/summary" class="d-inline"><button class="btn btn-sm btn-link p-0" style="font-size:14px">生成要点摘要</button></form>`)
           : `<div class="text-muted small">${esc(a.content || '')}</div>`}
         ${a.outcome ? `<div class="small mt-1 text-success"><i class="bi bi-check2-circle me-1"></i>结果：${esc(a.outcome)}</div>` : ''}
         ${imagesThumb(a.images)}
@@ -1159,7 +1159,7 @@ function customerFormPage(ctx) {
   ];
   const imgPreview = c && c.image
     ? `<img id="cImg" src="${esc(c.image)}" alt="" style="width:84px;height:84px;object-fit:cover;border-radius:16px;border:1px solid #dee2e6;padding:3px;background:#fff">`
-    : `<div id="cImg" style="width:84px;height:84px;border-radius:16px;border:1px dashed #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;background:#f8fafc"><i class="bi bi-building" style="font-size:24px"></i><span class="small">主图</span></div>`;
+    : `<div id="cImg" style="width:84px;height:84px;border-radius:16px;border:1px dashed #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;background:#f8fafc"><i class="bi bi-building" style="font-size:26px"></i><span class="small">主图</span></div>`;
   const clearBox = (c && c.image) ? `<label class="form-check mt-2"><input class="form-check-input" type="checkbox" name="clear_image" value="1"><span class="form-check-label small">移除现有主图</span></label>` : '';
   const content = `
     ${pageHead(title, '', `<a class="btn btn-outline-secondary" href="/customers${c ? '/' + c.id : ''}">返回</a>`)}
@@ -1279,7 +1279,7 @@ function contactFormPage(ctx) {
   const title = contact ? '编辑联系人' : '添加联系人';
   const imgPreview = contact && contact.image
     ? `<img id="kImg" src="${esc(contact.image)}" alt="" style="width:76px;height:76px;object-fit:cover;border-radius:50%;border:1px solid #dee2e6;padding:3px;background:#fff">`
-    : `<div id="kImg" style="width:76px;height:76px;border-radius:50%;border:1px dashed #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;background:#f8fafc"><i class="bi bi-person" style="font-size:26px"></i></div>`;
+    : `<div id="kImg" style="width:76px;height:76px;border-radius:50%;border:1px dashed #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;background:#f8fafc"><i class="bi bi-person" style="font-size:28px"></i></div>`;
   const clearBox = (contact && contact.image) ? `<label class="form-check mt-2"><input class="form-check-input" type="checkbox" name="clear_image" value="1"><span class="form-check-label small">移除照片</span></label>` : '';
   const content = `
     ${pageHead(title, '客户：' + esc(customer.company_name), `<a class="btn btn-outline-secondary" href="/customers/${customer.id}">返回客户</a>`)}
@@ -1532,7 +1532,7 @@ function productsPage(ctx) {
   const rowsHtml = rows.map(p => `<tr>
     <td><div class="d-flex align-items-center gap-2">
       <div style="width:48px;height:48px;flex:0 0 48px;border-radius:8px;overflow:hidden;background:#f1f4f8;border:1px solid #e7ecf2;display:flex;align-items:center;justify-content:center">
-        ${p.image ? `<img src="${esc(p.image)}" style="width:100%;height:100%;object-fit:cover" alt="">` : '<i class="bi bi-image text-secondary" style="font-size:18px"></i>'}
+        ${p.image ? `<img src="${esc(p.image)}" style="width:100%;height:100%;object-fit:cover" alt="">` : '<i class="bi bi-image text-secondary" style="font-size:19px"></i>'}
       </div>
       <div><div class="fw-semibold"><a class="text-decoration-none" href="/products/${p.id}">${esc(p.name)}</a>${p.status && p.status !== '在售' ? ` <span class="badge ${p.status === '停产' ? 'text-bg-danger' : 'text-bg-secondary'}">${esc(p.status)}</span>` : ''}</div>${p.name_en ? `<div class="text-muted small">${esc(p.name_en)}</div>` : ''}</div>
     </div></td>
@@ -1690,7 +1690,7 @@ function productFormPage(ctx) {
   const curOpts = ['USD', 'EUR', 'CNY', 'GBP', 'JPY'].map(s => ({ v: s, l: s }));
   const imgPreview = p && p.image
     ? `<img id="pImg" src="${esc(p.image)}" alt="" style="max-width:120px;max-height:120px;border-radius:10px;border:1px solid #dee2e6;padding:4px;background:#fff">`
-    : `<div id="pImg" style="width:120px;height:120px;border-radius:10px;border:1px dashed #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;background:#f8fafc"><i class="bi bi-image" style="font-size:26px"></i><span class="small mt-1">暂无图片</span></div>`;
+    : `<div id="pImg" style="width:120px;height:120px;border-radius:10px;border:1px dashed #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;background:#f8fafc"><i class="bi bi-image" style="font-size:28px"></i><span class="small mt-1">暂无图片</span></div>`;
   const clearBox = (p && p.image) ? `<label class="form-check mt-2"><input class="form-check-input" type="checkbox" name="clear_image" value="1"><span class="form-check-label small">移除现有图片</span></label>` : '';
   const linkedSps = p ? all('SELECT sp.id, sp.name, sp.model, sp.price, sp.currency, sp.supplier_id, s.name AS supplier_name FROM supplier_products sp JOIN suppliers s ON s.id=sp.supplier_id WHERE sp.product_id=? ORDER BY s.name', p.id) : [];
   const linkedSupHtml = !linkedSps.length ? '' : `<div class="mt-3">
@@ -1903,7 +1903,7 @@ function supplierDetailPage(ctx) {
   const rowHtml = prods.map(p => `<tr>
     <td><div class="d-flex align-items-center gap-2">
       <div style="width:52px;height:52px;flex:0 0 52px;border-radius:8px;overflow:hidden;background:#f1f4f8;border:1px solid #e7ecf2;display:flex;align-items:center;justify-content:center">
-        ${p.image ? `<img src="${esc(p.image)}" style="width:100%;height:100%;object-fit:cover" alt="">` : '<i class="bi bi-image text-secondary" style="font-size:20px"></i>'}
+        ${p.image ? `<img src="${esc(p.image)}" style="width:100%;height:100%;object-fit:cover" alt="">` : '<i class="bi bi-image text-secondary" style="font-size:22px"></i>'}
       </div>
       <div><div class="fw-semibold">${esc(p.name)}</div>${p.name_en ? `<div class="text-muted small">${esc(p.name_en)}</div>` : ''}</div>
     </div></td>
@@ -1988,7 +1988,7 @@ function supplierProductFormPage(ctx) {
   const curOpts = ['CNY', 'USD', 'EUR', 'JPY'].map(x => ({ v: x, l: x }));
   const imgPreview = sp && sp.image
     ? `<img id="spImg" src="${esc(sp.image)}" alt="" style="width:96px;height:96px;object-fit:cover;border-radius:10px;border:1px solid #dee2e6;padding:3px;background:#fff">`
-    : `<div id="spImg" style="width:96px;height:96px;border-radius:10px;border:1px dashed #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;background:#f8fafc"><i class="bi bi-image" style="font-size:26px"></i><span class="small mt-1">产品图片</span></div>`;
+    : `<div id="spImg" style="width:96px;height:96px;border-radius:10px;border:1px dashed #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;background:#f8fafc"><i class="bi bi-image" style="font-size:28px"></i><span class="small mt-1">产品图片</span></div>`;
   const clearBox = (sp && sp.image) ? `<label class="form-check mt-2"><input class="form-check-input" type="checkbox" name="clear_image" value="1"><span class="form-check-label small">移除图片</span></label>` : '';
   const linkOpts = [{ v: '', l: '（不关联我方产品）' }].concat(all('SELECT id,name,model FROM products ORDER BY name').map(pr => ({ v: String(pr.id), l: (pr.name || '') + (pr.model ? '（' + pr.model + '）' : '') })));
   const content = `
