@@ -12,6 +12,7 @@ const NAV = [
   { href: '/leads', key: 'leads', icon: 'bi-buildings', label: '线索库' },
   { href: '/verify', key: 'verify', icon: 'bi-check2-circle', label: '核验任务' },
   { href: '/import', key: 'import', icon: 'bi-upload', label: '导入线索' },
+  { href: '/maps', key: 'maps', icon: 'bi-geo-alt', label: '地图采集' },
   { href: '/settings', key: 'settings', icon: 'bi-gear', label: '数据源设置' },
 ];
 
@@ -289,11 +290,64 @@ function verifyPage() {
   return layout({ title: '核验任务', active: 'verify', content, scripts: ['/lg-static/verify.js'] });
 }
 
+// ── 地图采集 ──
+function mapsPage() {
+  const hasKey = !!String(getSetting('google_places_key', '') || '').trim();
+  const kwPresets = ['locksmith', 'door hardware', 'hardware store', 'lock distributor'];
+  const locPresets = ['Lagos, Nigeria', 'Riyadh, Saudi Arabia', 'Paris, France'];
+  const content = `
+  ${pageHead('地图采集', '用 Google Places API 按关键词 + 城市批量找海外商家，采回即进线索库',
+    `<a class="btn btn-outline-secondary btn-sm" href="/leads"><i class="bi bi-collection"></i> 查看线索</a>`)}
+  ${hasKey ? '' : `<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> <b>未配置 Google Places API Key，地图采集暂不可用。</b>请先到<a href="/settings">数据源设置</a>填写 Google Places API Key（Key 只保存在本机设置里，不会写进代码或日志）。</div>`}
+  <div class="row g-3"><div class="col-lg-5">
+    <div class="card panel"><div class="card-header panel-header"><span><i class="bi bi-geo-alt"></i> 采集条件</span></div><div class="card-body">
+      <form id="mapsForm" data-has-key="${hasKey ? '1' : '0'}">
+        <div class="mb-3"><label class="form-label fw-semibold">关键词</label>
+          <input class="form-control" name="keyword" id="mapsKeyword" placeholder="例如 locksmith" required>
+          <div class="mt-2">${kwPresets.map(k => `<button type="button" class="btn btn-sm btn-outline-secondary preset-kw" data-kw="${k}">${k}</button>`).join(' ')}</div>
+        </div>
+        <div class="mb-3"><label class="form-label fw-semibold">城市 / 地区</label>
+          <input class="form-control" name="location" id="mapsLocation" placeholder="例如 Lagos, Nigeria">
+          <div class="mt-2">${locPresets.map(l => `<button type="button" class="btn btn-sm btn-outline-secondary preset-loc" data-loc="${esc(l)}">${esc(l)}</button>`).join(' ')}</div>
+          <div class="form-text">城市用于拼搜索词（“关键词 in 城市”）；填了半径时还会先定位，再按半径圈定范围。</div>
+        </div>
+        <div class="row g-2">
+          <div class="col-6"><label class="form-label small">半径（公里，可选）</label><input class="form-control" type="number" min="1" max="50" name="radiusKm" id="mapsRadius" placeholder="留空不限半径"></div>
+          <div class="col-6"><label class="form-label small">最多条数</label><input class="form-control" type="number" min="1" max="60" name="maxResults" id="mapsMax" value="20"></div>
+        </div>
+        <div class="alert alert-info small mt-3 mb-3" id="mapsEstimate">预估调用：搜索 1 次 + 详情 20 次（未填半径，不定位）。</div>
+        <button type="submit" class="btn btn-primary w-100" id="mapsRunBtn" ${hasKey ? '' : 'disabled'}><i class="bi bi-search"></i> 开始采集</button>
+        ${hasKey ? '' : '<div class="form-text mt-2">配好 Key 后即可使用。</div>'}
+      </form>
+    </div></div>
+    <div class="card panel mt-3"><div class="card-header panel-header">费用说明</div><div class="card-body small">
+      <p class="mb-1">走官方 Places API (New)，不是爬虫：每次搜索与详情调用都计费，但每月有免费额度——</p>
+      <ul class="mb-1">
+        <li>Text Search Pro：每月免费 5,000 次，超出后 $32 / 1,000 次</li>
+        <li>Place Details Pro：每月免费 5,000 次，超出后 $17 / 1,000 次</li>
+        <li>Geocoding：每月免费 10,000 次</li>
+      </ul>
+      <p class="mb-0 text-muted">按“搜一次 20 家、每家查 1 次详情”算，免费额度够每月采约 5,000 家。超出才收费，建议在 Google Cloud 控制台设预算上限。</p>
+    </div></div>
+  </div><div class="col-lg-7">
+    <div class="card panel"><div class="card-header panel-header"><span><i class="bi bi-list-ul"></i> 采集结果</span><span class="small text-muted" id="mapsSummary"></span></div><div class="card-body">
+      <div id="mapsProgress" style="display:none"><div class="d-flex justify-content-between small mb-1"><span id="mapsProgressLabel">采集中…</span></div><div class="progress"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%"></div></div><div class="small text-muted mt-2">搜索 + 逐家查详情，60 条约需 1 分钟左右（每家间隔 1.2 秒防限流），请勿关闭页面。</div></div>
+      <div id="mapsError" class="mt-2"></div>
+      <div id="mapsResult" class="mt-2"><div class="text-muted small">尚未采集。填好左侧条件后点“开始采集”，结果会出现在这里。</div></div>
+      <div id="mapsActions" class="mt-3" style="display:none">
+        <button class="btn btn-primary btn-sm" id="btnVerifyBatch"><i class="bi bi-arrow-repeat"></i> 去核验这批</button>
+        <a class="btn btn-outline-secondary btn-sm" href="/leads">查看线索</a>
+      </div>
+    </div></div>
+  </div></div>`;
+  return layout({ title: '地图采集', active: 'maps', content, scripts: ['/lg-static/maps.js'] });
+}
+
 // ── 设置 ──
 function settingsPage() {
-  const s = { google_cse_key: getSetting('google_cse_key'), google_cse_cx: getSetting('google_cse_cx'), serpapi_key: getSetting('serpapi_key'), request_delay_ms: getSetting('request_delay_ms'), request_timeout_ms: getSetting('request_timeout_ms'), max_results_per_query: getSetting('max_results_per_query'), proxy_url: getSetting('proxy_url'), jina_reader: getSetting('jina_reader'), jina_base: getSetting('jina_base'), enabled_sources: getSetting('enabled_sources', 'website,bing,linkedin_search,facebook_search,instagram_search,google_cse,serpapi'), approval_min_score: getSetting('approval_min_score', '70') };
+  const s = { google_cse_key: getSetting('google_cse_key'), google_cse_cx: getSetting('google_cse_cx'), serpapi_key: getSetting('serpapi_key'), google_places_key: getSetting('google_places_key'), request_delay_ms: getSetting('request_delay_ms'), request_timeout_ms: getSetting('request_timeout_ms'), max_results_per_query: getSetting('max_results_per_query'), proxy_url: getSetting('proxy_url'), jina_reader: getSetting('jina_reader'), jina_base: getSetting('jina_base'), enabled_sources: getSetting('enabled_sources', 'website,bing,linkedin_search,facebook_search,instagram_search,google_cse,serpapi'), approval_min_score: getSetting('approval_min_score', '70') };
   const enabled = new Set(String(s.enabled_sources).split(',').map(x => x.trim()).filter(Boolean));
-  const providers = [['website','官网元数据'],['bing','Bing 搜索'],['linkedin_search','LinkedIn 搜索'],['facebook_search','Facebook 搜索'],['instagram_search','Instagram 搜索'],['google_cse','Google CSE（需 Key）'],['serpapi','SerpAPI（需 Key）']];
+  const providers = [['website','官网元数据'],['bing','Bing 搜索'],['linkedin_search','LinkedIn 搜索'],['facebook_search','Facebook 搜索'],['instagram_search','Instagram 搜索'],['google_cse','Google CSE（需 Key）'],['serpapi','SerpAPI（需 Key）'],['google_places','Google 地图采集']];
   const content = `
   ${pageHead('数据源设置', '免密通道开箱即用；配置 API Key 可显著提升搜索覆盖与规模识别')}
   <div class="row g-3"><div class="col-lg-7">
@@ -312,6 +366,7 @@ function settingsPage() {
       <div class="mb-3"><label class="form-label small fw-semibold">Google Custom Search API Key</label><input class="form-control form-control-sm" name="google_cse_key" value="${esc(s.google_cse_key)}" placeholder="留空则不启用"></div>
       <div class="mb-3"><label class="form-label small fw-semibold">Google CSE CX (搜索引擎 ID)</label><input class="form-control form-control-sm" name="google_cse_cx" value="${esc(s.google_cse_cx)}"></div>
       <div class="mb-3"><label class="form-label small fw-semibold">SerpAPI Key</label><input class="form-control form-control-sm" name="serpapi_key" value="${esc(s.serpapi_key)}"></div>
+      <div class="mb-3"><label class="form-label small fw-semibold">Google Places API Key（地图采集）</label><input class="form-control form-control-sm" name="google_places_key" value="${esc(s.google_places_key)}" placeholder="留空则不启用地图采集"><div class="form-text">配好 Key 后即可在「地图采集」页使用，不依赖上方通道开关；Key 只保存在本机设置里，不会写进代码或日志。</div></div>
       <hr>
       <div class="row g-2">
         <div class="col-md-4"><label class="form-label small">请求间隔(ms)</label><input class="form-control form-control-sm" name="request_delay_ms" value="${esc(s.request_delay_ms)}"></div>
@@ -331,4 +386,4 @@ function settingsPage() {
   return layout({ title: '数据源设置', active: 'settings', content, scripts: ['/lg-static/settings.js'] });
 }
 
-module.exports = { layout, pageHead, dashboardPage, leadsPage, leadDetailPage, importPage, verifyPage, settingsPage, scoreBadge, statusBadge, esc };
+module.exports = { layout, pageHead, dashboardPage, leadsPage, leadDetailPage, importPage, verifyPage, mapsPage, settingsPage, scoreBadge, statusBadge, esc };

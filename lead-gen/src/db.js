@@ -144,6 +144,7 @@ const DEFAULT_SETTINGS = {
   google_cse_key: '',
   google_cse_cx: '',
   serpapi_key: '',
+  google_places_key: '',
   request_delay_ms: '1200',
   request_timeout_ms: '15000',
   max_results_per_query: '8',

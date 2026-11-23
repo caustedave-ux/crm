@@ -505,3 +505,32 @@
 - 2026-11-22 产品管理 × 知识库产品资料合并：需求 → 产品管理与知识库各存一份产品资料（价格/MOQ 两边不一致），按 GitHub 开源 PIM 的数据模型合并，products 为唯一事实源，文章挂 product_id。候选 → ① UnoPim（MIT，属性族/变体/完整度）、② Akeneo PIM（行业标准父子两级模型）、③ Part-DB（五金件形态，附件/阶梯价）；三个都是 PHP 栈，装进来等于再养一套系统，只照搬模型。选中 → 混合模型：UnoPim 的属性族（按锁体/把手/锁芯/合页配专属参数 specs JSON）+ Akeneo 的父子两级思路（变体放二期）+ Part-DB 的附件表（product_attachments）；改动点：src/db.js（product_categories / product_attachments 表、products 加 10 列、knowledge_articles 加 product_id、服装示例文章迁移删除）、tools/migrate-products.js（只出建议清单，不写库）、src/views/pages_core.js（详情页 5 页签、列表筛选、表单新字段）、src/views/pages_knowledge.js（关联产品芯片、必填关联）、src/knowledgeBase.js + src/aiContext.js（已关联文章降权、价格/MOQ/交期以 products 为准）、Excel 模板加 8 列；不动 supplier_products 同步逻辑。
 - 2026-11-22 分类添加按钮、客户 AI 摘要、AI 助手学知识库：需求 → ① 分类要能随时加（智能锁/门吸）；② 客户详情 AI 摘要与实际不符；③ AI 助手要按知识库学习、可引用、可保存。候选 → ① 分类：新引分类管理组件库（overkill：只是一张表 + 一个弹窗）；② 摘要：直接调 DeepSeek 每次现算（要等模型、不稳定，且根因是写死文案不是模型不行）；③ 助手：新引 RAG 框架（overkill：检索 relevantArticles 已有、提示词已在 buildPrompt 里）。选中 → 全部原生实现、零新依赖：① 分类用现有 Bootstrap modal + POST /products/categories；② 摘要默认按真实数据规则现算（buildCustomerAiSummary），另加 DeepSeek 重新生成按钮（复用 src/workbench.js 已有的 callDeepSeek）；③ 助手 /api/ai/chat 由本地 Codex CLI 改走 DeepSeek（复用 callDeepSeek，与设置页“系统全部 AI 共用 DeepSeek Key”一致），检索沿用 knowledgeBase.relevantArticles，保存问答用现有 knowledge_articles 表 + 新增“问答”分类；改动点：src/db.js（分类种子补齐）、src/routes.js（新增分类、AI 摘要、保存问答三个接口，聊天接口改 DeepSeek）、src/views/pages_core.js（分类弹窗/摘要面板）、src/views/pages_ai.js（改名 + 保存 UI）、src/knowledgeBase.js（加“问答”分类）。
 - 2026-11-23 客户给出具体需求转人工的右下角强弹窗：需求 → 客户给出具体需求时 CRM 所有页面右下角弹大卡片提醒人工，常驻到点【知道了】才消失，多条可叠加。候选 → ① Bootstrap 5 Toast（已随 Bootstrap 引入）：默认自动消失、需额外管多卡堆叠与自定义按钮，改造成本不比手写小；② 少量自定义 CSS + 原生 JS 轮询（本项目 lightbox 已用同一做法）。选中 ②，原因：零新依赖、零构建、行为完全按需求来（常驻、叠加、两个按钮、25 秒轮询、复用 crm_wa_sound 声音开关）；改动点：src/db.js（notifications 表）、src/routes.js（POST /api/notifications、GET /api/notifications、POST /api/notifications/:id/read，24 小时同会话同类未读去重）、src/views/layout.js（铃铛未读数 + 弹窗容器与轮询脚本）、static/css/style.css（.notify-toast-stack 样式）、auto-reply/worker.js（notifyHandoff，只在给出具体需求的转人工事件调用）。
+
+## 2026-11-23 · Google 地图采集 MVP（获客核验服务）
+
+**需求**：在独立获客核验服务里加地图采集：输关键词 + 城市/地区 + 半径，批量采 Google 地图上的商家（店名、地址、电话、网址、评分），去重后进线索库，再走现有核验流程。
+
+**候选**：
+
+| 项目 | 形态 / 许可证 | 结论 |
+| --- | --- | --- |
+| [@googlemaps/google-maps-services-js](https://github.com/googlemaps/google-maps-services-js)（官方 Node 客户端，Apache-2.0，v3.3.34） | npm 包，只包 Places API (Legacy)；Legacy 自 2026-10 起新项目不能再启用，新 API 不会加进这个库 | 否决：要 npm install（本任务不新增依赖），且走的是已停售的旧版 API |
+| [@googlemaps/places](https://docs.cloud.google.com/nodejs/docs/reference/places/latest)（官方 Places API (New) Node 客户端，Apache-2.0） | npm 包，仍在 preview | 否决：同样要 npm install；Places API (New) 本身就是纯 HTTPS + JSON，直接 fetch 更轻 |
+| [omkarcloud/google-maps-scraper](https://github.com/omkarcloud/google-maps-scraper)（约 3.9k★，MIT） | 桌面应用 + Python/Playwright 爬取地图页面 | 否决：爬虫违反 Google 服务条款、要浏览器与代理、不可靠；且本项目 2026-11-21 已明确否决地图爬虫 |
+| [gosom/google-maps-scraper](https://github.com/gosom/google-maps-scraper)（约 7.1k★，MIT） | Go 实现，需 Docker 或 Go 工具链 | 否决：同上是爬虫，且要另起运行时，与本项目 Node + SQLite 单机栈不合 |
+| 直接 fetch Places API (New) | Node 内置 global fetch，纯 HTTPS + JSON | **选中** |
+
+**选中理由**：零新增依赖、零构建，与本项目 Node 原生 http、无构建链的栈一致；走官方付费 API 而非爬虫，合规且稳定；字段按需拿（搜索只拿 id/名称/地址/坐标，详情只拿电话/网址/地址/评分等 Pro 档及以下字段，不碰 Enterprise 档），免费额度内基本不用花钱（Text Search Pro 与 Place Details Pro 各 5,000 次/月）。
+
+**与 2026-11-21 决策的关系**：2026-11-21 工作台首版时曾决定“不做海外 POI 批量采集”，理由是竞品用的地图爬虫违反合规红线且本机 Google 直连不可达。本次用户明确要求做地图采集，并已确认走官方 Places API（不是爬虫）与免费额度口径后下令开始；Key 由用户在数据源设置里自配，代码内不内嵌任何 Key。爬虫方案仍否决，本次只接官方 API。
+
+**改动点**（全部在 `lead-gen/`，主 CRM 业务规则不动）：
+
+- 新增 `lead-gen/src/places.js`：Places API (New) 客户端（geocode / searchText 翻页 / placeDetails）+ 采集编排（定位 → 搜索 → 逐家详情 → 按 importer 去重规则入库 + 写 website/phone/address 证据），Key 只从 settings 表读，API 报错转中文友好信息，Key 永不进日志/错误/URL。
+- `lead-gen/server.js`：新增 `GET /maps`、`POST /api/maps/search`（无 Key 直接报友好错、零请求）、`POST /api/maps/verify-batch`（复用现有 enqueue 入队核验）。
+- `lead-gen/src/views.js`：新增 `mapsPage()`（关键词/城市/半径/条数表单、预设快捷按钮、预估调用量、无 Key 提示、结果列表、去核验按钮）、导航加“地图采集”；`settingsPage` 加 Google Places API Key 输入框与 `google_places` 通道开关（默认关闭，配好 Key 后用户自己勾选；`/maps` 页只要 Key 配了就能用，不依赖开关）。
+- `lead-gen/src/db.js`：默认设置加 `google_places_key: ''`。
+- 新增 `lead-gen/static/maps.js`（前端交互）、`lead-gen/tools/test-maps-collect.js`（mock fetch 自测：无 Key 零请求、翻页与 60 上限、去重、fieldMask、报错转中文、定位与半径、预估调用量）；`lead-gen/package.json` 的 test 脚本接入新测试。
+- 根 `package.json` 版本 2.0.3 → 2.0.4。
+
+**验证**：`node --check` 全部通过；`cd lead-gen && npm test` 通过（含新测试）；根目录 `npm run check` 通过；临时库 + 临时端口拉起 lead-gen 服务验证 `/maps` 页面与无 Key 提示态。

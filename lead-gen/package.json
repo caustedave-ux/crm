@@ -6,7 +6,7 @@
   "engines": { "node": ">=22.5.0" },
   "scripts": {
     "start": "node server.js",
-    "test": "node tools/selftest.js && node tools/test-approval.js",
+    "test": "node tools/selftest.js && node tools/test-approval.js && node tools/test-maps-collect.js",
     "probe": "node tools/pipeline-demo.js"
   }
 }

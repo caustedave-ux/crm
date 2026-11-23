@@ -7,6 +7,7 @@ const path = require('node:path');
 const { Router, createApp } = require('./src/web');
 const views = require('./src/views');
 const importer = require('./src/importer');
+const places = require('./src/places');
 const { exportReport } = require('./src/exporter');
 const { verifyOne } = require('./tools/pipeline-demo');
 const { setStage, approveRecommended } = require('./src/workflow');
@@ -64,6 +65,7 @@ router.get('/leads', ctx => ctx.res.send(views.leadsPage(ctx.query)));
 router.get('/lead/:id', ctx => ctx.res.send(views.leadDetailPage(ctx.params.id)));
 router.get('/import', ctx => ctx.res.send(views.importPage()));
 router.get('/verify', ctx => ctx.res.send(views.verifyPage()));
+router.get('/maps', ctx => ctx.res.send(views.mapsPage()));
 router.get('/settings', ctx => ctx.res.send(views.settingsPage()));
 
 // ── API 路由 ──
@@ -94,6 +96,39 @@ router.post('/api/verify', ctx => {
 router.post('/api/verify-all', ctx => {
   const jobId = enqueue('verify_all', {});
   ctx.res.json(200, { ok: true, job_id: jobId });
+});
+
+// ── Google 地图采集 ──
+router.post('/api/maps/search', async ctx => {
+  const keyword = String(ctx.body.keyword || '').trim();
+  const location = String(ctx.body.location || '').trim();
+  const radiusKm = ctx.body.radiusKm === '' || ctx.body.radiusKm == null ? null : Number(ctx.body.radiusKm);
+  let maxResults = Number(ctx.body.maxResults) || 20;
+  maxResults = Math.min(places.MAX_RESULTS, Math.max(1, Math.floor(maxResults)));
+  if (!keyword) return ctx.res.json(400, { ok: false, error: '请填写关键词，例如 locksmith' });
+  if (radiusKm != null && !(radiusKm > 0 && radiusKm <= places.MAX_RADIUS_KM)) {
+    return ctx.res.json(400, { ok: false, error: '半径请填 1-' + places.MAX_RADIUS_KM + ' 公里' });
+  }
+  try {
+    const r = await places.collectLeads({ keyword, location, radiusKm, maxResults });
+    ctx.res.json(200, { ok: true, ...r });
+  } catch (e) {
+    const code = e && e.code;
+    if (code === 'NO_API_KEY') return ctx.res.json(400, { ok: false, error: e.message, code, settings_url: '/settings' });
+    if (code === 'GEOCODE_FAILED' || code === 'BAD_INPUT') return ctx.res.json(400, { ok: false, error: e.message, code });
+    ctx.res.json(502, { ok: false, error: (e && e.message) || '地图采集失败', code: code || 'PLACES_API' });
+  }
+});
+
+router.post('/api/maps/verify-batch', ctx => {
+  const batchId = Number(ctx.body.batchId);
+  if (!batchId) return ctx.res.json(400, { ok: false, error: '未指定批次' });
+  const batch = get('SELECT id FROM batches WHERE id=?', batchId);
+  if (!batch) return ctx.res.json(404, { ok: false, error: '批次不存在' });
+  const ids = all("SELECT id FROM leads WHERE batch_id=? AND status='new'", batchId).map(r => r.id);
+  if (!ids.length) return ctx.res.json(400, { ok: false, error: '该批次暂无待核验线索' });
+  const jobId = enqueue('verify_batch', { ids });
+  ctx.res.json(200, { ok: true, job_id: jobId, queued: ids.length });
 });
 
 router.get('/api/lead/:id', ctx => {
