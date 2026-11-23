@@ -1,0 +1,1 @@
+{"description":"获客工作台 - 地图采集 + AI 任务流 + 开发信，替代旧 lead-gen 服务，独立运行不改动主CRM","engines":{"node":">=22.5.0"},"name":"lead-suite","private":true,"scripts":{"start":"node server.js","test":"node tools/selftest.js && node tools/test-tasks-letters.js"},"version":"1.0.0"}

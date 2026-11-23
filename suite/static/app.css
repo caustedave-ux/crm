@@ -77,3 +77,18 @@ a:hover{color:var(--neo-green)}
 .font-monospace{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:12.5px}
 #importResult .alert{margin-bottom:0}
 @media(max-width:900px){.sidebar{display:none}.main-content{margin-left:0}.top-chip{display:none}}
+
+/* 获客工作台新增：导航 disabled 占位、任务卡片、任务时间线、地图容器 */
+.sidebar .nav-link.disabled{opacity:.55;cursor:not-allowed}
+.sidebar .nav-link.disabled:hover{background:transparent;color:var(--neo-ink)}
+.task-card .progress-bar{background:var(--neo-green)}
+.task-timeline{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding:8px 4px}
+.tl-node{flex:0 0 auto;text-align:center;min-width:110px}
+.tl-dot{width:34px;height:34px;border-radius:50%;margin:0 auto 6px;display:grid;place-items:center;font-weight:700;font-size:13px;background:#e7e1d5;color:var(--neo-ink)}
+.tl-node.tl-running .tl-dot,.tl-node.tl-enriching .tl-dot{background:#ffc107;color:#1b1a17}
+.tl-node.tl-done .tl-dot{background:var(--neo-green);color:#fff}
+.tl-node.tl-failed .tl-dot{background:#dc3545;color:#fff}
+.tl-label{font-weight:600;font-size:13px}
+.tl-sub{font-size:11px;color:var(--neo-muted);margin-top:2px}
+.tl-line{flex:1;height:2px;background:#e7e1d5;margin-top:17px;min-width:24px}
+#mapsMap{min-height:320px}

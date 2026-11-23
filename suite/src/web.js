@@ -1,5 +1,5 @@
 'use strict';
-/** 极简 HTTP 框架（零依赖，仿主系统自研风格） */
+/** 极简 HTTP 框架（零依赖，仿主系统自研风格）——获客工作台版：静态挂载为 /static/ */
 const http = require('node:http');
 const { URL } = require('node:url');
 const fs = require('node:fs');
@@ -53,9 +53,9 @@ function createApp(router, opts = {}) {
       const query = Object.fromEntries(u.searchParams);
       const ctx = { req, res, url: u, path: pathname, query, params: {}, body: {} };
 
-      // 静态资源
-      if (pathname.startsWith('/lg-static/')) {
-        const rel = pathname.slice('/lg-static/'.length);
+      // 静态资源（获客工作台：/static/ → suite/static/）
+      if (pathname.startsWith('/static/')) {
+        const rel = pathname.slice('/static/'.length);
         const file = path.join(__dirname, '..', 'static', rel);
         if (!file.startsWith(path.join(__dirname, '..', 'static'))) { res.writeHead(403).end(); return; }
         if (fs.existsSync(file) && fs.statSync(file).isFile()) {
@@ -104,7 +104,7 @@ function createApp(router, opts = {}) {
       route.keys.forEach((k, i) => { ctx.params[k] = decodeURIComponent(m[i + 1]); });
       await ALS.run(ctx, () => route.handler(ctx));
     } catch (e) {
-      console.error('[lead-gen] route error:', e);
+      console.error('[lead-suite] route error:', e);
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end('<h1>500</h1><pre>' + String(e && e.stack || e) + '</pre>');

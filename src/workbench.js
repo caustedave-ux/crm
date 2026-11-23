@@ -92,7 +92,7 @@ function mapPoints(user) {
   try {
     const path = require('node:path');
     const { DatabaseSync } = require('node:sqlite');
-    const lgDb = new DatabaseSync(path.join(__dirname, '..', 'lead-gen', 'data', 'leads.db'), { readOnly: true });
+    const lgDb = new DatabaseSync(path.join(__dirname, '..', 'suite', 'data', 'leads.db'), { readOnly: true });
     const rows = lgDb.prepare('SELECT id,company_name,country,industry_hint,overall_score,stage FROM leads').all();
     for (const r of rows) add('leads', r.id, r.company_name, r.country, { industry: r.industry_hint, score: r.overall_score, stage: r.stage });
     lgDb.close();

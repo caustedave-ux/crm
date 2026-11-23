@@ -6,7 +6,7 @@ const { getSetting, all } = require('../db');
 
 const SKILLS = [
   { key: 'dev', icon: 'bi-globe2', title: '开发客户', sub: '发现全球商业机会', href: '/workbench/map' },
-  { key: 'background', icon: 'bi-person-badge', title: '客户背调', sub: '洞悉客户，精准决策', href: '/leadgen', blank: true },
+  { key: 'background', icon: 'bi-person-badge', title: '获客工作台', sub: '地图找客、AI 整理、开发信、WhatsApp', href: '/leadgen', blank: true },
   { key: 'compose', icon: 'bi-envelope', title: '写开发信', sub: '让每一次触达更有效', href: '/workbench/compose' },
   { key: 'quote', icon: 'bi-currency-exchange', title: '报价谈判', sub: '专业报价，从容成交', href: '/workbench?skill=quote' },
   { key: 'marketing', icon: 'bi-megaphone', title: '营销推广', sub: '多渠道连接全球客户', href: '/workbench?skill=marketing' },
@@ -136,7 +136,7 @@ function mapPage(ctx) {
   <div class="wb-wrap">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div><h4 style="margin:0;font-weight:800;color:#f1f1f8">客户开发地图</h4><div class="text-muted" style="font-size:14px">按国家聚合显示客户 ${points.reduce((a,p)=>a+p.customers.length,0)} 家、线索 ${points.reduce((a,p)=>a+p.leads.length,0)} 条 · 点击国家查看名单</div></div>
-      <a class="btn btn-sm btn-outline-secondary" href="/leadgen" target="_blank" rel="noopener"><i class="bi bi-funnel"></i> 去获客挖掘</a>
+      <a class="btn btn-sm btn-outline-secondary" href="/leadgen" target="_blank" rel="noopener"><i class="bi bi-funnel"></i> 去获客工作台</a>
     </div>
     ${configured ? '' : `<div class="alert alert-info py-2 small">地图需配置腾讯地图 Key（海外底图为非默认场景，需自行申请）。请到 <a href="https://lbs.qq.com/dev/console/application/mine" target="_blank" rel="noopener">腾讯位置服务控制台</a> 申请 Key（开通 WebServiceAPI / JavaScript GL），再到 <a href="/settings">系统设置</a> 填入。当前显示占位符，地图不会加载。</div>`}
     <div class="wb-map-wrap">

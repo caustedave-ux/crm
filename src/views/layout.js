@@ -10,7 +10,7 @@ const APP_VERSION = require('../../package.json').version;
 const NAV = [
   { href: '/dashboard', key: 'dashboard', icon: 'bi-house', label: '工作台', section: '工作台' },
   { href: '/whatsapp/session', key: 'wa', icon: 'bi-whatsapp', label: 'WhatsApp' },
-  { href: '/leadgen', key: 'leadgen', icon: 'bi-funnel', label: '获客核验', target: '_blank' },
+  { href: '/leadgen', key: 'leadgen', icon: 'bi-funnel', label: '获客工作台', target: '_blank' },
   { href: '/products', key: 'products', icon: 'bi-box-seam', label: '产品信息', section: '产品' },
   { href: '/customers', key: 'customers', icon: 'bi-person', label: '客户管理', section: '客户与沟通' },
   { href: '/inquiries', key: 'inquiries', icon: 'bi-inbox', label: '询盘管理' },

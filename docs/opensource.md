@@ -534,3 +534,44 @@
 - 根 `package.json` 版本 2.0.3 → 2.0.4。
 
 **验证**：`node --check` 全部通过；`cd lead-gen && npm test` 通过（含新测试）；根目录 `npm run check` 通过；临时库 + 临时端口拉起 lead-gen 服务验证 `/maps` 页面与无 Key 提示态。
+
+## 2026-11-23 · 获客核验 → 获客工作台一整套
+
+**需求**：用户说获客核验和他发的地图获客截图完全是两个东西，要求做成一整套、把获客核验去掉。对外名“获客工作台”，新服务与 `lead-gen/` 平级、端口仍 5101。
+
+**做法**：新建 `suite/`（与 `lead-gen/` 平级，端口仍 5101，启动文件 `suite/启动获客工作台.bat`）；数据迁移复制（`lead-gen/data/` 不动、不删除，数据由新服务承接）；旧核验引擎不搬（`verify.js` / `sources.js` / `socialReader.js` / `exporter.js` / `workflow.js` 等核验链路不进新服务）；地图用 Google Maps JS API script 标签引入，不新增依赖。
+
+**改动点**：
+
+- 主 CRM 侧（本轮改动，业务规则不动）：
+  - `src/views/layout.js`：侧栏入口 label「获客核验」→「获客工作台」（href `/leadgen`、target `_blank`、key、icon 不变）。
+  - `src/leadgen-bridge.js`：探测/拉起目标由 `lead-gen/` 改为 `suite/`（`LG_DIR` 指向 `suite`，`ENTRY` 随之改，`autostart.log` 路径随 `LG_DIR` 走），「未找到 lead-gen/server.js」改为「未找到 suite/server.js」，文件头注释的 lead-gen 字样改为 suite；`LEADGEN_PORT` 环境变量名不变。
+  - `src/views/pages_workbench.js`：工作台「客户背调」卡片改名为「获客工作台」，副文案改为「地图找客、AI 整理、开发信、WhatsApp」；地图页「去获客挖掘」按钮改为「去获客工作台」（href 与 target 不变）。
+  - `src/routes.js`：`GET /leadgen` 报错页 title 与 h5 改为「获客工作台」，启动脚本提示改为 `<code>suite/启动获客工作台.bat</code>`，路由上方注释改为「获客工作台入口」。
+  - 根 `package.json` 版本 2.0.5 → 2.0.6。
+- 新服务 `suite/`：`server.js`、`package.json`、`README.md`、`启动获客工作台.bat`、`src/db.js`、`src/web.js`、`src/crmAuth.js`、`src/net.js`、`src/normalize.js`、`src/importer.js`、`src/places.js`、`src/tasks.js`、`src/letters.js`、`src/views.js`、`static/app.css`、`static/maps.js`、`static/leads.js`、`static/import.js`、`static/settings.js`、`static/tasks.js`、`static/letters.js`、`tools/selftest.js`、`tools/test-tasks-letters.js`（与 `lead-gen/` 平级的新服务，另见其 README）。
+- `lead-gen/` 代码删除：除 `data/` 以外的全部文件从仓库删除（`data/leads.db` 等数据文件保留在本地、不进 GitHub、不删除）。
+
+**验证**：`node --check` 改过的 JS 文件全部通过；根目录 `npm run check` 通过。
+
+## 2026-11-23 · 获客核验 → 获客工作台一整套（lead-gen → suite）
+
+**需求**：旧获客核验服务（lead-gen/，端口 5101）整体升级为获客工作台（suite/，平级目录）：地图采集改任务制、新增 AI 任务流、开发信单发、线索详情加 WhatsApp 联系按钮；旧核验引擎与导出本次不搬；首次启动把旧线索库复制过来。
+
+**候选（地图展示方案）**：
+
+| 方案 | 形态 / 许可证 | 结论 |
+| --- | --- | --- |
+| Google Maps JS API script 标签直接引入（`https://maps.googleapis.com/maps/api/js?key=…&callback=…`） | 官方文档三选一之一，无 npm 包 | **选中**：零新增依赖、零构建，与本项目 Node 原生 http、无构建链的栈一致；Key 由服务端只渲染进地图页 |
+| [@googlemaps/js-api-loader](https://github.com/googlemaps/js-api-loader)（官方 loader，Apache-2.0） | npm 包，Promise/callback 封装动态加载 | 否决：要 `npm install`（本任务不新增依赖），且它本质上也是动态插同一个 script 标签；本项目没有构建链，收益抵不过依赖成本 |
+| 动态库导入（Dynamic Library Import，`google.maps.importLibrary`） | 官方新版内联 bootstrap loader，按需加载库 | 否决：写法比直接 script 标签复杂，且本页只需要一个 Map，省不出有意义的加载量；后续要按需加载其他库时再评估 |
+
+**选中理由**：直接 script 标签是 Google 官方文档给出的三种加载方式之一，与 js-api-loader 加载的是同一个 Maps JS API；本项目零依赖、零构建的既定栈下，直接引入最轻；地图脚本加载失败时前端降级只显示列表，不阻塞采集。
+
+**改动点**（全部在 `suite/`，主 CRM 业务规则不动，不动 `lead-gen/data/`）：
+
+- 新增 `suite/`：`server.js`（端口仍 5101，环境变量名保持 `LEADGEN_PORT`）、`src/db.js`（首次启动复制旧库：`.db` + `-wal` + `-shm`，新库 checkpoint + 行数校验，失败不崩启动；新增 `tasks` / `send_records` / `letter_templates` 三张表）、`src/views.js`（新导航：概览/地图采集/AI 任务流/线索库/开发信/WhatsApp 咨询/社媒获客专区（第二阶段占位）/数据源设置）、`src/places.js` / `src/net.js` / `src/normalize.js` / `src/importer.js` / `src/crmAuth.js` / `src/web.js`（复制，静态挂载由 `/lg-static/` 改为 `/static/`）、`static/app.css` / `static/maps.js`（任务制轮询 + 地图打点与半径圆）/ `static/leads.js` / `static/import.js` / `static/settings.js`、`tools/selftest.js`（迁移 + places mock + 导入去重，41 项，临时库）。
+- `src/tasks.js` / `src/letters.js` / `static/tasks.js` / `static/letters.js` 由 B 交付，`server.js` 与 `views.js` 按约定直接调其导出函数；`tools/test-tasks-letters.js` 同样由 B 交付，已接入 `npm test` 并联调通过（见下）。联调时发现并修掉的口径差：任务整理中状态 B 用 `organizing`（`db.js` 注释与 `views.js`/`maps.js` 的状态文案随之统一）；`letters.recordSend` 要驼峰参数 `{ leadId, templateId }`，前端 POST `/api/send-records` 发 snake_case，由 `server.js` 转换；`letters.js` 前端另用 `GET/POST/DELETE /api/letter-templates` 与 `GET /api/send-records`，`server.js` 已补齐；`views.js` 的任务流页与开发信页、线索详情开发信区已按 B 的前端元素 ID（`#taskList` / `#taskTimeline` / `#taskForm`、`#templateList` / `#templateForm` / `#templateSelect` / `#leadSelect` / `#letterPreviewSubject` 等）重构。
+- 不搬：旧核验引擎（`verify.js`、`sources.js`、`socialReader.js`、`workflow.js`、pipeline-demo、`exporter.js`）；`/verify`、`/api/verify`、`/api/verify-all`、`/api/maps/verify-batch` 已去掉，导出功能 V1 先不做。
+
+**验证**：`node --check` 全部通过；`node tools/selftest.js` 41/41 通过；`npm test`（含 B 的 `tools/test-tasks-letters.js`）72/72 通过；临时端口 + 临时库拉起服务真渲染 `/`、`/maps`、`/tasks`、`/leads`、`/letters`、`/settings`，确认无 Key 态与页面结构，以及建任务、开发信渲染/标记已发送的端到端接口。

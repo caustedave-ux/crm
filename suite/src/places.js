@@ -195,7 +195,7 @@ function estimateCalls({ maxResults, radiusKm, location }) {
 /**
  * 采集编排：定位（如需）→ 翻页搜索 → 逐家查详情 → 按 importer 去重规则入库。
  * 返回汇总 { batch_id, found, inserted, duplicates, skipped, calls, results }。
- * results 每项：{ place_id, name, address, phone, website, rating, user_rating_count, status, lead_id, error? }
+ * results 每项：{ place_id, name, address, phone, website, rating, user_rating_count, status, lead_id, types, lat, lng, error? }（types/lat/lng 供行业归类与地图打点；详情无坐标时用搜索结果的坐标回退）
  * status: new（新增入库）/ duplicate（重复跳过）/ failed（详情失败未入库）。
  */
 async function collectLeads(input, opts = {}) {
@@ -243,12 +243,22 @@ async function collectLeads(input, opts = {}) {
         website: d.websiteUri || '',
         rating: typeof d.rating === 'number' ? d.rating : null,
         user_rating_count: typeof d.userRatingCount === 'number' ? d.userRatingCount : null,
+        types: Array.isArray(d.types) ? d.types.slice() : [],
+        location: (d.location && typeof d.location.latitude === 'number')
+          ? { latitude: d.location.latitude, longitude: d.location.longitude }
+          : (p.location && typeof p.location.latitude === 'number'
+            ? { latitude: p.location.latitude, longitude: p.location.longitude }
+            : null),
         status: 'pending',
       });
     } catch (e) {
       detailed.push({
         place_id: placeId, name: name0, address: addr0, phone: '', website: '',
-        rating: null, user_rating_count: null, status: 'failed', error: e && e.message ? String(e.message) : '详情查询失败',
+        rating: null, user_rating_count: null, types: [],
+        location: (p.location && typeof p.location.latitude === 'number'
+          ? { latitude: p.location.latitude, longitude: p.location.longitude }
+          : null),
+        status: 'failed', error: e && e.message ? String(e.message) : '详情查询失败',
       });
     }
   }
@@ -318,6 +328,9 @@ async function collectLeads(input, opts = {}) {
     user_rating_count: m.user_rating_count,
     status: m.status === 'pending' ? 'new' : m.status,
     lead_id: m.rowIndex != null ? (ids[m.rowIndex] || m.existing_id || null) : null,
+    types: Array.isArray(m.types) ? m.types : [],
+    lat: m.location && typeof m.location.latitude === 'number' ? m.location.latitude : null,
+    lng: m.location && typeof m.location.longitude === 'number' ? m.location.longitude : null,
     ...(m.error ? { error: m.error } : {}),
   }));
 
