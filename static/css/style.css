@@ -653,6 +653,15 @@ a:hover{color:var(--neo-coral);}
 .wa-compose{padding:10px 16px;border-top:1px solid var(--neo-line);background:var(--neo-surface);}
 #waText{max-height:160px;}
 .wa-compose-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.wa-compose-tools .btn.active{background:#7c3aed;border-color:#7c3aed;color:#fff;}
+/* 输入区附件边的翻译/快捷短语展开面板（2026-11-23）：默认收起（d-none），点按钮展开；
+   在输入框上方、发送表单外面，面板内可放管理表单而不嵌套进发送表单。 */
+.wa-compose-panel{flex:0 0 auto;padding:12px 16px;border-top:1px solid var(--neo-line);background:var(--neo-surface);max-height:260px;overflow:auto;}
+.wa-compose-panel .wa-ai-section-title{margin-bottom:6px;}
+.wa-compose-panel .wa-ai-field-label{margin-top:0;}
+.wa-compose-panel .form-select{font-size:12px;}
+.wa-compose-panel .wa-ai-hint{margin:8px 0 0;}
+.wa-compose-phrases-manage{margin-top:10px;padding-top:10px;border-top:1px solid var(--neo-line);}
 .wa-attachment-preview{display:block;margin-top:9px;padding:8px 10px;border:1px solid var(--neo-line);border-radius:8px;background:var(--neo-surface-2);}
 .wa-attachment-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;font-size:12px;}
 .wa-attachment-clear-all{font-size:11px;color:var(--neo-muted);text-decoration:none;white-space:nowrap;}
@@ -759,7 +768,7 @@ a:hover{color:var(--neo-coral);}
 .wa-ai-pane-head>div{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .wa-ai-pane-head b{color:#f2eafb;font-size:12px;}
 .wa-ai-pane-head small{color:#a99bb8;font-size:9px;}
-.wa-ai-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));flex:0 0 auto;gap:2px;padding:5px;border-bottom:1px solid #332942;}
+.wa-ai-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));flex:0 0 auto;gap:2px;padding:5px;border-bottom:1px solid #332942;}
 .wa-ai-tabs button{min-width:0;padding:7px 3px;border:0;border-radius:5px;background:transparent;color:#aa9bb8;font-size:9px;white-space:nowrap;}
 .wa-ai-tabs button:hover{background:#281b38;color:#fff;}
 .wa-ai-tabs button.active{background:#302044;color:#e4c8ff;box-shadow:inset 0 -2px 0 #a855f7;}
@@ -795,9 +804,6 @@ a:hover{color:var(--neo-coral);}
 .wa-ai-knowledge-row .badge{font-size:8px;}
 .wa-ai-knowledge-row b{overflow:hidden;font-size:9px;text-overflow:ellipsis;white-space:nowrap;}
 .wa-ai-knowledge-row>i{color:#b98ae2;font-size:9px;}
-.wa-ai-manage-phrases{margin-top:16px;padding-top:10px;border-top:1px solid #332942;}
-.wa-ai-manage-phrases summary{color:#c6b9d3;font-size:10px;cursor:pointer;}
-.wa-ai-manage-phrases .form-control{font-size:10px;}
 
 /* WhatsApp 工作区：常规模式自适应加宽，专注模式占满整个浏览器窗口 */
 .page-wa .content > *{max-width:none;}
@@ -1571,7 +1577,7 @@ a:hover { color: #c18bff; }
 }
 @media (max-width: 1100px) and (min-width: 992px) {
   .wa-inbox.wa-3col { grid-template-columns: minmax(220px, .23fr) minmax(360px, .42fr) minmax(270px, .35fr); gap: 7px; }
-  .wa-ai-tabs button { font-size: 8px; }
+  .wa-ai-tabs button { font-size: 10px; }
 }
 @media (max-width: 991.98px) {
   .wa-workbench-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }

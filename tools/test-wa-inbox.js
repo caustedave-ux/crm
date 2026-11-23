@@ -285,10 +285,11 @@ const cssSource = fs.readFileSync(require('path').join(sourcePath, 'static/css/s
 console.log('\n=== 9a. WhatsApp 工作台真实三栏布局 ===');
 eq(quotedHtml.includes('wa-workbench-metrics') && quotedHtml.includes('今日客户消息'), true, '工作台顶部指标从当前 CRM / WhatsApp 数据生成');
 eq(quotedHtml.includes('data-wa-main-tab="chat"') && quotedHtml.includes('data-wa-main-tab="customer"') && quotedHtml.includes('data-wa-main-tab="followups"') && quotedHtml.includes('data-wa-main-tab="files"') && quotedHtml.includes('data-wa-main-tab="orders"'), true, '中间会话区提供真实业务标签');
-eq(quotedHtml.includes('data-wa-ai-tab="reply"') && quotedHtml.includes('data-wa-ai-tab="translate"') && quotedHtml.includes('data-wa-ai-tab="knowledge"') && quotedHtml.includes('data-wa-ai-tab="phrases"'), true, '右侧 AI 助手标签可切换');
+eq(quotedHtml.includes('data-wa-ai-tab="reply"') && quotedHtml.includes('data-wa-ai-tab="knowledge"') && !quotedHtml.includes('data-wa-ai-tab="translate"') && !quotedHtml.includes('data-wa-ai-tab="phrases"'), true, '右侧 AI 助手只留智能回复和知识检索两个标签');
+eq(quotedHtml.includes('id="waComposeTranslateBtn"') && quotedHtml.includes('id="waComposePhrasesBtn"') && quotedHtml.includes('id="waComposeTranslatePanel"') && quotedHtml.includes('id="waComposePhrasesPanel"'), true, '翻译和快捷短语已搬到输入区附件边上');
 eq((quotedHtml.match(/id="waAiDraft"/g) || []).length, 1, 'AI 起草按钮只保留一份并连接现有 API');
 eq((quotedHtml.match(/id="waAiTranslate"/g) || []).length, 1, 'AI 翻译按钮只保留一份并连接现有 API');
-eq(quotedHtml.includes('role="tab" aria-selected="true" class="active" data-wa-ai-tab="reply"') && quotedHtml.includes('role="tabpanel" data-wa-ai-panel="translate" hidden'), true, 'AI 工具页签具备初始选中和面板可访问状态');
+eq(quotedHtml.includes('role="tab" aria-selected="true" class="active" data-wa-ai-tab="reply"') && quotedHtml.includes('role="tabpanel" data-wa-ai-panel="knowledge" hidden'), true, 'AI 工具页签具备初始选中和面板可访问状态');
 eq(quotedHtml.includes('提供款式 2 和 3 的工艺细节'), false, '移除截图里的虚构客户示例');
 eq(quotedHtml.includes('AI 回复建议（英文）'), false, '移除截图里的静态 AI 回复示例');
 eq(cssSource.includes('.wa-inbox.wa-3col{display:grid;grid-template-columns:'), true, '桌面 WhatsApp 工作台使用固定三栏网格');

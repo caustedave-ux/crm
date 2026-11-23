@@ -703,9 +703,22 @@ function sessionPage(ctx) {
         </form>
       </div>
       <div id="waMsgs" class="wa-messages">${msgs.map(m => msgHtml(m, active, msgByWaId)).join('') || '<div class="text-muted small py-4 text-center">暂无消息</div>'}</div>
-      ${'' /* 快捷回复管理放在输入框前面：原来在输入框下面，输入框 sticky 置底后它会被盖住、点不到。 */}
-      <details class="wa-quick-manage px-3 pt-2">
-          <summary class="small text-muted">管理快捷回复</summary>
+      ${'' /* 翻译/快捷短语面板放在输入框前面（2026-11-23）：从右侧 AI 面板搬过来，默认收起，点附件边的按钮展开；放在输入框下面会被 sticky 置底的输入框盖住、点不到。面板在 #waSendForm 外面，里面的管理表单才不会嵌套进发送表单。 */}
+      <div id="waComposeTranslatePanel" class="wa-compose-panel d-none" aria-label="翻译工具">
+        <div class="wa-ai-section-title"><i class="bi bi-translate"></i><span>翻译输入框内容</span></div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+          <label class="wa-ai-field-label mb-0" for="waTranslateLang">目标语言</label>
+          <select class="form-select form-select-sm w-auto" id="waTranslateLang" title="谷歌免费机翻，无需 API Key"><option value="en">英语</option><option value="fr">法语</option><option value="ar">阿拉伯语</option><option value="es">西班牙语</option><option value="ru">俄语</option></select>
+          <button class="btn btn-sm btn-outline-primary" type="button" id="waAiTranslate"><i class="bi bi-translate me-1"></i>翻译草稿</button>
+        </div>
+        <p class="wa-ai-hint mb-0">先在聊天输入框写入或粘贴内容，翻译结果会替换输入框文本，可编辑后再发送。</p>
+      </div>
+      <div id="waComposePhrasesPanel" class="wa-compose-panel d-none" aria-label="快捷短语">
+        <div class="wa-ai-section-title"><i class="bi bi-lightning"></i><span>快捷短语</span></div>
+        <label class="wa-ai-field-label" for="waQuickReply">选择并填入聊天输入框</label>
+        <select class="form-select form-select-sm" id="waQuickReply"><option value="">选择快捷回复…</option>${quickReplies.map(reply => `<option value="${esc(reply.content)}">${esc(reply.title)}</option>`).join('')}</select>
+        <div class="wa-compose-phrases-manage">
+          <div class="small text-muted mt-2 mb-1">管理快捷回复</div>
           <div class="d-flex flex-wrap gap-2 mt-2">
             ${quickReplies.map(r => `<form method="post" action="/whatsapp/quick-replies/${r.id}/delete" class="d-inline"><input type="hidden" name="chat_id" value="${active.id}"><button class="btn btn-sm btn-light border">${esc(r.title)} ×</button></form>`).join('') || '<span class="small text-muted">还没有快捷回复</span>'}
           </div>
@@ -717,7 +730,8 @@ function sessionPage(ctx) {
             <input type="hidden" name="chat_id" value="${active.id}">
             <input type="hidden" name="content" id="waQuickContent">
           </form>
-      </details>
+        </div>
+      </div>
       <form method="post" action="/whatsapp/send" class="wa-compose" id="waSendForm" enctype="multipart/form-data">
         <input type="hidden" name="chat_id" value="${active.id}">
         <input type="hidden" name="quote_id" id="waQuoteId" value="">
@@ -729,6 +743,8 @@ function sessionPage(ctx) {
         <div class="wa-compose-tools">
           <label class="btn btn-sm btn-outline-secondary mb-0" for="waAttachment" title="可多选文件，也可以直接在输入框按 Ctrl+V 粘贴图片"><i class="bi bi-paperclip me-1"></i>附件</label>
           <input class="visually-hidden" type="file" name="attachment" id="waAttachment" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" multiple>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="waComposeTranslateBtn" aria-expanded="false" aria-controls="waComposeTranslatePanel" title="翻译输入框内容"><i class="bi bi-translate me-1"></i>翻译</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="waComposePhrasesBtn" aria-expanded="false" aria-controls="waComposePhrasesPanel" title="选择快捷短语填入输入框"><i class="bi bi-lightning me-1"></i>快捷短语</button>
           <span class="small text-muted" id="waSendState" aria-live="polite"></span>
         </div>
         <div id="waAttachmentPreview" class="wa-attachment-preview d-none" aria-live="polite">
@@ -830,11 +846,10 @@ function sessionPage(ctx) {
     <a href="/customers/${activeCustomer.id}" class="btn btn-sm btn-outline-secondary ms-auto">客户档案</a>
   </div>` : '<div class="wa-unbound-notice"><i class="bi bi-person-exclamation"></i><span>当前会话尚未绑定客户。可在“客户信息”页完成绑定或新建客户。</span></div>';
   const aiKnowledgeHtml = matchedKnowledge.length ? matchedKnowledge.map(article => `<a class="wa-ai-knowledge-row" href="/knowledge?article=${Number(article.id)}"><span class="badge text-bg-light">${esc(article.category)}</span><b>${esc(article.title)}</b><i class="bi bi-arrow-up-right"></i></a>`).join('') : '<div class="wa-panel-empty">最近入站消息没有匹配到知识库内容。可先补充消息，或直接搜索知识库。</div>';
-  const quickReplyOptions = quickReplies.map(reply => `<option value="${esc(reply.content)}">${esc(reply.title)}</option>`).join('');
   const aiPanelHtml = `<aside class="wa-ai-pane" aria-label="AI 智能助手">
     <div class="wa-ai-pane-head"><span class="wa-ai-mark"><i class="bi bi-stars"></i></span><div><b>AI 智能助手</b><small>只生成草稿，不自动发送</small></div></div>
     <div class="wa-ai-tabs" role="tablist" aria-label="AI 工具">
-      <button type="button" role="tab" aria-selected="true" class="active" data-wa-ai-tab="reply">智能回复</button><button type="button" role="tab" aria-selected="false" data-wa-ai-tab="translate">翻译工具</button><button type="button" role="tab" aria-selected="false" data-wa-ai-tab="knowledge">知识检索</button><button type="button" role="tab" aria-selected="false" data-wa-ai-tab="phrases">快捷短语</button>
+      <button type="button" role="tab" aria-selected="true" class="active" data-wa-ai-tab="reply">智能回复</button><button type="button" role="tab" aria-selected="false" data-wa-ai-tab="knowledge">知识检索</button>
     </div>
     <section class="wa-ai-tab-panel active" role="tabpanel" data-wa-ai-panel="reply">
       <div class="wa-ai-section-title"><i class="bi bi-person-lines-fill"></i><span>客户与会话</span></div>
@@ -849,24 +864,11 @@ function sessionPage(ctx) {
         <div class="wa-ai-knowledge-list">${aiKnowledgeHtml}</div>
       </div>
     </section>
-    <section class="wa-ai-tab-panel" role="tabpanel" data-wa-ai-panel="translate" hidden>
-      <div class="wa-ai-section-title"><i class="bi bi-translate"></i><span>翻译输入框内容</span></div>
-      <label class="wa-ai-field-label" for="waTranslateLang">目标语言</label>
-      <select class="form-select form-select-sm" id="waTranslateLang" title="谷歌免费机翻，无需 API Key"><option value="en">英语</option><option value="fr">法语</option><option value="ar">阿拉伯语</option><option value="es">西班牙语</option><option value="ru">俄语</option></select>
-      <p class="wa-ai-hint">先在聊天输入框写入或粘贴内容，翻译结果会替换输入框文本，可编辑后再发送。</p>
-      <button class="btn btn-sm btn-outline-primary w-100" type="button" id="waAiTranslate"><i class="bi bi-translate me-1"></i>翻译草稿</button>
-    </section>
     <section class="wa-ai-tab-panel" role="tabpanel" data-wa-ai-panel="knowledge" hidden>
       <div class="wa-ai-section-title"><i class="bi bi-journal-richtext"></i><span>相关知识</span></div>
       ${latestInboundText ? `<div class="wa-ai-context-copy mb-2">按最近入站消息检索：${esc(latestInboundText.slice(0, 180))}</div>` : ''}
       <div class="wa-ai-knowledge-list">${aiKnowledgeHtml}</div>
       <a class="btn btn-sm btn-outline-secondary w-100 mt-3" href="/knowledge${latestInboundText ? '?search=' + encodeURIComponent(latestInboundText.split(/\\s+/).slice(0, 4).join(' ')) : ''}"><i class="bi bi-search me-1"></i>打开知识库</a>
-    </section>
-    <section class="wa-ai-tab-panel" role="tabpanel" data-wa-ai-panel="phrases" hidden>
-      <div class="wa-ai-section-title"><i class="bi bi-lightning"></i><span>快捷短语</span></div>
-      <label class="wa-ai-field-label" for="waQuickReply">选择并填入聊天输入框</label>
-      <select class="form-select form-select-sm" id="waQuickReply"><option value="">选择快捷回复…</option>${quickReplyOptions}</select>
-      <details class="wa-ai-manage-phrases"><summary>管理快捷回复</summary><div class="d-flex flex-wrap gap-2 mt-2">${quickReplies.map(reply => `<form method="post" action="/whatsapp/quick-replies/${Number(reply.id)}/delete" class="d-inline"><input type="hidden" name="chat_id" value="${active ? Number(active.id) : ''}"><button class="btn btn-sm btn-outline-secondary">${esc(reply.title)} ×</button></form>`).join('') || '<span class="small text-muted">还没有快捷回复</span>'}</div><form method="post" action="/whatsapp/quick-replies" class="vstack gap-2 mt-3"><input type="hidden" name="chat_id" value="${active ? Number(active.id) : ''}"><input type="text" class="form-control form-control-sm" name="title" maxlength="80" placeholder="短语名称" required><textarea class="form-control form-control-sm" name="content" rows="3" placeholder="快捷回复内容" required></textarea><button class="btn btn-sm btn-outline-primary">保存快捷回复</button></form></details>
     </section>
   </aside>`;
   const content = `
@@ -925,6 +927,9 @@ function sessionPage(ctx) {
         if (!inbox) return;
         var pollTimer = null;
         var pollNow = null;
+        // 输入区展开的面板（translate/phrases，2026-11-23）：轮询刷新会重渲染收件箱，
+        // 展开状态记在这里，initConversation 每次绑定完再恢复。
+        var openComposePanel = '';
         var requestSeq = 0;
         var loading = false;
         var deferredPollRefresh = false;
@@ -1538,17 +1543,23 @@ function sessionPage(ctx) {
           });
           var transLang = document.getElementById('waTranslateLang');
           var transBtn = document.getElementById('waAiTranslate');
+          // 翻译状态同时写到输入区状态行（2026-11-23）：翻译按钮已搬到附件边上，
+          // 右侧 AI 面板不一定停在“智能回复”页签，状态只写 waAiState 用户可能看不到。
+          var setTranslateState = function (msg) {
+            if (aiState) aiState.textContent = msg;
+            if (sendState) sendState.textContent = msg;
+          };
           if (transBtn && transLang && ta) transBtn.addEventListener('click', function () {
             var text = ta.value.trim();
             if (!text) {
-              if (aiState) aiState.textContent = '请先在输入框填写要翻译的内容';
+              setTranslateState('请先在输入框填写要翻译的内容');
               ta.focus();
               return;
             }
             transBtn.disabled = true;
             transBtn.dataset.originalHtml = transBtn.innerHTML;
             transBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>翻译中';
-            if (aiState) aiState.textContent = '正在翻译…';
+            setTranslateState('正在翻译…');
             fetch('/api/wa/translate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -1563,9 +1574,9 @@ function sessionPage(ctx) {
               ta.focus();
               autoGrowWaText();
               try { sessionStorage.setItem('waDraft:' + chatId, ta.value); } catch (e) {}
-              if (aiState) aiState.textContent = '翻译完成，请核对后发送';
+              setTranslateState('翻译完成，请核对后发送');
             }).catch(function (e) {
-              if (aiState) aiState.textContent = e.message || '翻译失败，请重试';
+              setTranslateState(e.message || '翻译失败，请重试');
             }).finally(function () {
               transBtn.disabled = false;
               if (transBtn.dataset.originalHtml) {
@@ -1574,6 +1585,34 @@ function sessionPage(ctx) {
               }
             });
           });
+          // 输入区附件边的翻译/快捷短语展开收起（2026-11-23）：两个面板互斥，点已展开的再收起；
+          // 展开状态记在 openComposePanel，轮询重渲染后由 initConversation 末尾恢复。
+          var composeTranslateBtn = document.getElementById('waComposeTranslateBtn');
+          var composeTranslatePanel = document.getElementById('waComposeTranslatePanel');
+          var composePhrasesBtn = document.getElementById('waComposePhrasesBtn');
+          var composePhrasesPanel = document.getElementById('waComposePhrasesPanel');
+          var toggleComposePanel = function (which, skipFocus) {
+            var pairs = [
+              { btn: composeTranslateBtn, panel: composeTranslatePanel, name: 'translate' },
+              { btn: composePhrasesBtn, panel: composePhrasesPanel, name: 'phrases' }
+            ];
+            var opened = '';
+            pairs.forEach(function (pair) {
+              if (!pair.btn || !pair.panel) return;
+              var open = pair.name === which && pair.panel.classList.contains('d-none');
+              if (open) opened = pair.name;
+              pair.panel.classList.toggle('d-none', !open);
+              pair.btn.classList.toggle('active', open);
+              pair.btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
+            openComposePanel = opened;
+            if (!skipFocus) {
+              if (opened === 'translate' && transLang) transLang.focus();
+              if (opened === 'phrases' && qr) qr.focus();
+            }
+          };
+          if (composeTranslateBtn) composeTranslateBtn.addEventListener('click', function () { toggleComposePanel('translate'); });
+          if (composePhrasesBtn) composePhrasesBtn.addEventListener('click', function () { toggleComposePanel('phrases'); });
           var attach = document.getElementById('waAttachment');
           if (attach) {
             attach.addEventListener('change', function () {
@@ -1666,6 +1705,8 @@ function sessionPage(ctx) {
             };
             pollTimer = setInterval(pollNow, 3000);
           }
+          // 轮询刷新会重渲染整个收件箱，恢复之前展开的翻译/快捷短语面板（2026-11-23），恢复时不抢焦点。
+          if (openComposePanel) toggleComposePanel(openComposePanel, true);
         }
 
         function setLoading(on) {
@@ -1709,6 +1750,11 @@ function sessionPage(ctx) {
           if (!root || !value) return;
           var buttonAttr = kind === 'main' ? 'data-wa-main-tab' : 'data-wa-ai-tab';
           var panelAttr = kind === 'main' ? 'data-wa-main-panel' : 'data-wa-ai-panel';
+          // 兜底（2026-11-23）：翻译/快捷短语已搬出 AI 面板，轮询恢复时若记住的还是旧标签，
+          // 没有按钮能对上就回落到第一个标签，避免全部标签失活、面板全藏。
+          var knownValues = Array.prototype.map.call(root.querySelectorAll('[' + buttonAttr + ']'), function (button) { return button.getAttribute(buttonAttr); });
+          if (knownValues.indexOf(value) === -1) value = knownValues[0] || '';
+          if (!value) return;
           root.querySelectorAll('[' + buttonAttr + ']').forEach(function (button) {
             var selected = button.getAttribute(buttonAttr) === value;
             button.classList.toggle('active', selected);
