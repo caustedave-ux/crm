@@ -6,16 +6,17 @@
  * 主 CRM 代码里没有任何现成发信能力（无 nodemailer、无 SMTP 配置），且本项目
  * 不允许新增 npm 依赖，所以 V1 不做直连 SMTP 发送。单发的方式是：
  *   选模板 + 选线索 → 渲染预览 → 复制全文 / 打开 mailto:（收件人取线索的
- *   邮箱证据，若无邮箱则只复制）→ 用户在自己邮箱发完后点「标记已发送」调
+ *   邮箱证据，若无邮箱则只复制）→ 用户在自己邮箱发完后点「标记已手动发送」调
  *   recordSend 写一条 send_records。
  * 也就是说：本模块只负责“模板管理 + 占位符渲染 + 读联系方式 + 记发送记录”，
  * 真正的发出动作发生在用户自己的邮箱客户端里。如后续要直连发送，需另接
  * SMTP 服务（发件箱配置 + nodemailer 或等价依赖），不在本模块范围内。
  *
  * 占位符：{{公司名}} {{国家}} {{产品}} {{联系人}} {{电话}} {{网址}}
- * - {{产品}} 默认取 'door locks & hardware'（法文模板默认取法文 'serrures et
- *   quincaillerie de porte'）；lead 自带 product / product_hint 字段时优先用它。
- * - {{联系人}} 取 lead.contact_name，lead 里没有取 ''。
+ * - {{产品}}：lead 自带 product / product_hint 字段时用它；没有时留空，
+ *   不再渲染 'door locks & hardware' 这类默认值——不要替客户编一个产品出来。
+ * - {{联系人}}：取 lead.contact_name；没有时改用公司名，再没有用 Hello/Bonjour，
+ *   不留 "Dear ," 这种空称呼。
  * - 模板或 lead 也可传 id（数字），模块内部会查库；传对象时直接取字段。
  *
  * 表结构约定（suite/src/db.js 建表）：
@@ -29,9 +30,6 @@ const { run, get, all } = require('./db');
 
 function now() { return new Date().toISOString(); }
 
-const DEFAULT_PRODUCT_EN = 'door locks & hardware';
-const DEFAULT_PRODUCT_FR = 'serrures et quincaillerie de porte';
-
 /** 默认模板：首次调用 ensureDefaults() 且表为空时写入。落款留公司名/电话占位。 */
 const DEFAULT_TEMPLATES = [
   {
@@ -41,7 +39,7 @@ const DEFAULT_TEMPLATES = [
     body: 'Hi {{公司名}} team,\n'
       + '\n'
       + 'We are a door lock and hardware manufacturer from China with 12 years of OEM experience. '
-      + 'We supply {{产品}} to distributors and hardware retailers in {{国家}} and worldwide — '
+      + 'We supply door locks and hardware to distributors and hardware retailers worldwide — '
       + 'including mortise locks, handles, cylinders and hinges.\n'
       + '\n'
       + 'Could you share your main product lines and typical order quantity? '
@@ -58,9 +56,9 @@ const DEFAULT_TEMPLATES = [
     body: 'Bonjour, équipe {{公司名}},\n'
       + '\n'
       + 'Nous sommes un fabricant chinois de serrures et de quincaillerie de porte, '
-      + 'avec 12 ans d\u2019expérience OEM. Nous fournissons {{产品}} aux distributeurs '
-      + 'et aux quincailleries en {{国家}} et dans le monde entier — serrures à mortaiser, '
-      + 'poignées, cylindres et charnières.\n'
+      + 'avec 12 ans d\u2019expérience OEM. Nous fournissons des serrures et de la '
+      + 'quincaillerie de porte aux distributeurs et aux quincailleries dans le monde '
+      + 'entier — serrures à mortaiser, poignées, cylindres et charnières.\n'
       + '\n'
       + 'Pourriez-vous nous indiquer vos gammes principales et vos quantités habituelles ? '
       + 'Nous vous enverrons notre catalogue avec nos meilleurs prix pour votre marché.\n'
@@ -163,21 +161,22 @@ function fillPlaceholders(text, values) {
 
 /**
  * 渲染模板：把 {{公司名}} {{国家}} {{产品}} {{联系人}} {{电话}} {{网址}}
- * 替换为 lead 字段（lead 里没有的取 ''；{{产品}} 默认取 'door locks & hardware'，
- * 法文模板默认取 'serrures et quincaillerie de porte'）。
+ * 替换为 lead 字段。没有的字段取 ''（{{产品}} 不再取默认值，{{联系人}}
+ * 没有时用公司名、再没有用 Hello/Bonjour，见上）。
  * 返回 { subject, body }。
  */
 function renderTemplate(template, lead) {
   const tpl = resolveTemplate(template);
   const ld = resolveLead(lead);
   const isFr = String(tpl.lang || 'en').toLowerCase() === 'fr';
+  const company = ld.company_name ? String(ld.company_name) : '';
   const values = {
-    '公司名': ld.company_name ? String(ld.company_name) : '',
+    '公司名': company,
     '国家': ld.country ? String(ld.country) : '',
     '产品': ld.product || ld.product_hint
       ? String(ld.product || ld.product_hint)
-      : (isFr ? DEFAULT_PRODUCT_FR : DEFAULT_PRODUCT_EN),
-    '联系人': ld.contact_name ? String(ld.contact_name) : '',
+      : '',
+    '联系人': ld.contact_name ? String(ld.contact_name) : (company || (isFr ? 'Bonjour' : 'Hello')),
     '电话': ld.phone ? String(ld.phone) : '',
     '网址': ld.website ? String(ld.website) : '',
   };
@@ -208,8 +207,9 @@ function getLeadContact(leadId) {
 }
 
 /**
- * 写一条发送记录（“标记已发送”调这个）。channel 只允许 'email'/'whatsapp'，
- * status 默认 'sent'。返回写入的记录行。
+ * 写一条发送记录（“标记已手动发送”调这个）。channel 只允许 'email'/'whatsapp'，
+ * status 默认 'sent'。同一线索 + 同一模板 + 同一渠道 + 同一主题，5 分钟内
+ * 重复标记只记一次（防手抖连点造出重复记录）。返回写入的记录行。
  */
 function recordSend({ leadId, templateId, channel, subject, body, status }) {
   if (leadId == null || leadId === '') throw new Error('线索不存在，无法记录发送。');
@@ -219,11 +219,24 @@ function recordSend({ leadId, templateId, channel, subject, body, status }) {
   if (ch !== 'email' && ch !== 'whatsapp') {
     throw new Error('发送渠道只支持 email 或 whatsapp。');
   }
+  const tplId = templateId != null && templateId !== '' ? Number(templateId) : null;
+  const subj = subject == null ? '' : String(subject);
+  const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+  const dup = all(
+    'SELECT template_id, channel, subject, created_at FROM send_records WHERE lead_id=? ORDER BY id DESC LIMIT 10',
+    Number(leadId)
+  ).find(r => {
+    const t = Date.parse(String(r.created_at || ''));
+    if (!Number.isFinite(t) || t < fiveMinAgo) return false;
+    const rTpl = r.template_id == null ? null : Number(r.template_id);
+    return rTpl === tplId && String(r.channel || '') === ch && String(r.subject || '') === subj;
+  });
+  if (dup) throw new Error('5 分钟内已标记过一次相同内容的发送，无需重复标记。');
   const st = status == null || String(status).trim() === '' ? 'sent' : String(status).trim();
   const r = run(
     'INSERT INTO send_records(lead_id,template_id,channel,subject,body,status,created_at) VALUES(?,?,?,?,?,?,?)',
-    Number(leadId), templateId != null && templateId !== '' ? Number(templateId) : null,
-    ch, subject == null ? '' : String(subject), body == null ? '' : String(body), st, now()
+    Number(leadId), tplId,
+    ch, subj, body == null ? '' : String(body), st, now()
   );
   return get('SELECT * FROM send_records WHERE id=?', Number(r.lastInsertRowid));
 }

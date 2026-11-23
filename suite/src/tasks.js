@@ -19,8 +19,8 @@
  *   runTask(id, opts) 收到 fetchImpl 时会同时放进 input 与 opts，两种读取方式都兼容。
  * - estimateCalls 直接 re-export places.js 的同名函数，不自己重算；其实测签名是
  *   estimateCalls({ maxResults, radiusKm, location })（对象参数）。
- * - tasks 表的 status 在 db.js 注释里写的是 enriching，但本模块按任务书用 organizing；
- *   表上没有 CHECK 约束，两种写法都能存，建议 A 把 db.js 注释统一成 organizing。
+ * - 任务状态统一用 organizing（AI 整理中）；enriching 只作为旧数据的别名保留在
+ *   各处徽章映射里，不再新写。
  *
  * 幂等 / 并发假设（供 server.js 接线参考）：
  * - runTask 只接受 status='queued' 的任务，running/done 的任务再次调用会抛中文错；
@@ -29,8 +29,8 @@
  *   industry_hint 的覆盖写本身也是幂等的。
  * - startRunner 同一时间只跑一个任务（500ms 轮询 + busy 锁，取 created_at 最早的
  *   queued 任务）；重复调用 startRunner 不会起第二个定时器，返回同一个 stop 函数。
- * - 进程崩溃时若任务卡在 running，不会自动认领：需人工把该行 status 改回 queued
- *   或 failed 后再跑（或后续再加 stale-running 回收）。
+ * - 进程崩溃时卡在 running 的任务，startRunner() 启动时会认领回 queued 重跑
+ *   （reclaimStaleTasks），不用人工改库。
  */
 const { run, get, all } = require('./db');
 const places = require('./places');
@@ -43,6 +43,7 @@ const STATUS_LABEL = {
   queued: '排队中',
   running: '采集中',
   organizing: '整理中',
+  enriching: '整理中', // 旧别名，只读不写
   done: '已完成',
   failed: '失败',
 };
@@ -156,7 +157,7 @@ function getTask(id) {
 function listTasks(limit = 20) {
   const n = Math.min(100, Math.max(1, Math.floor(Number(limit) || 20)));
   // 列表不带 results_json（结果原文只在单个任务详情里返回，避免列表响应过大）
-  return all('SELECT id, keyword, location, radius_km, max_results, status, total, done, batch_id, error, created_at, started_at, finished_at FROM tasks ORDER BY created_at DESC, id DESC LIMIT ?', n);
+  return all('SELECT id, keyword, location, radius_km, max_results, status, total, done, batch_id, error, center_lat, center_lng, created_at, started_at, finished_at FROM tasks ORDER BY created_at DESC, id DESC LIMIT ?', n);
 }
 
 /**
@@ -222,7 +223,10 @@ async function runTask(id, opts = {}) {
     const found = res && typeof res.found === 'number'
       ? res.found
       : (Array.isArray(res && res.results) ? res.results.length : 0);
-    run("UPDATE tasks SET batch_id=?, total=?, results_json=?, status='organizing' WHERE id=?", batchId, found, JSON.stringify(res.results || []), task.id);
+    // 服务端定位到的城市中心坐标存下来，供地图页直接用（L3，不再让浏览器重算）。
+    const centerLat = res && res.center && typeof res.center.lat === 'number' ? res.center.lat : null;
+    const centerLng = res && res.center && typeof res.center.lng === 'number' ? res.center.lng : null;
+    run("UPDATE tasks SET batch_id=?, total=?, results_json=?, status='organizing', center_lat=?, center_lng=? WHERE id=?", batchId, found, JSON.stringify(res.results || []), centerLat, centerLng, task.id);
     const organized = organizeStep(task, res.results || []);
     run("UPDATE tasks SET status='done', done=?, finished_at=? WHERE id=?", organized, now(), task.id);
     return getTask(id);
@@ -264,12 +268,24 @@ async function tickRunner() {
 }
 
 /**
+ * 认领崩溃遗留的任务：进程崩溃时卡在 running 的任务不会自己恢复，
+ * 下次启动时把它放回 queued（started_at 清空），runner 会重新跑它。
+ * 返回被认领的条数。startRunner() 启动时调一次。
+ */
+function reclaimStaleTasks() {
+  const r = run("UPDATE tasks SET status='queued', started_at=NULL WHERE status='running'");
+  if (r.changes > 0) console.log(`[获客工作台] 已认领 ${r.changes} 个崩溃遗留的采集中任务，放回排队。`);
+  return r.changes;
+}
+
+/**
  * 启动后台循环：每 500ms 检查一次，同一时间只跑一个任务，按 created_at 顺序取
  * queued 的跑；已在跑就跳过。重复调用不会起第二个定时器。返回 stop 函数。
  * 建议 server.js 启动时调一次 startRunner()。
  */
 function startRunner() {
   if (runnerTimer) return stopRunner;
+  reclaimStaleTasks();
   runnerTimer = setInterval(() => { tickRunner(); }, RUNNER_INTERVAL_MS);
   if (typeof runnerTimer.unref === 'function') runnerTimer.unref();
   setImmediate(() => { tickRunner(); });
@@ -289,6 +305,7 @@ module.exports = {
   listTasks,
   startRunner,
   stopRunner,
+  reclaimStaleTasks,
   runTask,
   retryTask,
   // 直接 re-export places.js 的同名函数（不要自己重算）；

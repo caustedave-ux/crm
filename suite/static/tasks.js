@@ -25,6 +25,7 @@
     queued: '排队中',
     running: '采集中',
     organizing: '整理中',
+    enriching: '整理中', // 旧别名，只读不写
     done: '已完成',
     failed: '失败',
   };
@@ -32,6 +33,7 @@
     queued: 'bg-secondary',
     running: 'bg-primary',
     organizing: 'bg-info',
+    enriching: 'bg-info', // 旧别名，只读不写
     done: 'bg-success',
     failed: 'bg-danger',
   };
@@ -69,7 +71,10 @@
     var total = Number(t.total) || 0;
     var done = Number(t.done) || 0;
     var pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
-    var meta = esc(t.keyword || '') + (t.location ? ' · ' + esc(t.location) : '');
+    // L6：卡片标题带上服务端 "T-12" 编号前缀；L2：搜索阶段 total 为 0 时不显示“已解析 0 / 0”。
+    var progressText = total > 0 ? ('已解析 ' + done + ' / ' + total)
+      : ({ queued: '排队中…', running: '采集中…正在搜索商家', organizing: 'AI 整理中…' }[t.status] || '—');
+    var meta = 'T-' + esc(t.id) + ' · ' + esc(t.keyword || '') + (t.location ? ' · ' + esc(t.location) : '');
     if (t.radius_km) meta += ' · 半径 ' + esc(t.radius_km) + ' 公里';
     meta += ' · 最多 ' + esc(t.max_results) + ' 家';
     var html = '<div class="card mb-2"><div class="card-body py-2">'
@@ -81,7 +86,7 @@
       + '<div class="text-nowrap">' + statusBadge(t.status) + '</div></div>'
       + '<div class="d-flex align-items-center gap-2 mt-2">'
       + '<div class="progress flex-grow-1" style="height: 8px;"><div class="progress-bar" role="progressbar" style="width: ' + pct + '%"></div></div>'
-      + '<span class="small text-nowrap">已解析 ' + done + ' / ' + total + '</span>';
+      + '<span class="small text-nowrap">' + progressText + '</span>';
     if (t.status === 'failed') {
       html += '<button class="btn btn-sm btn-outline-warning" data-retry-id="' + esc(t.id) + '">重试</button>';
     }
@@ -186,7 +191,10 @@
         var max = Math.min(60, Math.max(1, parseInt(maxInput.value, 10) || 20));
         var radius = parseFloat(radiusInput.value) || 0;
         var e = estimate(max, radius, !!(locInput.value || '').trim());
-        estBox.textContent = '预估调用：定位 ' + e.geocode + ' 次 + 搜索 ' + e.search + ' 次 + 详情 ' + e.details + ' 次（合计 ' + e.total + ' 次）。';
+        var text = '预估调用：定位 ' + e.geocode + ' 次 + 搜索 ' + e.search + ' 次 + 详情 ' + e.details + ' 次（合计 ' + e.total + ' 次）。';
+        // L4：只填半径不填城市时半径会被忽略，这里直接提示。
+        if (radius && !(locInput.value || '').trim()) text += ' 注意：只填半径不填城市时，半径不起作用（需配合城市使用）。';
+        estBox.textContent = text;
       };
       [radiusInput, maxInput, locInput].forEach(function (el) {
         if (el) el.addEventListener('input', refreshEstimate);
@@ -196,6 +204,11 @@
       form.addEventListener('submit', async function (e) {
         e.preventDefault();
         if (errBox) errBox.innerHTML = '';
+        // M7：无 Key 时服务端渲染已禁用提交按钮，这里再拦一道（防按钮被改回可用）。
+        if (form.dataset.hasKey === '0') {
+          if (errBox) errBox.innerHTML = '<div class="alert alert-warning py-1 px-2 mb-0">未配置 Google Places API Key，请先到<a href="/settings">数据源设置</a>填写。</div>';
+          return;
+        }
         var keyword = (kwInput.value || '').trim();
         if (!keyword) {
           if (errBox) errBox.innerHTML = '<div class="alert alert-warning py-1 px-2 mb-0">请先填写关键词。</div>';

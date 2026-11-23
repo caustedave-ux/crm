@@ -1,8 +1,10 @@
 'use strict';
 /** 获客工作台地图采集页交互：预设快捷按钮、预估调用量、提交建任务、轮询任务进度、渲染结果、地图打点。
  * 任务制：POST /api/maps/search 只建任务返回 task_id，再轮询 GET /api/tasks/:id 直到 done/failed。
- * 地图：Google Maps JS API 由服务端只在有 Key 时渲染进本页（callback=initMapsSuite）；
- * 脚本加载失败（google 未定义）时降级只显示列表，不阻塞采集。 */
+ * 地图：Google Maps JS API 由服务端代理端点 /maps-js 提供（Key 不进页面源码，
+ * callback=initMapsSuite）；脚本加载失败（google 未定义）时降级只显示列表，不阻塞采集。
+ * 地图中心用服务端定位到的城市坐标（任务的 center_lat/center_lng），不再让浏览器
+ * 端 Geocoder 重算一次。 */
 (function(){
   function esc(s){
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -23,13 +25,13 @@
   }
 
   // ── 地图（Google Maps JS API 回调；失败时 window.google 不存在，直接降级）──
-  var map = null, markers = [], circle = null, mapReady = false, pendingResults = null, pendingCenter = null;
+  var map = null, markers = [], circle = null, mapReady = false, pendingResults = null, pendingCenter = null, pendingRadiusKm = null, mapCentered = false;
   window.initMapsSuite = function(){
     try {
       if (!window.google || !google.maps) return;
       map = new google.maps.Map(document.getElementById('mapsMap'), { center: { lat: 20, lng: 0 }, zoom: 2 });
       mapReady = true;
-      if (pendingCenter) centerMap(pendingCenter, pendingResults && pendingResults.radiusKm);
+      if (pendingCenter) centerMap(pendingCenter, pendingRadiusKm);
       if (pendingResults) plotResults(pendingResults.results || []);
     } catch (e) {
       document.getElementById('mapsMapFallback').style.display = 'block';
@@ -61,7 +63,7 @@
     var bounds = new google.maps.LatLngBounds();
     var plotted = 0;
     (results || []).forEach(function(x){
-      // 结果带经纬度时才打点（places.js 的 collectLeads 目前不返回坐标，见汇报说明）。
+      // 结果带经纬度时才打点（collectLeads 返回每家的 lat/lng）。
       var lat = x.lat != null ? x.lat : (x.location && x.location.latitude);
       var lng = x.lng != null ? x.lng : (x.location && x.location.longitude);
       if (typeof lat !== 'number' || typeof lng !== 'number') return;
@@ -77,17 +79,16 @@
     var note = document.getElementById('mapsMapNote');
     if (note) note.textContent = plotted > 0 ? ('已在地图上标出 ' + plotted + ' 家') : '本次结果无坐标，仅显示列表';
   }
-  function geocodeCenter(locationText, radiusKm){
-    if (!mapReady || !locationText || !window.google) return;
-    try {
-      var gc = new google.maps.Geocoder();
-      gc.geocode({ address: locationText }, function(res, status){
-        if (status === 'OK' && res && res[0]) {
-          var loc = res[0].geometry.location;
-          centerMap({ lat: loc.lat(), lng: loc.lng() }, radiusKm);
-        }
-      });
-    } catch (e) { /* 定位失败不阻塞采集 */ }
+  // 地图中心用服务端定位到的城市坐标（任务的 center_lat/center_lng）：
+  // 地图未就绪时先存进 pendingCenter，等 initMapsSuite 回调时再定位。
+  function centerFromTask(task){
+    if (!task || task.center_lat == null || task.center_lng == null) return;
+    pendingCenter = { lat: Number(task.center_lat), lng: Number(task.center_lng) };
+    pendingRadiusKm = task.radius_km != null ? Number(task.radius_km) : null;
+    if (mapReady && !mapCentered) {
+      centerMap(pendingCenter, pendingRadiusKm);
+      mapCentered = true;
+    }
   }
 
   function renderResults(task){
@@ -137,7 +138,10 @@
       const max = Math.min(60, Math.max(1, parseInt(maxInput.value, 10) || 20));
       const radius = parseFloat(radiusInput.value) || 0;
       const e = estimate(max, radius, !!locInput.value.trim());
-      estBox.textContent = '预估调用：定位 ' + e.geocode + ' 次 + 搜索 ' + e.search + ' 次 + 详情 ' + e.details + ' 次（合计 ' + e.total + ' 次）。免费额度内：Text Search Pro 5,000 次/月、Place Details Pro 5,000 次/月，超了才收费。';
+      let text = '预估调用：定位 ' + e.geocode + ' 次 + 搜索 ' + e.search + ' 次 + 详情 ' + e.details + ' 次（合计 ' + e.total + ' 次）。免费额度内：Text Search Pro 5,000 次/月、Place Details Pro 5,000 次/月，超了才收费。';
+      // L4：只填半径不填城市时半径会被忽略，这里直接提示，不要等用户采完才发现。
+      if (radius && !locInput.value.trim()) text += ' 注意：只填半径不填城市时，半径不起作用（需配合城市使用）。';
+      estBox.textContent = text;
     }
     document.querySelectorAll('.preset-kw').forEach(b => b.addEventListener('click', ()=>{ kwInput.value = b.dataset.kw; kwInput.focus(); }));
     document.querySelectorAll('.preset-loc').forEach(b => b.addEventListener('click', ()=>{ locInput.value = b.dataset.loc; refreshEstimate(); locInput.focus(); }));
@@ -152,9 +156,18 @@
         const total = Number(t.total || 0), done = Number(t.done || 0);
         const pct = total ? Math.min(100, Math.round(100 * done / total)) : (t.status === 'done' ? 100 : 0);
         const statusCn = { queued: '排队', running: '采集中', organizing: 'AI 整理中', enriching: 'AI 整理中', done: '完成', failed: '失败' }[t.status] || t.status;
-        progressLabel.textContent = '任务 T-' + taskId + ' · ' + statusCn + '：已解析 ' + done + ' / ' + total + ' 条';
-        progressPct.textContent = pct + '%';
-        progressBar.style.width = pct + '%';
+        // 地图中心用服务端定位到的城市坐标（任务的 center_lat/center_lng）。
+        centerFromTask(t);
+        // L2：搜索阶段 total 还是 0，“已解析 0 / 0 条”像卡死，显示阶段文案 + 不定进度。
+        if (!total && (t.status === 'running' || t.status === 'queued' || t.status === 'organizing')) {
+          progressLabel.textContent = '任务 T-' + taskId + ' · ' + statusCn + '：正在搜索商家，结果陆续入库…';
+          progressPct.textContent = '';
+          progressBar.style.width = '30%';
+        } else {
+          progressLabel.textContent = '任务 T-' + taskId + ' · ' + statusCn + '：已解析 ' + done + ' / ' + total + ' 条';
+          progressPct.textContent = pct + '%';
+          progressBar.style.width = pct + '%';
+        }
         if (startedAt) {
           const secs = Math.round((Date.now() - startedAt) / 1000);
           progressLabel.textContent += ' · 用时 ' + secs + ' 秒';
@@ -191,9 +204,6 @@
       progressLabel.textContent = '正在创建任务…';
       progressBar.style.width = '0%';
       progressPct.textContent = '';
-      // 地图先按城市定位 + 画半径圆（客户端 Geocoder，不阻塞采集）。
-      const radiusKm = parseFloat(radiusInput.value) || null;
-      geocodeCenter(locInput.value.trim(), radiusKm);
       try {
         const r = await fetch('/api/maps/search', {
           method: 'POST',

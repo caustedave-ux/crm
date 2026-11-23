@@ -9,6 +9,16 @@
       if(hidden) hidden.value = toggles.filter(x=>x.checked).map(x=>x.dataset.source).join(',');
     }
     toggles.forEach(x=>x.addEventListener('change', syncSources));
+    // S2(1)：Places Key 输入框默认打码，点按钮切换显示/隐藏。
+    const keyInput = document.getElementById('placesKeyInput');
+    const toggleBtn = document.getElementById('togglePlacesKey');
+    if (keyInput && toggleBtn) {
+      toggleBtn.addEventListener('click', ()=>{
+        const show = keyInput.type === 'password';
+        keyInput.type = show ? 'text' : 'password';
+        toggleBtn.textContent = show ? '隐藏' : '显示';
+      });
+    }
     form.addEventListener('submit', async e=>{
       e.preventDefault();
       syncSources();

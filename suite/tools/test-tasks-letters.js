@@ -243,9 +243,9 @@ function waitFor(fn, timeoutMs = 15000) {
   console.log('\n[8] 开发信：占位符渲染');
   const rEn = letters.renderTemplate(enTpl, { company_name: 'Test Co Ltd', country: 'Nigeria' });
   ok(rEn.subject === 'Door Hardware Supply from China — Test Co Ltd', '英文主题 {{公司名}} 替换正确');
-  ok(rEn.body.includes('door locks & hardware') && !rEn.body.includes('{{'), '{{产品}} 默认取 door locks & hardware，无残留占位符');
+  ok(rEn.body.includes('door locks and hardware') && !rEn.body.includes('{{'), '英文默认模板正文直接写产品范围，无残留占位符');
   const rFr = letters.renderTemplate(frTpl, { company_name: 'Test Co Ltd', country: 'Nigeria' });
-  ok(rFr.body.includes('serrures et quincaillerie de porte'), '法文模板 {{产品}} 默认取法文词');
+  ok(rFr.body.includes('quincaillerie de porte') && !rFr.body.includes('{{'), '法文默认模板正文直接写法文产品范围，无残留占位符');
   const rProd = letters.renderTemplate(enTpl, { company_name: 'X', country: 'France', product: 'mortise locks' });
   ok(rProd.body.includes('mortise locks'), 'lead 自带 product 时优先用它');
   const allPh = letters.saveTemplate({
@@ -258,7 +258,11 @@ function waitFor(fn, timeoutMs = 15000) {
   });
   ok(rAll.body === 'Acme|Kenya|handles|Ann|+254 1|https://acme.example.com', '6 个占位符全部替换');
   const rMissing = letters.renderTemplate(allPh, { company_name: 'Acme' });
-  ok(rMissing.body === 'Acme||door locks & hardware|||', 'lead 里没有的字段取 \'\'（{{产品}} 除外，取默认值）');
+  ok(rMissing.body === 'Acme|||Acme||', 'lead 里没有的字段取 \'\'（{{产品}} 不再取默认值；{{联系人}} 没有时用公司名）');
+  const rContact = letters.renderTemplate(allPh, { company_name: 'Acme', contact_name: 'Ann' });
+  ok(rContact.body.split('|')[3] === 'Ann', '有联系人时 {{联系人}} 用联系人');
+  const rFrMissing = letters.renderTemplate(frTpl, {});
+  ok(!rFrMissing.body.includes('{{'), '法文模板无线索时也无残留占位符（{{联系人}} 没有时用法文 Bonjour 兜底）');
 
   console.log('\n[9] 开发信：联系方式与发送记录');
   run("INSERT INTO evidence(lead_id,source,field,raw_value,value,url,snippet,confidence,captured_at) VALUES(?,?,?,?,?,?,?,?,?)",
@@ -273,8 +277,11 @@ function waitFor(fn, timeoutMs = 15000) {
   ok(rec.status === 'sent' && rec.lead_id === abuja.id && rec.channel === 'email', 'recordSend 默认 status=sent');
   const recWa = letters.recordSend({ leadId: abuja.id, templateId: enTpl.id, channel: 'whatsapp', subject: 's', body: 'b' });
   ok(recWa.channel === 'whatsapp', 'recordSend 支持 whatsapp 渠道');
+  throwsSync(() => letters.recordSend({ leadId: abuja.id, templateId: enTpl.id, channel: 'email', subject: rEn.subject, body: rEn.body }), /无需重复标记/, 'M1：5 分钟内重复标记同一内容抛错');
+  const recDiff = letters.recordSend({ leadId: abuja.id, templateId: enTpl.id, channel: 'email', subject: '另一主题', body: 'b' });
+  ok(!!recDiff && recDiff.subject === '另一主题', 'M1：不同主题的标记不受去重影响');
   const recs = letters.listSendRecords(abuja.id);
-  ok(recs.length === 2 && recs[0].id === recWa.id, 'listSendRecords 按 id 倒序返回');
+  ok(recs.length === 3 && recs[0].id === recDiff.id, 'listSendRecords 按 id 倒序返回');
   throwsSync(() => letters.recordSend({ leadId: abuja.id, templateId: enTpl.id, channel: 'sms', subject: 's', body: 'b' }), /email.*whatsapp|whatsapp/, '非法 channel 抛中文错');
   throwsSync(() => letters.recordSend({ leadId: 999999, templateId: enTpl.id, channel: 'email', subject: 's', body: 'b' }), /线索不存在/, '不存在的线索记发送抛错');
 
@@ -283,6 +290,18 @@ function waitFor(fn, timeoutMs = 15000) {
   ok(letters.getTemplate(allPh.id) === null, '删除后查不到');
   ok(letters.deleteTemplate(allPh.id) === false, '重复删除返回 false');
   ok(letters.listTemplates().length === 3, '删后剩余 3 条模板（2 默认 + 1 测试）');
+
+  console.log('\n[11] L1 崩溃认领 + L3 任务中心坐标');
+  const t6 = tasks.createTask({ keyword: 'locksmith', location: 'Lagos, Nigeria', radiusKm: 10 });
+  run("UPDATE tasks SET status='running', started_at=? WHERE id=?", now(), t6.id);
+  ok(tasks.reclaimStaleTasks() === 1, 'L1：认领把 1 个卡在 running 的任务放回 queued');
+  ok(tasks.getTask(t6.id).status === 'queued' && tasks.getTask(t6.id).started_at == null, 'L1：认领后状态为 queued，started_at 清空');
+  ok(tasks.reclaimStaleTasks() === 0, 'L1：没有 running 任务时认领返回 0');
+  // L3：runTask 带半径时把服务端定位的中心坐标存进任务行（mock geocode 返回 6.45/3.39）。
+  scenario = 'success';
+  const done6 = await tasks.runTask(t6.id);
+  ok(done6.status === 'done', 'L3：认领回来的任务能正常跑完');
+  ok(tasks.getTask(t6.id).center_lat === 6.45 && tasks.getTask(t6.id).center_lng === 3.39, 'L3：任务存了服务端定位的中心坐标（供地图页直接用）');
 
   console.log(`\n通过 ${pass} 项，失败 ${fail} 项`);
   for (const f of [tmp, tmp + '-wal', tmp + '-shm']) { try { fs.unlinkSync(f); } catch {} }

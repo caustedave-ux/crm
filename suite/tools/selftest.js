@@ -70,6 +70,89 @@ const r0d = spawnSync(process.execPath, [childScript], {
 });
 ok(r0d.status === 0 && /LEADS=0/.test(r0d.stdout), '无旧库时空库正常启动');
 
+// 0e. SUITE_FORCE_MIGRATE=1：已有套件库时删旧库重迁（手动重迁逃生口）。
+const forceDb = tmp('force-suite.db');
+const r0e0 = spawnSync(process.execPath, [childScript], {
+  encoding: 'utf8',
+  env: { ...process.env, SUITE_DB: forceDb, SUITE_LEGACY_DB: tmp('no-such-legacy.db') },
+});
+ok(r0e0.status === 0 && /LEADS=0/.test(r0e0.stdout), '强制重迁前置：空库正常启动');
+const mkMarker = tmp('mk-marker.js');
+fs.writeFileSync(mkMarker, `'use strict';
+const { DatabaseSync } = require('node:sqlite');
+const db = new DatabaseSync(process.argv[2]);
+db.exec("INSERT INTO leads(company_name, dedup_key) VALUES('Marker Row','n:markerrow')");
+db.close();
+`);
+spawnSync(process.execPath, [mkMarker, forceDb], { encoding: 'utf8' });
+const r0e = spawnSync(process.execPath, [childScript], {
+  encoding: 'utf8',
+  env: { ...process.env, SUITE_DB: forceDb, SUITE_LEGACY_DB: legacyDb, SUITE_FORCE_MIGRATE: '1' },
+});
+ok(/SUITE_FORCE_MIGRATE=1/.test(r0e.stdout) && /\[数据迁移\] 已从 lead-gen 复制线索库（3 条线索）/.test(r0e.stdout), 'SUITE_FORCE_MIGRATE=1 时删现有库重迁并打日志');
+ok(/LEADS=3/.test(r0e.stdout), '重迁后新库读到 3 行（标记行已被清掉）');
+
+// 0f. 复制后完整性校验失败：删残文件并报错退出，不静默用空库。
+const corruptLegacy = tmp('corrupt-legacy.db');
+const mkCorrupt = tmp('mk-corrupt.js');
+fs.writeFileSync(mkCorrupt, `'use strict';
+const { DatabaseSync } = require('node:sqlite');
+const fs = require('node:fs');
+const db = new DatabaseSync(process.argv[2]);
+db.exec('PRAGMA journal_mode=DELETE;');
+db.exec("CREATE TABLE IF NOT EXISTS leads (id INTEGER PRIMARY KEY AUTOINCREMENT, batch_id INTEGER, company_name TEXT NOT NULL, website TEXT, domain TEXT, country TEXT, industry_hint TEXT, size_hint TEXT, employee_hint TEXT, source TEXT, status TEXT DEFAULT 'new', overall_score REAL DEFAULT 0, dedup_key TEXT UNIQUE, notes TEXT, created_at TEXT, updated_at TEXT)");
+for (let i = 0; i < 50; i++) db.prepare("INSERT INTO leads(company_name, dedup_key, notes) VALUES(?,?,?)").run('Corrupt Shop ' + i, 'n:corrupt' + i, 'x'.repeat(500));
+db.close();
+const buf = fs.readFileSync(process.argv[2]);
+buf.fill(0, 4096, 8192);
+fs.writeFileSync(process.argv[2], buf);
+`);
+spawnSync(process.execPath, [mkCorrupt, corruptLegacy], { encoding: 'utf8' });
+const corruptDb = tmp('corrupt-suite.db');
+const r0f = spawnSync(process.execPath, [childScript], {
+  encoding: 'utf8',
+  env: { ...process.env, SUITE_DB: corruptDb, SUITE_LEGACY_DB: corruptLegacy },
+});
+ok(r0f.status !== 0, '完整性校验失败时进程报错退出（不静默用空库）');
+ok(/完整性校验失败/.test((r0f.stderr || '') + (r0f.stdout || '')), '报错信息提到完整性校验失败');
+ok(!fs.existsSync(corruptDb) && !fs.existsSync(corruptDb + '-wal'), '完整性失败后残文件已删');
+
+// 0g. 端口被占时启动 server.js：直接退出、不跑迁移、不留残文件。
+const { spawn } = require('node:child_process');
+const holdPort = tmp('hold-port.js');
+fs.writeFileSync(holdPort, `'use strict'; const net = require('node:net'); const s = net.createServer(); s.listen(Number(process.argv[2]), '127.0.0.1', () => console.log('HOLDING')); setInterval(()=>{}, 1000);`);
+const holder = spawn(process.execPath, [holdPort, '5399'], { stdio: 'ignore' });
+Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1500); // 等 1.5 秒让 holder 占住端口
+const raceDb = tmp('race-suite.db');
+const r0g = spawnSync(process.execPath, [path.join(SUITE_ROOT, 'server.js')], {
+  encoding: 'utf8',
+  timeout: 15000,
+  env: { ...process.env, LEADGEN_PORT: '5399', SUITE_DB: raceDb, SUITE_LEGACY_DB: legacyDb },
+});
+holder.kill();
+ok(r0g.status !== 0, '端口被占时 server.js 报错退出');
+ok(!/\[数据迁移\]/.test(r0g.stdout || ''), '端口被占时不跑迁移');
+ok(!fs.existsSync(raceDb), '端口被占时不留套件库残文件');
+
+// 0h. 旧库 leads 表缺 status 列：补列后再建索引，启动不崩。
+// （按审计说的真实场景造：标准 leads 表，只缺 status 一列。）
+const noStatusLegacy = tmp('nostatus-legacy.db');
+const mkNoStatus = tmp('mk-nostatus.js');
+fs.writeFileSync(mkNoStatus, `'use strict';
+const { DatabaseSync } = require('node:sqlite');
+const db = new DatabaseSync(process.argv[2]);
+db.exec('PRAGMA journal_mode=DELETE;');
+db.exec("CREATE TABLE leads (id INTEGER PRIMARY KEY AUTOINCREMENT, batch_id INTEGER, company_name TEXT NOT NULL, website TEXT, domain TEXT, country TEXT, industry_hint TEXT, size_hint TEXT, employee_hint TEXT, source TEXT, overall_score REAL DEFAULT 0, dedup_key TEXT UNIQUE, notes TEXT, created_at TEXT, updated_at TEXT)");
+db.exec("INSERT INTO leads(company_name, dedup_key) VALUES('NoStatus A','n:nostatusa'),('NoStatus B','n:nostatusb')");
+db.close();
+`);
+spawnSync(process.execPath, [mkNoStatus, noStatusLegacy], { encoding: 'utf8' });
+const r0h = spawnSync(process.execPath, [childScript], {
+  encoding: 'utf8',
+  env: { ...process.env, SUITE_DB: tmp('nostatus-suite.db'), SUITE_LEGACY_DB: noStatusLegacy },
+});
+ok(r0h.status === 0 && /LEADS=2/.test(r0h.stdout), '旧库缺 status 列时迁移+启动正常（补列后建索引）');
+
 // ── 主进程库：临时库 + 不存在的旧库路径（不触发真实迁移）──
 const mainDb = tmp('main.db');
 process.env.SUITE_DB = mainDb;
@@ -226,6 +309,122 @@ function searchHandler(pages) {
   ok(imp2a.inserted === 1, '无网址公司首次导入新增');
   const imp2 = importer.importLeads([{ company_name: 'NoSite Co Ltd.' }], { source: 'manual' });
   ok(imp2.inserted === 0 && imp2.duplicates === 1, '导入按规范化公司名去重（无网址）');
+
+  console.log('\n[7] M5 校验 + L9 电话归一化 + M6 统计口径 + M3 代理状态');
+  const validate = require('../src/validate');
+  ok(validate.isValidLeadStatus('review') === true, 'M5：review 是合法线索状态');
+  ok(validate.isValidLeadStatus('bogus') === false, 'M5：bogus 不是合法线索状态');
+  ok(validate.validateSettingsBody({ evil_key: 'pwned' }).ok === false, 'M5：未知设置项整单拒绝');
+  ok(validate.validateSettingsBody({ proxy_url: 'http://127.0.0.1:7897' }).ok === true, 'M5：白名单内设置项通过');
+  ok(validate.validateSettingsBody({ proxy_url: { x: 1 } }).ok === false, 'M5：设置值非字符串/数字拒绝');
+  const views = require('../src/views');
+  ok(views.normalizeWaNumber('0803 123 4567', 'Nigeria').digits === '2348031234567', 'L9：尼日利亚本地号 0803… 补区号 +234');
+  ok(views.normalizeWaNumber('0803 123 4567', 'Nigeria').prefixed === true, 'L9：补区号时 prefixed 为 true');
+  ok(views.normalizeWaNumber('+234 803 123 4567', 'Nigeria').digits === '2348031234567', 'L9：已有 +234 国际号不动');
+  ok(views.normalizeWaNumber('01 42 68 53 00', 'France').digits === '33142685300', 'L9：法国本地号补区号 +33');
+  ok(views.normalizeWaNumber('0803 123 4567', '').digits === '08031234567', 'L9：国家未知时不编造区号');
+  const { proxyStatus } = require('../src/net');
+  const ps = proxyStatus();
+  ok(ps.proxyUrl === 'http://127.0.0.1:7897', 'M3：proxyStatus 读到默认代理地址');
+  ok(ps.willUseProxy === (ps.proxyUrl !== '' && ps.proxyAgentLoaded), 'M3：willUseProxy 口径 = 地址已配且 undici 已加载');
+  ok(ps.willUseProxy ? ps.warning === '' : ps.warning !== '', 'M3：代理不可用时有警告、可用时无警告');
+  run("INSERT INTO leads(company_name,status,dedup_key,created_at,updated_at) VALUES('Stat Test','new','n:stattest',?,?)", t, t);
+  const pendingCount = get("SELECT COUNT(*) c FROM leads WHERE status='new'").c;
+  const st = require('../src/db').stats();
+  ok(st.pending === pendingCount && pendingCount >= 1, 'M6：待跟进 = status=new 的真实条数');
+  ok(st.verified === undefined && st.review === undefined && st.approved === undefined, 'M6：stats 不再返回 verified/review/approved 死指标');
+
+  console.log('\n[8] places：翻页 token 未就绪重试 / 保留已取页 / 详情计数');
+  setSetting('google_places_key', 'FAKE-KEY-123');
+  setSetting('request_delay_ms', '0');
+  // [8a] 第 2 页第一次 400 INVALID_ARGUMENT，重试后成功：40 条全取。
+  let p2a = 0, p1aDone = false;
+  const r8a = await places.collectLeads(
+    { keyword: 'locksmith', location: 'Lagos, Nigeria', maxResults: 40 },
+    {
+      fetchImpl: makeMock((url) => {
+        if (url.includes(':searchText')) {
+          if (!p1aDone) { p1aDone = true; return jsonRes(200, { places: Array.from({ length: 20 }, (_, i) => searchPlace(1001 + i)), nextPageToken: 'tok1' }); }
+          p2a++;
+          if (p2a === 1) return jsonRes(400, { error: { status: 'INVALID_ARGUMENT', message: 'token not ready' } });
+          return jsonRes(200, { places: Array.from({ length: 20 }, (_, i) => searchPlace(1021 + i)) });
+        }
+        if (url.includes('/v1/places/')) { const pid = decodeURIComponent(url.split('/v1/places/')[1]); return jsonRes(200, detailsFor(pid)); }
+        throw new Error('unexpected url ' + url);
+      }),
+    });
+  ok(r8a.found === 40 && r8a.truncated === false, 'M2：token 未就绪重试后成功，40 条全取');
+  ok(r8a.calls.search === 3, 'M2：重试多发 1 次搜索调用（第 1 页 + 第 2 页两次尝试）');
+  ok(r8a.inserted === 40, 'M2：重试成功后 40 条全部入库');
+  // [8b] 第 2 页一直 400：保留已拿到的 20 条继续入库，不整批丢弃。
+  let p1bDone = false;
+  const r8b = await places.collectLeads(
+    { keyword: 'locksmith', location: 'Lagos, Nigeria', maxResults: 40 },
+    {
+      fetchImpl: makeMock((url) => {
+        if (url.includes(':searchText')) {
+          if (!p1bDone) { p1bDone = true; return jsonRes(200, { places: Array.from({ length: 20 }, (_, i) => searchPlace(2001 + i)), nextPageToken: 'tok1' }); }
+          return jsonRes(400, { error: { status: 'INVALID_ARGUMENT', message: 'token not ready' } });
+        }
+        if (url.includes('/v1/places/')) { const pid = decodeURIComponent(url.split('/v1/places/')[1]); return jsonRes(200, detailsFor(pid)); }
+        throw new Error('unexpected url ' + url);
+      }),
+    });
+  ok(r8b.found === 20 && r8b.truncated === true, 'M2：翻页一直失败时保留已拿到的 20 条，不整批丢弃');
+  ok(r8b.inserted === 20, 'M2：保留的 20 条正常入库');
+  ok(r8b.calls.search === 4, 'M2：翻页重试 2 次后放弃（第 1 页 + 第 2 页 3 次尝试）');
+  // [8c] 单家详情失败：只跳过该家，详情调用按请求发出计数（失败的也算）。
+  const r8c = await places.collectLeads(
+    { keyword: 'locksmith', location: 'Lagos, Nigeria', maxResults: 20 },
+    {
+      fetchImpl: makeMock((url) => {
+        if (url.includes(':searchText')) return jsonRes(200, { places: [searchPlace(3001), searchPlace(3002), searchPlace(3003)] });
+        if (url.includes('/v1/places/')) {
+          const pid = decodeURIComponent(url.split('/v1/places/')[1]);
+          if (pid === 'ChIJTEST3002') return jsonRes(500, { error: { status: 'INTERNAL', message: 'boom' } });
+          return jsonRes(200, detailsFor(pid));
+        }
+        throw new Error('unexpected url ' + url);
+      }),
+    });
+  ok(r8c.found === 3 && r8c.inserted === 2 && r8c.skipped === 1, 'M2：单家详情失败只跳过该家，不中断整批');
+  ok(r8c.calls.details === 3 && r8c.calls.total === 4, 'M2：详情调用按请求发出计数（失败的也算）');
+  ok(r8c.results.find(x => x.name.includes('3002')).status === 'failed', 'M2：详情失败的结果标 failed');
+
+  console.log('\n[9] web.js：超大 body 返回 413，500 不吐堆栈');
+  const { createApp, Router } = require('../src/web');
+  const http = require('node:http');
+  const r9 = new Router();
+  r9.post('/api/echo', ctx => ctx.res.json(200, { ok: true, got: ctx.body }));
+  const { server: srv9 } = createApp(r9, {});
+  await new Promise(res => srv9.listen(0, '127.0.0.1', res));
+  const port9 = srv9.address().port;
+  function postRaw(pathname, body) {
+    return new Promise((resolve, reject) => {
+      const req = http.request({ host: '127.0.0.1', port: port9, path: pathname, method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, (res) => {
+        let data = '';
+        res.on('data', c => data += c);
+        res.on('end', () => resolve({ status: res.statusCode, body: data }));
+      });
+      req.on('error', reject);
+      req.end(body);
+    });
+  }
+  const big = JSON.stringify({ x: 'A'.repeat(2100000) });
+  const rBig = await postRaw('/api/echo', big);
+  ok(rBig.status === 413 && /超过 2MB/.test(rBig.body), 'L7：超过 2MB 的 body 返回 413');
+  const rSmall = await postRaw('/api/echo', JSON.stringify({ x: 'hi' }));
+  ok(rSmall.status === 200, 'L7：正常 body 不受影响');
+  r9.get('/api/boom', () => { throw new Error('secret-boom-marker'); });
+  const boom = await new Promise((resolve, reject) => {
+    http.get({ host: '127.0.0.1', port: port9, path: '/api/boom' }, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+    }).on('error', reject);
+  });
+  ok(boom.status === 500 && !/secret-boom-marker/.test(boom.body) && /服务器内部错误/.test(boom.body), 'L7：500 只给通用文案，不吐堆栈');
+  await new Promise(res => srv9.close(res));
 
   db.close();
   cleanup();

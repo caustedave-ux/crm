@@ -4,8 +4,8 @@
  *
  * 单发流程（V1，不直连 SMTP，见 suite/src/letters.js 文件头）：
  *   选模板 + 选线索 → 调渲染接口出预览 → 复制全文 / 打开 mailto:（收件人取
- *   线索的邮箱证据，若无邮箱则只复制）→ 用户在自己邮箱发完后点「标记已发送」
- *   调 recordSend 接口写一条发送记录。
+ *   线索的邮箱证据，若无邮箱则只复制）→ 用户在自己邮箱发完后点「标记已手动发送」
+ *   调 recordSend 接口写一条发送记录（5 分钟内同一内容重复标记只记一次）。
  *
  * 调用的本服务接口（由 suite/server.js 接线，需与 suite/src/letters.js 对应）：
  * - GET    /api/letter-templates                 模板列表
@@ -13,7 +13,7 @@
  * - DELETE /api/letter-templates/:id             删除模板
  * - GET    /api/letters/render?template_id=&lead_id=
  *          渲染预览 → { ok, subject, body, contact: { phone, website, email } }
- * - POST   /api/send-records                     标记已发送 { lead_id, template_id, channel, subject, body }
+ * - POST   /api/send-records                     标记已手动发送 { lead_id, template_id, channel, subject, body }
  * - GET    /api/send-records?lead_id=            某线索的发送记录
  * 响应统一按 { ok, ... } 或数组处理（两种都兼容）。
  *
@@ -150,7 +150,7 @@
     }
   }
 
-  /* ---------- 复制 / mailto / 标记已发送 ---------- */
+  /* ---------- 复制 / mailto / 标记已手动发送 ---------- */
 
   function letterFullText() {
     return (currentSubject ? '主题：' + currentSubject + '\n\n' : '') + currentBody;
@@ -194,7 +194,7 @@
 
   async function markSent(btn) {
     if (!currentLeadId) { alert('请先选择线索。'); return; }
-    if (!currentBody.trim()) { alert('请先选模板生成预览，再标记已发送。'); return; }
+    if (!currentBody.trim()) { alert('请先选模板生成预览，再标记已手动发送。'); return; }
     var channelEl = document.getElementById('channelSelect');
     var channel = channelEl ? channelEl.value : 'email';
     if (btn) btn.disabled = true;

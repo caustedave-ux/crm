@@ -22,17 +22,40 @@
  *   前端 POST /api/send-records 发 snake_case（lead_id/template_id），本文件转驼峰后再调 recordSend。
  */
 const path = require('node:path');
+
+// ── S1(a)：启动前先确认端口空闲，再加载数据库层 ──
+// db.js 在 require 时就会跑旧库迁移；若旧服务还占着端口，新服务先复制旧库、
+// 再因 EADDRINUSE 崩溃退出，复制文件会残留，下次启动因“库已存在”跳过迁移。
+// 端口被占就直接报错退出，什么都不复制、不碰旧库。
+// 端口探测是异步操作，这里用一次性的子进程同步探测（只 bind 一下就退出）。
+const PORT = parseInt(process.env.LEADGEN_PORT || '5101', 10);
+const HOST = process.env.LEADGEN_HOST || '0.0.0.0';
+(function ensurePortFree() {
+  const { execFileSync } = require('node:child_process');
+  const probeJs = 'require("node:net").createServer()'
+    + '.once("error",e=>{console.error(e.message);process.exit(1)})'
+    + '.once("listening",function(){this.close(()=>process.exit(0))})'
+    + `.listen(${JSON.stringify(PORT)},${JSON.stringify(HOST)});`;
+  try {
+    execFileSync(process.execPath, ['-e', probeJs], { timeout: 10000, stdio: 'pipe' });
+  } catch (e) {
+    const detail = e && e.stderr ? String(e.stderr).trim().split('\n').pop() : '';
+    console.error(`[获客工作台] 端口 ${HOST}:${PORT} 已被占用${detail ? '（' + detail + '）' : ''}，请先停掉旧的获客服务（或旧的获客工作台）再启动。本次未复制任何数据，旧库完好。`);
+    process.exit(1);
+  }
+})();
+
 const { Router, createApp } = require('./src/web');
 const views = require('./src/views');
 const importer = require('./src/importer');
 const places = require('./src/places');
 const tasks = require('./src/tasks');
 const letters = require('./src/letters');
+const validate = require('./src/validate');
+const { fetchUrl, proxyStatus } = require('./src/net');
 const { get, run, now, setSetting, log } = require('./src/db');
 const crmAuth = require('./src/crmAuth');
 
-const PORT = parseInt(process.env.LEADGEN_PORT || '5101', 10);
-const HOST = process.env.LEADGEN_HOST || '0.0.0.0';
 const router = new Router();
 
 // ── 页面路由 ──
@@ -46,6 +69,31 @@ router.get('/letters', ctx => ctx.res.send(views.lettersPage()));
 router.get('/settings', ctx => ctx.res.send(views.settingsPage()));
 
 // ── 地图采集（任务制：只建任务入队，不做同步搜索）──
+// S2(2)：地图 JS 由服务端代为加载，Key 不出现在页面源码里——浏览器只请求
+// 同源的 /maps-js（见下），服务端拼 Key 去取 Google 的 bootstrap 再返回。
+// 注意：Google 的 loader 会把 Key 嵌进返回的 JS（后续模块地址里要用），所以 Key
+// 仍可从 /maps-js 的响应体里看到，只是不在页面源码中；因此 Key 仍只能限制
+// API 范围（Places API (New) + Geocoding API），不要加 HTTP referrer 限制，
+// 否则服务端取脚本和调 API 都会断（见设置页说明）。
+router.get('/maps-js', async ctx => {
+  const key = places.getApiKey();
+  if (!key) {
+    ctx.res.writeHead(404, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
+    ctx.res.end('// 未配置 Google Places API Key');
+    return;
+  }
+  const url = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&loading=async&callback=initMapsSuite';
+  const r = await fetchUrl(url, { throttle: false, retries: 0 });
+  if (!r.ok || !r.text) {
+    console.error('[获客工作台] 地图脚本代理加载失败：', r.status || '', r.error || '');
+    ctx.res.writeHead(502, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
+    ctx.res.end('// 地图脚本加载失败，已降级为只显示列表，不影响采集。');
+    return;
+  }
+  ctx.res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
+  ctx.res.end(r.text);
+});
+
 router.post('/api/maps/search', ctx => {
   const keyword = String(ctx.body.keyword || '').trim();
   const location = String(ctx.body.location || '').trim();
@@ -55,6 +103,10 @@ router.post('/api/maps/search', ctx => {
   if (!keyword) return ctx.res.json(400, { ok: false, error: '请填写关键词，例如 locksmith' });
   if (radiusKm != null && !(radiusKm > 0 && radiusKm <= places.MAX_RADIUS_KM)) {
     return ctx.res.json(400, { ok: false, error: '半径请填 1-' + places.MAX_RADIUS_KM + ' 公里' });
+  }
+  // M4：地图采集通道开关真正守门——取消勾选时明确拒绝（不建任务、不发请求）。
+  if (!places.isMapsEnabled()) {
+    return ctx.res.json(400, { ok: false, error: '地图采集通道未启用，请在数据源设置里勾选「Google 地图采集」后再试', code: 'MAPS_DISABLED', settings_url: '/settings' });
   }
   // 无 Key 直接报错，不发起任何请求（也不建任务）。
   if (!places.hasApiKey()) {
@@ -78,6 +130,10 @@ function noApiKeyRes(ctx) {
 }
 
 router.post('/api/tasks', ctx => {
+  // M4：地图采集通道开关同样守门任务创建。
+  if (!places.isMapsEnabled()) {
+    return ctx.res.json(400, { ok: false, error: '地图采集通道未启用，请在数据源设置里勾选「Google 地图采集」后再试', code: 'MAPS_DISABLED', settings_url: '/settings' });
+  }
   if (!places.hasApiKey()) return noApiKeyRes(ctx);
   try {
     const t = tasks.createTask({
@@ -138,7 +194,14 @@ router.get('/api/lead/:id', ctx => {
 });
 
 router.post('/api/lead/:id/status', ctx => {
-  run('UPDATE leads SET status=?,updated_at=? WHERE id=?', ctx.body.status || 'review', now(), ctx.params.id);
+  // M5：状态加白名单，并先查线索存在（不存在 404；非法状态 400）。
+  const status = ctx.body.status;
+  if (!validate.isValidLeadStatus(status)) {
+    return ctx.res.json(400, { ok: false, error: '无效的状态：' + String(status == null ? '' : status) + '。可选：' + validate.LEAD_STATUS_VALUES.join(' / ') });
+  }
+  const lead = get('SELECT id FROM leads WHERE id=?', Number(ctx.params.id));
+  if (!lead) return ctx.res.json(404, { ok: false, error: '线索不存在' });
+  run('UPDATE leads SET status=?,updated_at=? WHERE id=?', status, now(), ctx.params.id);
   ctx.res.json(200, { ok: true });
 });
 
@@ -235,7 +298,10 @@ router.get('/api/letters/sends', listSendRecords);
 
 // ── 设置（照旧服务写法）──
 router.post('/api/settings', ctx => {
-  for (const [k, v] of Object.entries(ctx.body)) if (typeof v === 'string') setSetting(k, v);
+  // M5：设置项加白名单——未知键整单拒绝，不写任何项。
+  const v = validate.validateSettingsBody(ctx.body);
+  if (!v.ok) return ctx.res.json(400, { ok: false, error: v.error });
+  for (const [k, val] of Object.entries(v.settings)) setSetting(k, val);
   log('info', '更新数据源设置');
   ctx.res.json(200, { ok: true });
 });
@@ -260,4 +326,7 @@ tasks.startRunner();
 server.listen(PORT, HOST, () => {
   console.log(`[获客工作台] 已启动: http://localhost:${PORT}`);
   console.log(`[获客工作台] 独立数据库: ${require('./src/db').DB_PATH}`);
+  // M3：代理缺失时不要静默直连——启动日志里明确警告。
+  const ps = proxyStatus();
+  if (ps.warning) console.warn('[获客工作台] 代理警告：' + ps.warning);
 });

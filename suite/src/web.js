@@ -26,8 +26,16 @@ function parseBody(req) {
   return new Promise(resolve => {
     const chunks = [];
     let size = 0;
-    req.on('data', c => { size += c.length; if (size <= 2e6) chunks.push(c); });
+    let tooLarge = false;
+    req.on('data', c => {
+      size += c.length;
+      // 超过 2MB 不再收内容（但继续把流读完），由调用方返回 413，而不是
+      // 静默截断成空对象让业务以为收到了一份空表单。
+      if (size > 2e6) { tooLarge = true; return; }
+      chunks.push(c);
+    });
     req.on('end', () => {
+      if (tooLarge) return resolve({ __tooLarge: true });
       const raw = Buffer.concat(chunks).toString('utf8');
       const ct = req.headers['content-type'] || '';
       if (ct.includes('application/json')) {
@@ -83,7 +91,16 @@ function createApp(router, opts = {}) {
         return;
       }
 
-      if (req.method === 'POST' || req.method === 'PUT') ctx.body = await parseBody(req);
+      if (req.method === 'POST' || req.method === 'PUT') {
+        ctx.body = await parseBody(req);
+        // 请求体超过 2MB：返回 413，不让业务拿到一份被静默截断的空对象。
+        // 注意：res.json 在下面才定义，这里直接用 writeHead。
+        if (ctx.body && ctx.body.__tooLarge) {
+          res.writeHead(413, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+          res.end(JSON.stringify({ ok: false, error: '请求体过大（超过 2MB），请分批提交。' }));
+          return;
+        }
+      }
 
       res.json = (code, obj) => {
         res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -106,8 +123,9 @@ function createApp(router, opts = {}) {
     } catch (e) {
       console.error('[lead-suite] route error:', e);
       if (!res.headersSent) {
+        // 500 只给通用文案，不把堆栈打进响应（堆栈只写服务端日志）。
         res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end('<h1>500</h1><pre>' + String(e && e.stack || e) + '</pre>');
+        res.end('<h1>500</h1><p>服务器内部错误，请稍后再试。</p>');
       }
     }
   });

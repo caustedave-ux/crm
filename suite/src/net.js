@@ -26,6 +26,27 @@ function dispatcherFor(targetUrl) {
   return proxyCache.get(proxy);
 }
 
+/**
+ * 代理可用状态（M3）：ProxyAgent 为 null 时，配了代理地址也会静默直连，
+ * 用户机器上 Google 直连不可达会表现为“连接 Google 失败”。
+ * - proxyUrl：设置里的代理地址（可能为空）
+ * - proxyAgentLoaded：undici 是否加载成功（工作区/ZIP 解压后常常没有 node_modules）
+ * - willUseProxy：真正会走代理（地址已配且 undici 已加载）
+ * - warning：为空表示正常，否则是给启动日志 / 设置页 / 地图页看的中文提示
+ */
+function proxyStatus() {
+  const proxyUrl = String(getSetting('proxy_url', '') || '').trim();
+  const proxyAgentLoaded = !!ProxyAgent;
+  const willUseProxy = !!proxyUrl && proxyAgentLoaded;
+  let warning = '';
+  if (proxyUrl && !proxyAgentLoaded) {
+    warning = '代理地址已配（' + proxyUrl + '），但 undici 未加载（缺少 node_modules），请求将直连 Google；直连不可达时采集会失败。';
+  } else if (!proxyUrl) {
+    warning = '未配置代理地址，请求将直连 Google；本机直连不可达时采集会失败，可在设置里填代理地址。';
+  }
+  return { proxyUrl, proxyAgentLoaded, willUseProxy, warning };
+}
+
 const UAS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0',
@@ -109,4 +130,4 @@ function metaContent(html, key) {
   return '';
 }
 
-module.exports = { fetchUrl, sleep, stripTags, decodeEntities, attr, metaContent, dispatcherFor };
+module.exports = { fetchUrl, sleep, stripTags, decodeEntities, attr, metaContent, dispatcherFor, proxyStatus };

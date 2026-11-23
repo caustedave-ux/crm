@@ -31,6 +31,19 @@ const MAX_PAGE_SIZE = 20;
 const MAX_RESULTS = 60;
 const MAX_RADIUS_KM = 50;
 
+// 翻页间隔固定 2000ms：Google 的 nextPageToken 通常要 ~2s 才就绪，不能与
+// 用户可调的 request_delay_ms 共用同一设置（默认 1200ms 不够）。
+const PAGE_DELAY_MS = 2000;
+// 翻页 token 未就绪时的重试：最多 2 次，每次等 2000ms 再试。
+const PAGE_TOKEN_MAX_RETRIES = 2;
+const PAGE_TOKEN_RETRY_DELAY_MS = 2000;
+
+/** 地图采集通道开关（M4）：enabled_sources 里有没有 google_places。 */
+function isMapsEnabled() {
+  const raw = String(getSetting('enabled_sources', '') || '');
+  return raw.split(',').map(s => s.trim()).includes('google_places');
+}
+
 function getApiKey() {
   return String(getSetting('google_places_key', '') || '').trim();
 }
@@ -133,39 +146,74 @@ async function geocodeLocation(text, opts = {}) {
 }
 
 /**
+ * 翻页 token 未就绪：Google 翻页时若 token 还没就绪，会返回 400 +
+ * INVALID_ARGUMENT（个别版本返回 INVALID_REQUEST），等一会儿再试就好，
+ * 不是请求本身写错了。
+ */
+function isPageTokenNotReady(res, data) {
+  if (!res || res.ok) return false;
+  if (res.status !== 400) return false;
+  const gStatus = data && data.error && data.error.status;
+  return gStatus === 'INVALID_ARGUMENT' || gStatus === 'INVALID_REQUEST';
+}
+
+/**
  * Text Search 翻页搜索。
- * 返回 { places: [...], calls: n }，places 每项为搜索原始对象。
+ * 返回 { places: [...], calls: n, truncated: bool }，places 每项为搜索原始对象。
+ * truncated 为 true 表示翻页中途失败，已拿到的页数照常返回（不整批丢弃）。
  */
 async function textSearch({ keyword, locationText, center, radiusKm, maxResults }, opts = {}) {
   const textQuery = locationText ? keyword + ' in ' + locationText : keyword;
   const places = [];
   let pageToken = null;
   let calls = 0;
+  let truncated = false;
   do {
     const body = { textQuery, pageSize: MAX_PAGE_SIZE, languageCode: 'en' };
     if (pageToken) body.pageToken = pageToken;
     if (center && radiusKm) {
       body.locationBias = { circle: { center: { latitude: center.lat, longitude: center.lng }, radius: Math.round(radiusKm * 1000) } };
     }
-    const res = await googleFetch(SEARCH_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': getApiKey(),
-        'X-Goog-FieldMask': SEARCH_FIELD_MASK,
-      },
-      body: JSON.stringify(body),
-    }, opts.fetchImpl);
-    calls++;
-    const data = await readJsonSafe(res);
-    if (!res.ok) throw friendlyError(res.status, data, '搜索失败');
+    // token 未就绪时重试（带退避）；仍失败且已有页在手，就保留已拿到的页数返回，
+    // 继续走详情入库，而不是把第 1 页已拿到的 20 条也丢掉。
+    let res = null;
+    let data = null;
+    let lastErr = null;
+    for (let attempt = 0; attempt <= PAGE_TOKEN_MAX_RETRIES; attempt++) {
+      if (attempt > 0) await sleep(PAGE_TOKEN_RETRY_DELAY_MS);
+      res = await googleFetch(SEARCH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': getApiKey(),
+          'X-Goog-FieldMask': SEARCH_FIELD_MASK,
+        },
+        body: JSON.stringify(body),
+      }, opts.fetchImpl);
+      calls++;
+      data = await readJsonSafe(res);
+      if (res.ok) { lastErr = null; break; }
+      if (pageToken && isPageTokenNotReady(res, data) && attempt < PAGE_TOKEN_MAX_RETRIES) {
+        lastErr = null;
+        continue;
+      }
+      lastErr = friendlyError(res.status, data, '搜索失败');
+      break;
+    }
+    if (lastErr) {
+      if (places.length) {
+        truncated = true;
+        break;
+      }
+      throw lastErr;
+    }
     const page = Array.isArray(data && data.places) ? data.places : [];
     places.push(...page);
     pageToken = data && data.nextPageToken ? data.nextPageToken : null;
-    // 翻页之间留间隔，避免触发限流
-    if (pageToken && places.length < maxResults) await sleep(getDelayMs());
+    // 翻页之间留固定间隔（不与 request_delay_ms 共用），等 token 就绪。
+    if (pageToken && places.length < maxResults) await sleep(PAGE_DELAY_MS);
   } while (pageToken && places.length < maxResults);
-  return { places: places.slice(0, maxResults), calls };
+  return { places: places.slice(0, maxResults), calls, truncated };
 }
 
 /** 取一家商家的详情（电话、网址、地址、评分等 Pro 档字段）。 */
@@ -194,7 +242,8 @@ function estimateCalls({ maxResults, radiusKm, location }) {
 
 /**
  * 采集编排：定位（如需）→ 翻页搜索 → 逐家查详情 → 按 importer 去重规则入库。
- * 返回汇总 { batch_id, found, inserted, duplicates, skipped, calls, results }。
+ * 返回汇总 { batch_id, found, inserted, duplicates, skipped, truncated, center, calls, results }。
+ * truncated：翻页中途失败时为 true（已拿到的页数已入库）；center：定位到的城市中心坐标。
  * results 每项：{ place_id, name, address, phone, website, rating, user_rating_count, status, lead_id, types, lat, lng, error? }（types/lat/lng 供行业归类与地图打点；详情无坐标时用搜索结果的坐标回退）
  * status: new（新增入库）/ duplicate（重复跳过）/ failed（详情失败未入库）。
  */
@@ -221,7 +270,7 @@ async function collectLeads(input, opts = {}) {
     calls.geocode++;
   }
 
-  const { places, calls: searchCalls } = await textSearch({ keyword, locationText: location, center, radiusKm, maxResults }, { fetchImpl });
+  const { places, calls: searchCalls, truncated } = await textSearch({ keyword, locationText: location, center, radiusKm, maxResults }, { fetchImpl });
   calls.search += searchCalls;
 
   // 逐家查详情（间隔 request_delay_ms），失败的单家跳过不中断整批。
@@ -232,9 +281,10 @@ async function collectLeads(input, opts = {}) {
     const name0 = p && p.displayName && p.displayName.text ? String(p.displayName.text) : '';
     const addr0 = p && p.formattedAddress ? String(p.formattedAddress) : '';
     if (i > 0) await sleep(getDelayMs());
+    // 详情调用按“请求发出”计数（失败的也算，计费口径不低估），不要等成功才 +1。
+    calls.details++;
     try {
       const d = await placeDetails(placeId, { fetchImpl });
-      calls.details++;
       detailed.push({
         place_id: placeId,
         name: (d.displayName && d.displayName.text) || name0,
@@ -340,6 +390,10 @@ async function collectLeads(input, opts = {}) {
     inserted,
     duplicates,
     skipped,
+    // 翻页中途失败时为 true：已拿到的页数已入库，剩余的没拿到（见 textSearch）。
+    truncated: !!truncated,
+    // 定位到的城市中心坐标（只在填了半径+城市时有），供地图页直接用，不再让浏览器重算。
+    center: center ? { lat: center.lat, lng: center.lng } : null,
     calls: { ...calls, total: calls.geocode + calls.search + calls.details },
     results,
   };
@@ -347,6 +401,6 @@ async function collectLeads(input, opts = {}) {
 
 module.exports = {
   SEARCH_FIELD_MASK, DETAILS_FIELD_MASK, MAX_RESULTS, MAX_RADIUS_KM,
-  hasApiKey, getApiKey, estimateCalls,
+  hasApiKey, getApiKey, isMapsEnabled, estimateCalls,
   geocodeLocation, textSearch, placeDetails, collectLeads,
 };
