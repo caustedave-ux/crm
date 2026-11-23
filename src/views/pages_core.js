@@ -947,7 +947,7 @@ function customerDetailPage(ctx) {
         <div class="fw-semibold"><span class="badge text-bg-light border me-1">${esc(a.type || '其他')}</span>${esc(a.subject || '')} ${priorityBadge(a.priority)}${a.archived ? ' <span class="badge text-bg-success">已完成</span>' : ''}</div>
         ${a.type === 'WhatsApp'
           ? waRender.renderActivity(a, waSummaries[a.id])
-            + (waSummaries[a.id] ? '' : `<form method="post" action="/whatsapp/activity/${a.id}/summary" class="d-inline"><button class="btn btn-sm btn-link p-0" style="font-size:12px">生成要点摘要</button></form>`)
+            + (waSummaries[a.id] ? '' : `<form method="post" action="/whatsapp/activity/${a.id}/summary" class="d-inline"><button class="btn btn-sm btn-link p-0" style="font-size:13px">生成要点摘要</button></form>`)
           : `<div class="text-muted small">${esc(a.content || '')}</div>`}
         ${a.outcome ? `<div class="small mt-1 text-success"><i class="bi bi-check2-circle me-1"></i>结果：${esc(a.outcome)}</div>` : ''}
         ${imagesThumb(a.images)}

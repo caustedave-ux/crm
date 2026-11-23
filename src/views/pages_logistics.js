@@ -45,7 +45,7 @@ function listPage(ctx) {
     const names = [...new Set(items.map(i => i.company_name || i.customer_text || i.order_no || '未指定'))];
     const extra = names.length > 2 ? ` +${names.length - 2}` : '';
     return `<div class="small">${esc(names.slice(0, 2).join('、'))}${extra}</div>
-      <div class="text-muted" style="font-size:11px">${items.length} 票 · ${items.map(i => i.marks).filter(Boolean).slice(0, 2).map(esc).join(' / ') || '无唛头'}</div>`;
+      <div class="text-muted" style="font-size:12px">${items.length} 票 · ${items.map(i => i.marks).filter(Boolean).slice(0, 2).map(esc).join(' / ') || '无唛头'}</div>`;
   };
 
   const dueCount = rows.filter(r => L.dueForCheck(r, today)).length;
@@ -56,7 +56,7 @@ function listPage(ctx) {
     return `<tr class="${due ? 'table-warning' : ''}">
       <td>
         <a href="/logistics/${r.id}" class="fw-semibold text-decoration-none">${esc(r.waybill_no || '（无单号）')}</a>
-        <div class="text-muted" style="font-size:11px">${esc(r.carrier || '')}</div>
+        <div class="text-muted" style="font-size:12px">${esc(r.carrier || '')}</div>
       </td>
       <td>${dirBadge(r.direction)}</td>
       <td>${itemSummary(r.id)}</td>
@@ -278,9 +278,9 @@ function detailPage(ctx, s, items, events) {
     <tbody>${items.map(i => `<tr>
       <td>${i.customer_id
         ? `<a href="/customers/${i.customer_id}">${esc(i.company_name || '')}</a>`
-        : (i.customer_text ? `<span class="badge text-bg-light border">${esc(i.customer_text)}</span> <span class="text-muted" style="font-size:11px">手填</span>` : '<span class="text-muted">—</span>')}</td>
+        : (i.customer_text ? `<span class="badge text-bg-light border">${esc(i.customer_text)}</span> <span class="text-muted" style="font-size:12px">手填</span>` : '<span class="text-muted">—</span>')}</td>
       <td class="small">${i.supplier_id ? esc(i.supplier_name || '')
-        : (i.supplier_text ? `${esc(i.supplier_text)} <span class="text-muted" style="font-size:11px">手填</span>` : '<span class="text-muted">—</span>')}</td>
+        : (i.supplier_text ? `${esc(i.supplier_text)} <span class="text-muted" style="font-size:12px">手填</span>` : '<span class="text-muted">—</span>')}</td>
       <td class="small">${esc(i.order_no || '')}</td>
       <td class="small"><code>${esc(i.marks || '')}</code></td>
       <td class="small">${esc(i.description || '')}</td>

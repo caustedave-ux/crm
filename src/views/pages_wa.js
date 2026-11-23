@@ -307,7 +307,7 @@ function chatAvatarHtml(chat, eager) {
 function chatListHtml(chats, activeId, hrefFor, backUrl) {
   if (!chats.length) return `<div class="text-muted small py-3">
     没有符合条件的会话。<br>
-    <span style="font-size:12px">清空搜索或切换筛选试试，或等待客户发来新消息。</span>
+    <span style="font-size:13px">清空搜索或切换筛选试试，或等待客户发来新消息。</span>
   </div>`;
   const back = String(backUrl || '/whatsapp/session');
   const isPinned = c => String(c.pinned_at || '').trim() !== '';
