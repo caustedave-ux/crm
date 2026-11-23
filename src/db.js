@@ -650,7 +650,7 @@ function syncProductToSupplier(productId) {
   const price = Number(p.cost_price) || Number(p.price) || 0;
   const currency = p.currency || 'CNY';
   run('INSERT INTO supplier_products(supplier_id,name,name_en,model,unit,color,price,currency,product_id,image,notes,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)',
-    supplierId, name, nameEn, model, unit, color, price, currency, p.id, image, '系统自动关联产品管理', t, t);
+    supplierId, name, nameEn, model, unit, color, price, currency, p.id, image, '系统自动关联产品信息', t, t);
   return true;
 }
 

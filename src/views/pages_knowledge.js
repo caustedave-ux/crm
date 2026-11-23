@@ -48,13 +48,13 @@ function knowledgePage(ctx) {
       <div class="ai-panel" aria-label="AI 助手对话">
         <h3 class="ai-panel-title"><i class="bi bi-robot"></i> AI 助手对话</h3>
         <div class="small"><b>提问：</b>执手锁 LS-8801，如果出口到美国市场，MOQ、单价、交期大概是多少？需要注意哪些合规要求？</div>
-        <div class="small" style="margin-top:8px"><b>AI 综合建议：</b>根据知识库中的产品资料、报价政策和出口合规经验：<br>1. 报价与起订量（参考）：执手锁 LS-8801，304 不锈钢拉丝，MOQ 500 PCS，单价、MOQ、交期以产品管理为准。<br>2. 交期：打样 5 天；大货 15 天。<br>3. 美国市场合规要点：锁具建议符合 ANSI/BHMA 等级要求；包装标注尺寸、毛重、净重及 “Made in China”。<br>4. 建议：新品测试可从 500 件起订，订单稳定后可谈阶梯价。</div>
+        <div class="small" style="margin-top:8px"><b>AI 综合建议：</b>根据知识库中的产品资料、报价政策和出口合规经验：<br>1. 报价与起订量（参考）：执手锁 LS-8801，304 不锈钢拉丝，MOQ 500 PCS，单价、MOQ、交期以产品信息为准。<br>2. 交期：打样 5 天；大货 15 天。<br>3. 美国市场合规要点：锁具建议符合 ANSI/BHMA 等级要求；包装标注尺寸、毛重、净重及 “Made in China”。<br>4. 建议：新品测试可从 500 件起订，订单稳定后可谈阶梯价。</div>
         <div class="text-muted small mt-2">信息来源（Obsidian 知识库）：报价政策_MOQ与价格.md · 产品资料_执手锁 LS-8801.md · 出口合规_美国市场.md</div>
       </div>
       <div class="ai-panel" aria-label="知识检索结果与产品关键信息">
         <h3 class="ai-panel-title"><i class="bi bi-journal-richtext"></i> 知识检索结果</h3>
         <div class="small">为您检索到 3 条相关知识：报价政策_MOQ与价格.md（高度相关） · 产品资料_执手锁 LS-8801.md（高度相关） · 出口合规_美国市场.md（相关）</div>
-        <div class="small" style="margin-top:8px"><b>产品关键信息 — 执手锁 LS-8801</b><br>材质：304 不锈钢 · 表面处理：拉丝 · 含安装螺丝包<br>MOQ：500 PCS · 生产交期：样品 5 天，大货 15 天<br>合规要求（美国）：ANSI/BHMA 等级 · 包装标注 Made in China<br>参考单价：以产品管理为准</div>
+        <div class="small" style="margin-top:8px"><b>产品关键信息 — 执手锁 LS-8801</b><br>材质：304 不锈钢 · 表面处理：拉丝 · 含安装螺丝包<br>MOQ：500 PCS · 生产交期：样品 5 天，大货 15 天<br>合规要求（美国）：ANSI/BHMA 等级 · 包装标注 Made in China<br>参考单价：以产品信息为准</div>
         <div class="small" style="margin-top:8px"><b>AI 判断与可信度 96%</b><br><span class="ai-check">✓</span> 答案基于知识库内容生成<br><span class="ai-check">✓</span> 已匹配报价政策与产品资料<br><span class="ai-check">✓</span> 包含出口合规建议（美国）</div>
       </div>
       <div class="small text-muted">左栏分类计数复用现有知识库分类统计；对话内容为图片里的示例问答，真实问答仍走现有 CRM 数据助理接口。</div>
@@ -101,7 +101,7 @@ function knowledgeFormPage(ctx) {
         <div class="kb-editor-fields">
           <label class="kb-field"><span>标题</span><input class="form-control" name="title" value="${esc(value.title || '')}" maxlength="180" required placeholder="输入清晰、便于搜索的标题"></label>
           <label class="kb-field"><span>分类</span><select class="form-select" name="category" required>${categoryOptions}</select></label>
-          <label class="kb-field" id="kbProductField"><span>关联产品</span><select class="form-select" name="product_id" id="kbProductSelect"><option value="">— 请选择产品 —</option>${productOptions}</select><small class="text-muted">分类选“产品资料”时必须关联一个产品；价格、MOQ、交期以产品管理为准，不要写进文章。</small></label>
+          <label class="kb-field" id="kbProductField"><span>关联产品</span><select class="form-select" name="product_id" id="kbProductSelect"><option value="">— 请选择产品 —</option>${productOptions}</select><small class="text-muted">分类选“产品资料”时必须关联一个产品；价格、MOQ、交期以产品信息为准，不要写进文章。</small></label>
           <label class="kb-field kb-field-tags"><span>标签</span><input class="form-control" name="tags" value="${esc(value.tags || '')}" maxlength="500" placeholder="用逗号分隔，例如：门锁, FOB, MOQ"></label>
         </div>
         <label class="kb-field kb-content-field"><span>正文</span><textarea class="form-control kb-editor-text" name="content" maxlength="60000" rows="22" required placeholder="输入产品规格、报价政策、工厂资料或实际外贸经验。支持 Markdown 格式。">${esc(value.content || '')}</textarea></label>

@@ -104,7 +104,7 @@ function dashboardPage(ctx) {
       <a class='btn btn-sm btn-outline-secondary' href='/products/${p.id}/edit'>编辑</a>
     </div>`).join('') || '<div class="text-muted small py-3 text-center">近 30 天没有新增产品</div>';
   const recentProductsCard = `<div class='row g-3 mb-4'>
-      <div class='col-lg-12'>${card({ title: '最近 30 天新增产品 <span class="badge text-bg-primary ms-1">' + recentProducts.length + '</span>', actions: '<a class="btn btn-sm btn-outline-primary" href="/products">产品管理</a>', body: '<div style="max-height:340px;overflow:auto">' + recentProductsHtml + '</div>' })}
+      <div class='col-lg-12'>${card({ title: '最近 30 天新增产品 <span class="badge text-bg-primary ms-1">' + recentProducts.length + '</span>', actions: '<a class="btn btn-sm btn-outline-primary" href="/products">产品信息</a>', body: '<div style="max-height:340px;overflow:auto">' + recentProductsHtml + '</div>' })}
       </div>
     </div>`;
 
@@ -1529,6 +1529,20 @@ function productsPage(ctx) {
   })() + "</ul></nav>" : "";
   const pageOptions = Array.from({ length: pageCount }, (_, i) => '<option value="' + (i + 1) + '"' + ((i + 1) === safePage ? ' selected' : '') + '>' + (i + 1) + '</option>').join('');
   const backTarget = '/products' + (ctx.url.search || '');
+  // 本页产品已绑定的知识库文章（与详情页“关联知识条目”页签同一口径：product_id 指向该产品的所有文章）
+  const linkedArticles = {};
+  if (rows.length) {
+    const pageIds = rows.map(p => p.id);
+    all(`SELECT id, product_id, title FROM knowledge_articles WHERE product_id IN (${pageIds.map(() => '?').join(',')}) ORDER BY updated_at DESC`, ...pageIds).forEach(a => {
+      (linkedArticles[a.product_id] = linkedArticles[a.product_id] || []).push(a);
+    });
+  }
+  const kbCellHtml = (p) => {
+    const arts = linkedArticles[p.id] || [];
+    if (!arts.length) return `<span class="text-muted">未绑定</span><br><a class="btn btn-sm btn-outline-primary mt-1" href="/products/${p.id}?tab=articles">去绑定</a>`;
+    const shown = arts.slice(0, 2).map(a => `<a href="/knowledge?article=${a.id}">${esc(a.title)}</a>`).join('<br>');
+    return `<span class="badge text-bg-primary">${arts.length} 篇</span><div class="small mt-1">${shown}${arts.length > 2 ? `<br><span class="text-muted">等 ${arts.length} 篇</span>` : ''}</div><a class="btn btn-sm btn-outline-secondary mt-1" href="/products/${p.id}?tab=articles">管理绑定</a>`;
+  };
   const rowsHtml = rows.map(p => `<tr>
     <td><div class="d-flex align-items-center gap-2">
       <div style="width:48px;height:48px;flex:0 0 48px;border-radius:8px;overflow:hidden;background:#f1f4f8;border:1px solid #e7ecf2;display:flex;align-items:center;justify-content:center">
@@ -1543,6 +1557,7 @@ function productsPage(ctx) {
     <td class="text-center">${esc(p.unit || 'PCS')}</td>
     <td class="text-center">${Number(p.moq) ? numFmt(p.moq) + ' ' + esc(p.moq_unit || 'PCS') : '-'}</td>
     <td class="text-center">${Number(p.lead_time_days) ? Number(p.lead_time_days) + ' 天' : '-'}</td>
+    <td>${kbCellHtml(p)}</td>
     <td class="text-end">
       <div class="fw-bold">${numFmt(p.stock)} ${esc(p.unit || '')}</div>
       ${p.stock <= 0 ? '<span class="badge text-bg-danger">缺货</span>' : (p.stock <= (p.stock_alert || 0) ? '<span class="badge text-bg-warning">库存偏低</span>' : '<span class="badge text-bg-success">正常</span>')}
@@ -1564,9 +1579,9 @@ function productsPage(ctx) {
       <a class="btn btn-sm btn-outline-primary" href="/stock/product/${p.id}/buyers">客户采购</a> <a class="btn btn-sm btn-outline-primary" href="/quotes?product_id=${p.id}"><i class="bi bi-clock-history"></i> 历史报价</a> <a class="btn btn-sm btn-outline-primary" href="/products/${p.id}/edit?back=${encodeURIComponent(backTarget)}">编辑</a>
         <form class="d-inline" method="post" action="/products/${p.id}/copy"><input type="hidden" name="back" value="${esc(backTarget)}"><button class="btn btn-sm btn-outline-secondary" title="复制为新产品"><i class="bi bi-files"></i></button></form>
       <form class="d-inline" method="post" action="/products/${p.id}/delete" onsubmit="return confirm('确认删除该产品？')"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>
-    </td></tr>`).join('') || emptyRow(11, '没有产品，先去新建吧');
+    </td></tr>`).join('') || emptyRow(12, '没有产品，先去新建吧');
   const content = `
-    ${pageHead('产品管理', '产品资料库（图片/货号/单价/进货价等），库存与流水请在「库存管理」查看', `<a class="btn btn-primary" href="/products/new"><i class="bi bi-plus-lg"></i> 新建产品</a>`)}
+    ${pageHead('产品信息', '产品资料库（图片/货号/单价/进货价等），库存与流水请在「库存管理」查看', `<a class="btn btn-primary" href="/products/new"><i class="bi bi-plus-lg"></i> 新建产品</a>`)}
     ${card({ title: 'Excel 批量导入', body: `<div class="d-flex gap-2 flex-wrap align-items-center">
       <a class="btn btn-outline-success btn-sm" href="/api/products/template.xlsx"><i class="bi bi-file-earmark-excel"></i> 下载导入模板</a>
       <form method="post" action="/products/import" enctype="multipart/form-data" class="d-inline">
@@ -1595,11 +1610,11 @@ function productsPage(ctx) {
         <div class="col-auto d-flex align-items-center gap-1"><span class="text-muted small">页码</span><select class="form-select form-select-sm" name="page" onchange="this.form.submit()" style="width:82px">${pageOptions}</select><span class="text-muted small">/ ${pageCount} 页</span></div>
       </form>
       <div class="table-responsive"><table class="table table-hover align-middle">
-        <thead><tr><th>产品名称</th><th>规格型号</th><th>分类</th><th class="text-center">定位</th><th class="text-center">颜色</th><th class="text-center">单位</th><th class="text-center">MOQ</th><th class="text-center">交期</th><th class="text-end">库存</th><th class="text-end">进货价</th><th class="text-end">操作</th></tr></thead>
+        <thead><tr><th>产品名称</th><th>规格型号</th><th>分类</th><th class="text-center">定位</th><th class="text-center">颜色</th><th class="text-center">单位</th><th class="text-center">MOQ</th><th class="text-center">交期</th><th>知识库资料</th><th class="text-end">库存</th><th class="text-end">进货价</th><th class="text-end">操作</th></tr></thead>
         <tbody>${rowsHtml}</tbody></table></div>
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2"><span class="text-muted small">共 ${totalCount} 个产品 · 每页 15 · 第 ${safePage}/${pageCount} 页</span>${pagination}</div>
       ${addCategoryModalHtml(categories, backTarget)}` })}`;
-  return page({ title: '产品管理', active: 'products', user: ctx.user, content, flash: ctx.flash() });
+  return page({ title: '产品信息', active: 'products', user: ctx.user, content, flash: ctx.flash() });
 }
 
 function productFormPage(ctx) {
@@ -2008,7 +2023,7 @@ function supplierProductFormPage(ctx) {
             <div class="col-md-2">${fld({ label: '单位', name: 'unit', value: v.unit || 'PCS', options: ['PCS','SET','PAIR','CTN','KGS','M'].map(x => ({ v: x, l: x })), type: 'select' })}</div>
             <div class="col-md-2">${fld({ label: '独立报价', name: 'price', value: (v.price === 0 && !isEdit) ? '' : v.price, type: 'number', step: '0.001', min: 0, required: true })}</div>
             <div class="col-md-2">${fld({ label: '币种', name: 'currency', value: v.currency || 'CNY', type: 'select', options: curOpts })}</div>
-            <div class="col-md-12">${fld({ label: '对应我方产品（用于采购匹配 / 入库）', name: 'product_id', value: v.product_id ? String(v.product_id) : '', type: 'select', options: linkOpts, help: '把该供应产品对应到产品管理中的某个产品，可留空' })}</div>
+            <div class="col-md-12">${fld({ label: '对应我方产品（用于采购匹配 / 入库）', name: 'product_id', value: v.product_id ? String(v.product_id) : '', type: 'select', options: linkOpts, help: '把该供应产品对应到产品信息中的某个产品，可留空' })}</div>
             <div class="col-12">
               <label class="form-label fw-semibold">上传 / 更换图片</label>
               <input type="file" class="form-control" id="spImageFile" accept="image/png,image/jpeg,image/gif,image/webp">
@@ -2058,7 +2073,7 @@ function stockMovementsPage(ctx) {
     </tr>`;
   }).join('') || emptyRow(8, '暂无库存流水');
   const content = `
-    ${pageHead('库存流水', '客户采购扣减 / 采购入库 / 回补等每一次变动都会记录在这里', `<a class="btn btn-outline-secondary" href="/products"><i class="bi bi-box-seam"></i> 返回产品管理</a>`)}
+    ${pageHead('库存流水', '客户采购扣减 / 采购入库 / 回补等每一次变动都会记录在这里', `<a class="btn btn-outline-secondary" href="/products"><i class="bi bi-box-seam"></i> 返回产品信息</a>`)}
     ${card({ body: `
       <form class="row g-2 mb-3" method="get"><div class="col-md-4"><input class="form-control" name="search" value="${esc(kw)}" placeholder="搜索产品 / 单号 / 客户 / 备注"></div><div class="col-auto"><button class="btn btn-outline-primary"><i class="bi bi-search"></i> 搜索</button></div><div class="col-auto"><a class="btn btn-outline-secondary" href="/stock/movements">重置</a></div></form>
       <div class="table-responsive"><table class="table table-hover align-middle">
@@ -2159,7 +2174,7 @@ function miniStat(label, value) {
         <a class="btn btn-sm btn-outline-primary" href="/products/${p.id}/edit?back=${encodeURIComponent(stockBack)}">编辑</a>
       </td>
     </tr>`;
-  }).join('') || emptyRow(9, '暂无产品，先到产品管理新建');
+  }).join('') || emptyRow(9, '暂无产品，先到产品信息新建');
   const content = `
     ${pageHead('库存管理', '库存集中看板：箱数 / 装箱数 / 总数量 / 进货价 / 客户平均卖价', `<a class="btn btn-outline-primary" href="/stock/movements"><i class="bi bi-journal-text"></i> 库存流水</a> <a class="btn btn-primary" href="/products/new"><i class="bi bi-plus-lg"></i> 新建产品</a>`)}
     <div class="row g-3 mb-3">

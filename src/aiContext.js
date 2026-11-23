@@ -30,7 +30,7 @@ function buildContext(user, question, knowledgeMatches) {
     L.push('【知识库参考】' + matchedKnowledge.map(article => {
       const linked = !!article.product_id;
       const body = String(article.content || '').slice(0, linked ? 1500 : 5000);
-      return `${article.category}｜${article.title}${linked ? '（已关联产品，价格/MOQ/交期以产品管理为准）' : ''}\n${body}`;
+      return `${article.category}｜${article.title}${linked ? '（已关联产品，价格/MOQ/交期以产品信息为准）' : ''}\n${body}`;
     }).join('\n\n'));
   }
 

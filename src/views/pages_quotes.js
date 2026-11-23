@@ -1,5 +1,5 @@
 'use strict';
-// ============ 历史报价：与产品管理联动，新增后自动生成跟进 ============
+// ============ 历史报价：与产品信息联动，新增后自动生成跟进 ============
 const { esc } = require('../util');
 const { page } = require('./layout');
 const { fld, card, pageHead, emptyRow } = require('./ui');
@@ -190,7 +190,7 @@ function quoteFormPage(ctx) {
           <div class="form-text">输入公司名称 / 英文名称后，从结果中点击添加</div>
         </div>
         <div class="col-md-5">
-          <label class="form-label">产品（来自产品管理） <span class="text-danger">*</span></label>
+          <label class="form-label">产品（来自产品信息） <span class="text-danger">*</span></label>
           <div class="position-relative">
             <input type="text" class="form-control" id="quoteProductSearch" value="${esc(selectedProductLabel)}" placeholder="点击选择产品：按英文品名分类或搜索货号" autocomplete="off">
             <input type="hidden" name="product_id" id="quoteProduct" value="${esc(productId)}">

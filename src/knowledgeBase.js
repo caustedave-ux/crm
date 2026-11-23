@@ -131,7 +131,7 @@ function relevantArticles(question, limit) {
 function contextForQuestion(question, limit) {
   return relevantArticles(question, limit).map(article => {
     const content = String(article.content || '').trim().slice(0, 5000);
-    const linkedNote = article.product_id ? '（已关联产品，价格/MOQ/交期以产品管理为准）' : '';
+    const linkedNote = article.product_id ? '（已关联产品，价格/MOQ/交期以产品信息为准）' : '';
     return `【${article.category}｜${article.title}】${linkedNote}\n${content}`;
   }).join('\n\n');
 }

@@ -1880,8 +1880,8 @@ function registerRoutes(app, router) {
     if (!knowledgeBase.CATEGORIES.includes(category)) return fail(ctx, '请选择有效的知识分类', '/knowledge/new');
     if (!content || content.length > 60000) return fail(ctx, '正文不能为空且不能超过60000个字符', '/knowledge/new');
     if (tags.length > 500) return fail(ctx, '标签不能超过500个字符', '/knowledge/new');
-    // 产品资料必须关联一个产品：价格/MOQ/交期以产品管理为准，文章只写说明文字
-    if (category === '产品资料' && !productId) return fail(ctx, '“产品资料”请先关联一个产品（价格、MOQ、交期以产品管理为准）', '/knowledge/new');
+    // 产品资料必须关联一个产品：价格/MOQ/交期以产品信息为准，文章只写说明文字
+    if (category === '产品资料' && !productId) return fail(ctx, '“产品资料”请先关联一个产品（价格、MOQ、交期以产品信息为准）', '/knowledge/new');
     if (productId && !get('SELECT id FROM products WHERE id=?', productId)) return fail(ctx, '关联的产品不存在', '/knowledge/new');
     const stamp = nowStr();
     const result = run(`INSERT INTO knowledge_articles(title,category,tags,content,product_id,created_by,created_at,updated_at)
@@ -1901,7 +1901,7 @@ function registerRoutes(app, router) {
     if (!knowledgeBase.CATEGORIES.includes(category)) return fail(ctx, '请选择有效的知识分类', '/knowledge/' + article.id + '/edit');
     if (!content || content.length > 60000) return fail(ctx, '正文不能为空且不能超过60000个字符', '/knowledge/' + article.id + '/edit');
     if (tags.length > 500) return fail(ctx, '标签不能超过500个字符', '/knowledge/' + article.id + '/edit');
-    if (category === '产品资料' && !productId) return fail(ctx, '“产品资料”请先关联一个产品（价格、MOQ、交期以产品管理为准）', '/knowledge/' + article.id + '/edit');
+    if (category === '产品资料' && !productId) return fail(ctx, '“产品资料”请先关联一个产品（价格、MOQ、交期以产品信息为准）', '/knowledge/' + article.id + '/edit');
     if (productId && !get('SELECT id FROM products WHERE id=?', productId)) return fail(ctx, '关联的产品不存在', '/knowledge/' + article.id + '/edit');
     run('UPDATE knowledge_articles SET title=?,category=?,tags=?,content=?,product_id=?,updated_at=? WHERE id=?', title, category, tags, content, productId, nowStr(), article.id);
     ok(ctx, '知识条目已更新', '/knowledge?article=' + article.id);
@@ -2171,7 +2171,7 @@ function registerRoutes(app, router) {
         ['请保留第一行表头。品名必填；其余列可留空（留空表示不填写 / 不修改）。'],
         ['导入规则：按“规格型号(货号)”匹配已有产品——相同货号则更新该产品资料；货号留空时按品名匹配；都匹配不到则自动新建。'],
         ['单位可填 PCS / SET / PAIR / CTN / KGS / M；币种可填 USD / CNY / EUR 等；产地留空默认为“中国 China”。'],
-        ['分类请填系统里的分类名称（锁体 / 把手 / 锁芯 / 合页 / 其他），填了不存在的名称会进“未分类”，导入后在产品管理里再分；材质、表面处理可自由填写，常用：不锈钢 / 锌合金 / 铜 / 铝合金，拉丝 / 镜面 / 电镀 / 喷涂 / 古铜 / 黑色。'],
+        ['分类请填系统里的分类名称（锁体 / 把手 / 锁芯 / 合页 / 其他），填了不存在的名称会进“未分类”，导入后在产品信息里再分；材质、表面处理可自由填写，常用：不锈钢 / 锌合金 / 铜 / 铝合金，拉丝 / 镜面 / 电镀 / 喷涂 / 古铜 / 黑色。'],
         ['MOQ 为最低起订量（数字）；状态只能填 在售 / 下架 / 停产，留空默认为“在售”。'],
         ['定位只能填 高端款 / 高流通款，留空为“未分类”；自动回复挑款只按定位选——高端精品客户只推高端款，大众流通客户只推高流通款，未分类的产品不参与自动挑款。'],
         ['图片列（最后一列）：两种方式任选——①把产品图片直接“插入”到该行图片列，表格里能看到图即可；②在该列填写图片所在路径或网址，例如 uploads/products/CDL-100.jpg（仅允许服务器上 uploads/ 或 auto-reply/materials/ 目录内文件）或 https://xxx.com/a.jpg。'],
