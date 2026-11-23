@@ -825,7 +825,7 @@ function sessionPage(ctx) {
     ${row.content && row.subject ? `<div class="wa-workbench-record-copy">${esc(String(row.content).slice(0, 500))}</div>` : ''}
     ${row.outcome ? `<div class="wa-workbench-record-copy">结果：${esc(row.outcome)}</div>` : ''}
     ${row.next_follow_date ? `<div class="wa-workbench-record-next">下次跟进：${esc(row.next_follow_date)}</div>` : ''}
-  </div>`).join('') : '<div class="wa-panel-empty">绑定 CRM 客户后，这里会显示已有跟进记录。</div>';
+  </div>`).join('') : (activeCustomer ? '<div class="wa-panel-empty">暂无跟进记录。</div>' : '<div class="wa-panel-empty">绑定 CRM 客户后，这里会显示已有跟进记录。</div>');
   const fileMessages = activeMessages.filter(message => message.media_path && ['image', 'video', 'audio', 'document', 'sticker'].includes(message.kind)).slice().reverse();
   const filesTabHtml = fileMessages.length ? `<div class="wa-files-grid">${fileMessages.map(message => {
     const url = messageMediaUrl(message);
@@ -840,7 +840,7 @@ function sessionPage(ctx) {
   const orderQuoteRowsHtml = [
     ...customerQuotes.map(row => `<a class="wa-order-row" href="/quotes/${Number(row.id)}/edit"><span><b>${esc(row.quote_no || '历史报价')}</b><small>${esc(row.product_name || '')}${row.model ? ' · ' + esc(row.model) : ''} · ${esc(row.quote_date || '')}</small></span><span><b>${esc(row.currency || 'USD')} ${Number(row.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b><small>${esc(row.status || '')}</small></span></a>`),
     ...orderRows.map(row => `<a class="wa-order-row" href="/documents/${Number(row.id)}"><span><b>${esc(row.doc_no || '单据')}</b><small>${esc(DOC_TYPE_MAP[row.doc_type] ? DOC_TYPE_MAP[row.doc_type].name : row.doc_type)} · ${esc(row.issue_date || '')}</small></span><span><b>${esc(row.currency || 'USD')} ${Number(row.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b><small>${esc(row.status || '')}</small></span></a>`),
-  ].join('') || '<div class="wa-panel-empty">绑定 CRM 客户后，这里会显示真实报价和订单。</div>';
+  ].join('') || (activeCustomer ? '<div class="wa-panel-empty">该客户暂无报价或订单记录。</div>' : '<div class="wa-panel-empty">绑定 CRM 客户后，这里会显示真实报价和订单。</div>');
   const activeProfile = activeCustomer ? `<div class="wa-profile-summary">
     <span class="wa-avatar wa-avatar-lg">${chatAvatarHtml(active, true)}</span><div class="min-w-0"><a href="/customers/${activeCustomer.id}" class="wa-profile-name">${esc(activeCustomer.company_name)}</a><div class="wa-profile-meta">${esc(activeCustomer.country || '国家/地区未填写')}${activeCustomer.status ? ' · ' + esc(activeCustomer.status) : ''}</div></div>
     <a href="/customers/${activeCustomer.id}" class="btn btn-sm btn-outline-secondary ms-auto">客户档案</a>
