@@ -508,7 +508,7 @@ function sessionPage(ctx) {
   } else if (filter === 'pinned') {
     chats = chats.filter(isPinned);
   } else {
-    if (filter === 'unread') chats = chats.filter(row => Number(row.unread) > 0 && !isPinned(row));
+    if (filter === 'unread') chats = chats.filter(row => Number(row.unread) > 0);
     else if (filter === 'unbound') chats = chats.filter(row => !row.customer_id);
     else if (filter === 'bound') chats = chats.filter(row => !!row.customer_id);
     // “全部”只显示普通会话；其他业务筛选仍保留置顶会话，避免漏掉待办。
