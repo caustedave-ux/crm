@@ -1552,16 +1552,28 @@ a:hover { color: #c18bff; }
   .wa-inbox.wa-3col { flex: 1 1 auto; display: grid; grid-template-rows: auto; height: auto;
     /* 2026-11-22 聊天区改大：行高原来是 minmax(0, 1fr)，被锁在视口高度里，
        消息区只能分到 120px。改成 auto，行高由中间栏内容决定，页面纵向滚动。
-       左右两栏不跟中间栏一起长高：定高 + sticky，往下滚看消息时会话列表和 AI 助手还贴在原地。
-       左侧列表最多渲染 300 个会话，绝不能让行高按它内容算，否则行会被撑爆。
-       420px 下限保留，内容少时三栏不至于太矮。 */
+       2026-11-23 三栏同高：左右两栏不再定高 + sticky，改为跟中间栏同高、随页面一起滚动。
+       左侧列表是 flex:1 + min-height:0 + overflow:auto，不会按 300 个会话把行撑爆；
+       右侧 AI 面板也是 flex 列 + 面板内滚动。420px 下限保留，内容少时三栏不至于太矮。 */
     min-height: 420px; }
+  /* 三栏拉伸对齐：.workbench-2 .wa-3col（1719 行附近）设了 align-items:start，
+     会让各栏只按自身内容高、不跟行高走；这里用更高优先级拉回 stretch。
+     注意只覆盖 WhatsApp 的 .wa-inbox.wa-3col，不动报价页的 .quote-3col。 */
+  .page-wa .wa-inbox.wa-3col { align-items: stretch; }
+  /* 行高只由中间栏内容决定：左右两栏里的可滚动区（会话列表、AI 面板）内容再长也不参与
+     行高计算。flex 容器的 max-content 会把列表 25 个会话的全高（约 2375px）一路传上来，
+     把整行撑到 2571px、中间栏输入框下面多出一大段空白；contain:size 把这两块的固有尺寸
+     归零，高度只由 flex:1 从卡片里分，超出的在区内自己滚动。只在桌面三栏时生效，
+     窄屏堆叠时列表仍按内容长高、不动。 */
+  .wa-inbox.wa-3col > .wa-left-column .wa-chat-list,
+  .wa-inbox.wa-3col > .wa-right-column .wa-ai-tab-panel { contain: size; }
   .wa-inbox.wa-3col > .wa-left-column, .wa-inbox.wa-3col > .wa-right-column {
-    height: calc(100dvh - 250px); min-height: 480px;
-    position: sticky; top: calc(var(--neo-topbar) + 12px);
+    /* 2026-11-23：取消 100dvh 定高 + sticky，改为占满行高、跟中间栏同步长高、随页面滚动。
+       行高由中间栏内容决定；卡片 height:100%（712/764 行已有），列表/面板在卡片内自己滚动。 */
+    height: 100%; min-height: 0;
   }
   .wa-inbox.wa-3col > .wa-center-column { height: auto; }
-  .wa-inbox.wa-3col > .wa-center-column > .card { height: auto; }
+  .wa-inbox.wa-3col > .wa-center-column > .card { height: 100%; }
   .wa-inbox.wa-3col > .wa-left-column { grid-column: 1; grid-row: 1; }
   .wa-inbox.wa-3col > .wa-center-column { grid-column: 2; grid-row: 1; }
   .wa-inbox.wa-3col > .wa-right-column { grid-column: 3; grid-row: 1; }
