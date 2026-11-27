@@ -2,6 +2,20 @@
 
 按 [AGENTS.md](../AGENTS.md) 的约定，每个功能动工前先调研开源实现，这里记一行：需求 → 候选 → 选中项 + 原因 → 改动点。
 
+## 2026-11-27 · WhatsApp 跟进 Facebook 收尾
+
+评估了 [XState](https://github.com/statelyai/xstate)（MIT）和现有 SQLite 跟进记录（公有领域）。采用现有记录，它已经包含跟进次数、消息发送结果和会话状态，可用来判断收尾时机并避免重复邀请。改动位于 `auto-reply/logic.js`、`auto-reply/worker.js` 和 `auto-reply/qualify.js`。
+
+## 2026-11-26 · WhatsApp 自动回复按区号识别地区
+
+复用客户验证已选型的 [libphonenumber-js](https://github.com/catamphetamine/libphonenumber-js)（MIT）完整号码元数据，可区分共用区号的地区。自动回复和主动跟进按需询问城市，并参考同一会话已经问过的问题。改动位于 `auto-reply/logic.js`、`auto-reply/qualify.js` 和 `auto-reply/worker.js`。
+
+## 2026-11-24 · WhatsApp 历史消息搜索
+
+WhatsApp 会话、消息和关联业务记录复用 SQLite 内置的 [ORDER BY](https://sqlite.org/lang_select.html#the_order_by_clause)（公有领域）按时间降序排列。订单与报价在服务端视图中按各自业务日期合并，同一时间按记录 ID 排序。
+
+评估了 [MiniSearch](https://github.com/lucaong/minisearch)（MIT）、[FlexSearch](https://github.com/nextapps-de/flexsearch)（Apache-2.0）和 SQLite 内置 [LIKE](https://sqlite.org/lang_expr.html#the_like_glob_regexp_match_and_extract_operators) 与 [FTS5](https://sqlite.org/fts5.html)（公有领域）。在当前约 1.3 万条消息的数据量下，带权限条件的原库查询平均约 9 毫秒。选用 SQLite 参数化 LIKE，支持中文子串和型号符号，直接复用现有会话可见性和数据库。WhatsApp 收件箱显示分页结果与匹配摘要，点击后加载该消息附近的历史记录。
+
 ## 2026-10-21 · WhatsApp 聊天记录导入 CRM（2026-10-30 已移除入口）
 
 **需求**：把客户在 WhatsApp 里的聊天记录指定导入 CRM，成本尽可能低。
@@ -575,5 +589,13 @@
 - 不搬：旧核验引擎（`verify.js`、`sources.js`、`socialReader.js`、`workflow.js`、pipeline-demo、`exporter.js`）；`/verify`、`/api/verify`、`/api/verify-all`、`/api/maps/verify-batch` 已去掉，导出功能 V1 先不做。
 
 **验证**：`node --check` 全部通过；`node tools/selftest.js` 41/41 通过；`npm test`（含 B 的 `tools/test-tasks-letters.js`）72/72 通过；临时端口 + 临时库拉起服务真渲染 `/`、`/maps`、`/tasks`、`/leads`、`/letters`、`/settings`，确认无 Key 态与页面结构，以及建任务、开发信渲染/标记已发送的端到端接口。
-
-- 2026-11-23 采集主界面按参考图重做单屏：无新增依赖、不引入新库——布局为现有栈上的定制实现（Bootstrap 5 + Google Maps JS 经服务端 `/maps-js` 代理加载 + `node:sqlite`）；改动：`src/tasks.js`（`createMapBatch`/`getMapBatchDetail`，复用 `batches` 表 + `tasks.map_batch_id`/`calls_json`/`current_name` 三个轻量字段）、`src/places.js`（`collectLeads` 加可选 `onProgress` 回调）、`src/views.js`（`mapsPage` 一屏三区：表单/560px 大地图 + 右侧 AI 执行流栏/底部关键词时间线）、`static/maps.js`（多关键词提交、2 秒轮询批次、地点搜索 Autocomplete、地图叠加列表）、`static/app.css`（追加样式）。分类 chips 未做：现有按关键词采集的后端没有对应分类字段，做出来只是摆设。
+- 2026-11-24 WhatsApp 全部列表支持搜索置顶客户：需求 → 在“全部”筛选中按客户名字搜索时，结果也要包含已置顶会话。候选 → 参考 Chatwoot（约 40,440 stars，2026-11-24 有更新，1,636 个 open issues；仓库核心 MIT，enterprise/ 单独许可）的收件箱置顶交互；完整收件箱框架与当前原生 Node.js + SQLite 服务端渲染栈不兼容，也无需引入搜索库。选中 → 沿用现有 SQL 搜索条件，仅让“全部”在存在搜索词时包含置顶会话；空搜索时保持原列表筛选，置顶页签行为不变。改动点：src/views/pages_wa.js + tools/test-wa-inbox.js。
+- 2026-11-24 WhatsApp 会话列表分页。评估了 Chatwoot 收件箱（核心 MIT）和 SQLite（公有领域）配合现有 Bootstrap（MIT）控件的方案。选用后者，在服务端分页并保留筛选及搜索条件，沿用当前消息时间降序。改动涉及 `src/views/pages_wa.js` 和 `tools/test-wa-inbox.js`。
+- 2026-11-24 WhatsApp 聊天框按消息时间升序，聊天记录搜索按消息时间降序。沿用 SQLite（公有领域）查询和浏览器原生滚动实现，打开会话时定位到最新消息，刷新时保留历史阅读位置。改动涉及 `src/views/pages_wa.js` 和 `tools/test-wa-inbox.js`。
+- 2026-11-25 WhatsApp 客户验证。对比 [libphonenumber-js](https://github.com/catamphetamine/libphonenumber-js)（MIT，3,005 stars，最近推送 2026-11-10，38 个 open issues）、[Google libphonenumber](https://github.com/google/libphonenumber)（Apache-2.0，18,365 stars，最近推送 2026-11-24，123 个 open issues）和 [PhoneInfoga](https://github.com/sundowndev/phoneinfoga)（GPL-3.0，18,671 stars，最近推送 2026-08-25，173 个 open issues）。选用 libphonenumber-js 的完整号码元数据和 Node.js 接口，配合项目已有 Baileys 和 Bing 解析器，结合 CRM 同号档案、WhatsApp 商家资料和公开网页线索。服务端设置可选环境变量 `CRM_WA_VERIFICATION_SERPAPI_KEY` 后优先使用 Google 搜索接口，接口不可用时使用 Bing。实现位于 `src/waCustomerVerification.js`、`src/routes.js` 和 `src/views/pages_wa.js`。
+- 2026-11-25 WhatsApp 数字快捷回复。评估了 [Tribute.js](https://github.com/zurb/tribute) 5.1.3（MIT）、[autoComplete.js](https://github.com/TarekRaafat/autoComplete.js) 10.2.10（Apache-2.0）和项目已有的 [Bootstrap](https://github.com/twbs/bootstrap) 5.3.3（MIT）。复用 Bootstrap 选择器和浏览器输入事件，共用同一份快捷回复数据并使用现有记录 ID 作为固定编号。实现位于 `src/views/pages_wa.js`。
+- 2026-11-25 FOEVE 门用五金知识库。对比 Obsidian 的外部文档流程和 CRM 已有的 [Bootstrap](https://github.com/twbs/bootstrap) 5.3.3（MIT）、[markdown-it](https://github.com/markdown-it/markdown-it)（MIT）与 SQLite（公有领域）组合。沿用现有文本搜索、产品关联及 Markdown 渲染。业务分类和阅读页位于 `src/views/pages_knowledge.js`，首批资料位于 `docs/foeve-knowledge-starter.json`。
+- 2026-11-25 多币种货款管理。评估 [currency.js](https://github.com/scurker/currency.js) 2.0.4（MIT）、[Dinero.js](https://github.com/dinerojs/dinero.js) 2.0.2（MIT）及现有 SQLite（公有领域）和 Bootstrap（MIT）。沿用 SQLite 账本和 Bootstrap 表单，以整数分汇总。收款保存原币与实际冲抵金额，单据、客户和发货复用同一份记录。主要实现位于 `src/payments.js` 和 `src/views/pages_pay.js`。
+- 2026-11-25 WhatsApp 订单报价空白页。评估 [Floating UI](https://github.com/floating-ui/floating-ui)（MIT）和现有 [Bootstrap Dropdown](https://github.com/twbs/bootstrap)（MIT）。沿用现有下拉菜单及订单、报价表单，新建时带入当前客户。改动涉及 `src/views/pages_wa.js`、`src/views/pages_quotes.js`。
+- 2026-11-25 订单与报价导出 PNG。复用现有 [Puppeteer Core](https://github.com/puppeteer/puppeteer)（Apache-2.0）、本机浏览器及单据 HTML 模板，按当前登录用户验证归属后按需生成高清图片。订单沿用已保存的正式单据模板，报价采用客户版式且只包含售价与产品信息。实现位于 `src/documentPdf.js`、`src/quoteImage.js` 和对应导出路由。
+- 2026-11-25 WhatsApp 指标卡跳转。评估了 Bootstrap 5（MIT，约 175,130 stars，2026-11-24 更新，237 个 open issues）和 htmx 2（0BSD，约 49,661 stars，2026-11-20 更新，325 个 open issues）。复用 CRM 已内置的 Bootstrap 链接样式和服务端分页，支持今日来信、今日活跃会话和到期跟进，移除近 7 天报价卡。改动涉及 src/views/pages_wa.js、src/views/pages_core.js 和 static/css/style.css。

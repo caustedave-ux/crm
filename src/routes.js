@@ -7,6 +7,7 @@ const { run, get, all, getCompany, setCompany, getSetting, setSetting, DOC_TYPES
 const auth = require('./auth');
 const docx = require('./documents');
 const documentPdf = require('./documentPdf');
+const quoteImage = require('./quoteImage');
 const excel = require('./excel');
 const stock = require('./stock');
 const { esc, todayStr, nowStr, addDays, randomToken, guessCountry, makePhone, COUNTRY_CODES, mapCountryName } = require('./util');
@@ -15,12 +16,14 @@ const pagesTiers = require('./views/pages_tiers');
 const pagesDocs = require('./views/pages_docs');
 const pagesQuotes = require('./views/pages_quotes');
 const pagesPay = require('./views/pages_pay');
+const payments = require('./payments');
 const pagesAi = require('./views/pages_ai');
 const { buildContext } = require('./aiContext');
 const pagesMap = require('./views/pages_map'); // 客户星空统计页
 const pagesWa = require('./views/pages_wa');   // WhatsApp 实时会话
 const pagesLogistics = require('./views/pages_logistics'); // 物流跟踪
 const wa = require('./wa');
+const waCustomerVerification = require('./waCustomerVerification');
 const customerTiers = require('./customerTiers');
 const briefings = require('./briefings');
 const pagesBriefings = require('./views/pages_briefings');
@@ -251,6 +254,23 @@ function registerRoutes(app, router) {
   router.get('/quotes', (ctx) => ctx.res.send(pagesQuotes.quotesPage(ctx)));
   router.get('/quotes/new', (ctx) => ctx.res.send(pagesQuotes.quoteFormPage(ctx)));
   router.get('/quotes/:id/edit', (ctx) => ctx.res.send(pagesQuotes.quoteFormPage(ctx)));
+  router.get('/api/quotes/:id/export.png', async (ctx) => {
+    const quote = get('SELECT * FROM quote_history WHERE id=? AND user_id=?', ctx.params.id, ctx.user.id);
+    if (!quote) return ctx.res.json(404, { error: '报价不存在或无权访问' });
+    try {
+      const image = Buffer.from(await quoteImage.generateQuoteImage(quote, ctx.user.id));
+      const filename = quoteImage.quoteFilename(quote.quote_no);
+      ctx.res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': image.length,
+        'Content-Disposition': 'attachment; filename="' + filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_') + '"; filename*=UTF-8\'\'' + encodeURIComponent(filename),
+        'Cache-Control': 'no-store',
+      });
+      ctx.res.end(image);
+    } catch (error) {
+      ctx.res.json(500, { error: '报价图片生成失败：' + error.message });
+    }
+  });
   router.get('/templates', (ctx) => ctx.res.send(pagesDocs.templatesPage(ctx)));
   router.get('/templates/new', (ctx) => ctx.res.send(pagesDocs.templateFormPage(ctx)));
   router.get('/templates/:id/edit', (ctx) => ctx.res.send(pagesDocs.templateFormPage(ctx)));
@@ -923,6 +943,19 @@ function registerRoutes(app, router) {
     }
   });
 
+  router.post('/api/wa/customer-verification', async (ctx) => {
+    const chat = visibleChat(ctx.body.chat_id, ctx.user.id);
+    if (!chat) return ctx.res.json(404, { ok: false, error: '会话不存在或无权查看' });
+    const phone = waCustomerVerification.chatNumber(chat);
+    if (!phone?.isPossible()) return ctx.res.json(400, { ok: false, error: '当前会话没有可核验的国际号码' });
+    try {
+      const result = await waCustomerVerification.verifyCustomer(ctx.user.id, chat, phone);
+      ctx.res.json(200, { ok: true, html: pagesWa.customerVerificationResultHtml(result) });
+    } catch {
+      ctx.res.json(500, { ok: false, error: '客户验证暂时失败，请重试' });
+    }
+  });
+
   // 谷歌免费机翻：把当前输入框里的内容翻译成目标语言，只回填，不自动发送。
   router.post('/api/wa/translate', async (ctx) => {
     const text = String(ctx.body.text || '').trim();
@@ -1582,6 +1615,11 @@ function registerRoutes(app, router) {
     if (!old) return fail(ctx, '单据不存在或无权访问', '/documents');
     try {
       const p = parseDocForm(ctx.body, ctx.user, old);
+      if (payments.hasReceipts(old.id) && (
+        payments.currencyCode(p.currency) !== payments.currencyCode(old.currency)
+          || Number(p.customer_id) !== Number(old.customer_id) || !payments.SALE_TYPES.includes(p.doc_type))) {
+        return fail(ctx, '已有收款记录，不能更改单据币种、归属客户或转为非销售单据。', '/documents/' + old.id + '/edit');
+      }
       docx.updateDocument(old.id, p);
       const updated = docx.getDoc(old.id);
       const sres = stock.syncAfterEdit(old, updated.status, updated.items);
@@ -1598,6 +1636,7 @@ function registerRoutes(app, router) {
   router.post('/documents/:id/delete', (ctx) => {
     const own = get('SELECT id FROM documents WHERE id=? AND user_id=?', ctx.params.id, ctx.user.id);
     if (!own) return fail(ctx, '单据不存在或无权删除', '/documents');
+    if (payments.hasReceipts(own.id)) return fail(ctx, '已有收款记录，请保留单据以便核账。', '/documents/' + own.id);
     stock.releaseOnDelete(ctx.params.id);
     docx.deleteDocument(ctx.params.id);
     ok(ctx, '单据已删除', '/documents');
@@ -1625,12 +1664,31 @@ function registerRoutes(app, router) {
       ctx.res.writeHead(200, {
         'Content-Type': 'application/pdf',
         'Content-Length': pdf.length,
-        'Content-Disposition': 'attachment; filename="' + filename + '"; filename*=UTF-8\'\'' + encodeURIComponent(filename),
+        'Content-Disposition': 'attachment; filename="' + filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_') + '"; filename*=UTF-8\'\'' + encodeURIComponent(filename),
         'Cache-Control': 'no-store',
       });
       ctx.res.end(pdf);
     } catch (e) {
       ctx.res.json(500, { error: 'PDF 生成失败：' + e.message });
+    }
+  });
+
+  router.get('/api/documents/:id/export.png', async (ctx) => {
+    const doc = get('SELECT * FROM documents WHERE id=? AND user_id=?', ctx.params.id, ctx.user.id);
+    if (!doc) return ctx.res.json(404, { error: '单据不存在或无权访问' });
+    try {
+      const image = await documentPdf.generateDocumentImage(doc);
+      const filename = documentPdf.safeImageFilename(doc.doc_no);
+      const imageBuffer = Buffer.from(image);
+      ctx.res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': imageBuffer.length,
+        'Content-Disposition': 'attachment; filename="' + filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_') + '"; filename*=UTF-8\'\'' + encodeURIComponent(filename),
+        'Cache-Control': 'no-store',
+      });
+      ctx.res.end(imageBuffer);
+    } catch (error) {
+      ctx.res.json(500, { error: '单据图片生成失败：' + error.message });
     }
   });
 
@@ -1795,42 +1853,18 @@ function registerRoutes(app, router) {
   router.get('/payments', (ctx) => ctx.res.send(pagesPay.paymentsPage(ctx)));
   router.get('/payments/:id/edit', (ctx) => ctx.res.send(pagesPay.paymentEditPage(ctx)));
   router.post('/payments/:id/edit', (ctx) => {
-    const doc = get('SELECT * FROM documents WHERE id=? AND user_id=?', ctx.params.id, ctx.user.id);
-    if (!doc) return fail(ctx, '单据不存在或无权访问', '/payments');
-    const total = Number(doc.total_amount) || 0;
-    const deposit = Math.min(parseFloat(ctx.body.deposit) || 0, total);
-    const remark = String(ctx.body.remark || '').trim();
-    const by = ctx.user.display_name || ctx.user.username || '';
-    const raw = String(ctx.body.records || '');
-    let recs = null;
-    if (Object.prototype.hasOwnProperty.call(ctx.body, 'records')) {
-      try { const arr = JSON.parse(raw); recs = Array.isArray(arr) ? arr : []; } catch (e) { recs = []; }
-      run('DELETE FROM payment_records WHERE doc_id=?', doc.id);
+    const doc = payments.findPayableDoc(ctx.params.id, ctx.user.id);
+    if (!doc) return fail(ctx, '单据不存在或不可登记收款', '/payments');
+    try {
+      payments.savePayments(doc, ctx.body, ctx.user);
+    } catch (error) {
+      return fail(ctx, error.message || '收款登记失败', '/payments/' + doc.id + '/edit');
     }
-    let sum = 0;
-    if (recs !== null) {
-      for (const it of recs) {
-        const amt = parseFloat(it && it.amount);
-        if (!isFinite(amt) || amt <= 0) continue;
-        const paidAt = String(it.paid_at || '').trim().replace('T', ' ').slice(0, 16) || nowStr().slice(0, 16);
-        const note = String(it.note || '').trim();
-        run('INSERT INTO payment_records(doc_id,amount,paid_at,note,created_by,created_at) VALUES(?,?,?,?,?,?)',
-          doc.id, Math.round(amt * 100) / 100, paidAt, note, by, nowStr());
-        sum += amt;
-      }
-    } else {
-      const ex = all('SELECT amount FROM payment_records WHERE doc_id=?', doc.id);
-      sum = ex.reduce((s, rr) => s + (Number(rr.amount) || 0), 0);
-    }
-    sum = Math.round(sum * 100) / 100;
-    const paid = Math.min(sum, total);
-    run('INSERT INTO document_payments(doc_id,deposit,paid,remark,created_at,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(doc_id) DO UPDATE SET deposit=excluded.deposit, paid=excluded.paid, remark=excluded.remark, updated_at=excluded.updated_at',
-      doc.id, deposit, paid, remark, nowStr(), nowStr());
     try {
       customerTiers.refreshTiers(ctx.user.id, { force: true });
       customerTiers.ensureTierActions(ctx.user.id);
     } catch (e) {}
-    ok(ctx, '收款已登记（分笔 ' + (recs === null ? '保留' : recs.length) + ' 笔）', '/payments');
+    ok(ctx, '收款已登记', '/payments/' + doc.id + '/edit');
   });
   // ---------- 发货管理 ----------
   router.get('/shipments', (ctx) => ctx.res.send(pagesPay.shipmentsPage(ctx)));
@@ -2418,10 +2452,15 @@ function registerRoutes(app, router) {
   });
   // ---------- 单据批量删除 ----------
   router.post('/documents/batch-delete', (ctx) => {
-    const ids = String(ctx.body.ids || '').split(',').map(x => parseInt(x, 10)).filter(x => x > 0);
+    const ids = [...new Set(String(ctx.body.ids || '').split(',').map(Number).filter(x => Number.isSafeInteger(x) && x > 0))];
     let n = 0;
-    for (const id of ids) { stock.releaseOnDelete(id); docx.deleteDocument(id); n++; }
-    ok(ctx, '已批量删除 ' + n + ' 张单据', '/documents');
+    for (const id of ids) {
+      if (!get('SELECT id FROM documents WHERE id=? AND user_id=?', id, ctx.user.id) || payments.hasReceipts(id)) continue;
+      stock.releaseOnDelete(id);
+      docx.deleteDocument(id);
+      n++;
+    }
+    ok(ctx, '已批量删除 ' + n + ' 张单据' + (ids.length > n ? '，跳过 ' + (ids.length - n) + ' 张有收款记录或无权删除的单据' : ''), '/documents');
   });
 
   function normDocType(s) {

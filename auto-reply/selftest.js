@@ -219,8 +219,12 @@ t('跟进 2 次后 → 发收尾', () => {
   const d = L.followupDue({ followupsSent: 2, closingSent: false, silenceHours: 60, silenceSinceFollowupHours: 30 }, fcfg);
   assert.strictEqual(d.due, true); assert.strictEqual(d.kind, 'closing');
 });
-t('收尾时总静默超 72 小时 → 不发收尾（M1：停工/重启后静默 30 天的客户不打扰）', () => {
-  const d = L.followupDue({ followupsSent: 2, closingSent: false, silenceHours: 90, silenceSinceFollowupHours: 30 }, fcfg);
+t('两次跟进后留出收尾窗口，允许轮询略过 72 小时整点', () => {
+  const d = L.followupDue({ followupsSent: 2, closingSent: false, silenceHours: 73, silenceSinceFollowupHours: 24 }, fcfg);
+  assert.strictEqual(d.kind, 'closing');
+});
+t('收尾时总静默超 96 小时 → 不发收尾', () => {
+  const d = L.followupDue({ followupsSent: 2, closingSent: false, silenceHours: 97, silenceSinceFollowupHours: 30 }, fcfg);
   assert.strictEqual(d.due, false);
 });
 t('收尾已发 → 不再打扰', () => {
@@ -233,6 +237,21 @@ t('收尾开关关闭 → 满次数就停', () => {
 });
 
 console.log('== v2.3 目录规则：不直接发全套、老客户直给、报量转人工 ==');
+t('Facebook 收尾使用固定主页和客户语言', () => {
+  assert.strictEqual(L.facebookInvitation('en').split('\n')[1], 'https://www.facebook.com/caustechina/');
+  assert.match(L.facebookInvitation('fr-FR'), /^Suivez notre page Facebook/);
+  assert.doesNotMatch(L.facebookInvitation('en'), /\?/);
+});
+t('只有连续答非所问的低信息询盘可以用 Facebook 收尾', () => {
+  const verdict = { signals: { consecutiveOffTopic: true } };
+  const decision = { action: 'ask', precision: 'unknown', riskFlags: [] };
+  assert.strictEqual(L.shouldCloseOffTopic(verdict, decision, null), true);
+  assert.strictEqual(L.shouldCloseOffTopic({ signals: { consecutiveOffTopic: false } }, decision, null), false);
+  assert.strictEqual(L.shouldCloseOffTopic({ signals: { ...verdict.signals, quantityGiven: true } }, decision, null), false);
+  assert.strictEqual(L.shouldCloseOffTopic(verdict, { ...decision, riskFlags: ['complaint'] }, null), false);
+  assert.strictEqual(L.shouldCloseOffTopic(verdict, { ...decision, notify: true }, null), false);
+  assert.strictEqual(L.shouldCloseOffTopic(verdict, { ...decision, action: 'send_material' }, null), false);
+});
 t('要目录的新客户判精准 → 追问，不发全套', () => {
   const d = L.decideQualification({ precision: 'high', purpose: 'catalog', confidence: 0.9, signals: { existingCustomer: false } }, null, cfg2);
   assert.strictEqual(d.action, 'ask');
@@ -291,6 +310,22 @@ t('文件发送数量按成功文件累计', () => assert(worker.includes('file_
 t('DeepSeek 网络错误至少重试 3 次', () => assert.strictEqual(Number(cfg.qualify.aiRetries), 3));
 t('AI 调用包含重试循环', () => assert(qualify.includes('for (let attempt = 1; attempt <= attempts; attempt++)') && qualify.includes('lastError')));
 t('追问规则禁止重复已知信息', () => assert(qualify.includes('已知信息不要重复询问')));
+t('国际号码识别地区，跳过群聊、无号码 LID 和国际免费电话', () => {
+  assert.strictEqual(L.phoneNumberRegion({ jid: '2348031234567:2@s.whatsapp.net' }), '尼日利亚 (+234)');
+  assert.strictEqual(L.phoneNumberRegion({ jid: '1@lid', phone: '0014165550123' }), '加拿大 (+1)');
+  assert.strictEqual(L.phoneNumberRegion({ jid: '2348031234567@lid' }), '');
+  assert.strictEqual(L.phoneNumberRegion({ jid: '1@g.us', phone: '+2348031234567' }), '');
+  assert.strictEqual(L.phoneNumberRegion({ jid: '80012345678@s.whatsapp.net' }), '');
+});
+t('后续回复去掉称呼，并拦截同义重复问题和国家问题', () => {
+  const history = ['Which type of door lock are you looking for — smart locks or mechanical ones?'];
+  assert.strictEqual(L.trimRepeatedGreeting('Hi Michael, which city are you in?', true), 'Which city are you in?');
+  assert.strictEqual(L.trimRepeatedGreeting('Hi Michael, which city are you in?', false), 'Hi Michael, which city are you in?');
+  assert.strictEqual(L.hasBlockedQuestion('Is it smart locks or mechanical locks you’re after?', history), true);
+  assert.strictEqual(L.hasBlockedQuestion('Which country are you in?', []), true);
+  assert.strictEqual(L.hasBlockedQuestion('Which city are you in?', history), false);
+  assert.strictEqual(L.hasBlockedQuestion('What city is delivery for?', ['Which city should we deliver to?']), true);
+});
 t('中国采购经验可构成高精准证据', () => assert(qualify.includes('明确或可可靠推断从中国采购过')));
 t('资格追问最多 6 轮', () => assert.strictEqual(Number(cfg.qualify.maxQualifyRounds), 6));
 t('回复采用自然 WhatsApp 销售口吻', () => assert(qualify.includes('像真实外贸业务员在 WhatsApp 上聊天') && qualify.includes('每次只问 1 个最关键的问题')));
@@ -391,7 +426,7 @@ t('问满 6 轮仍不明（没给具体需求）→ 转人工但不弹强通知'
 });
 t('判定提示词写明挖到具体需求为止、最多 6 轮', () => {
   assert(qualify.includes('挖到具体需求') && qualify.includes('最多 6 轮'));
-  assert(qualify.includes("PROMPT_VERSION = 'v2.4'"));
+  assert.strictEqual(require('./qualify').PROMPT_VERSION, 'v2.7');
 });
 t('worker 有 notifyHandoff 且只在给出具体需求时调用', () => {
   assert(worker.includes('notifyHandoff') && worker.includes("POST /api/notifications") && worker.includes('decision.notify'));

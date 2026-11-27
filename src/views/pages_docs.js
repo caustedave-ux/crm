@@ -6,6 +6,7 @@ const { fld, card, pageHead, badge, emptyRow } = require('./ui');
 const dbx = require('../db');
 const { get, all, DOC_TYPES, DOC_TYPE_MAP, DOC_STATUS } = dbx;
 const docx = require('../documents');
+const payments = require('../payments');
 const pagesWa = require('./pages_wa'); // WhatsApp 连接与自动回复卡片（原在 WhatsApp 页顶部，现移到系统设置）
 
 function moneyFmt(n) {
@@ -49,6 +50,7 @@ function documentsPage(ctx) {
       <td>${esc(d.created_by || '-')}</td>
       <td class="text-end">
         <a class="btn btn-sm btn-outline-primary" href="/documents/${d.id}">查看</a>
+        <a class="btn btn-sm btn-outline-primary" href="/api/documents/${d.id}/export.png" title="导出单据图片" aria-label="导出单据图片"><i class="bi bi-image"></i></a>
         <a class="btn btn-sm btn-outline-secondary" href="/documents/${d.id}/print" target="_blank"><i class="bi bi-printer"></i></a>
       </td>
     </tr>`).join('') || emptyRow(8, '暂无单据，点击右上角「新建单据」开始');
@@ -129,19 +131,20 @@ function documentDetailPage(ctx) {
   const statusOpts = DOC_STATUS.map(s => s.key);
   const prev = { '草稿': '已发送', '已发送': '已确认', '已确认': '已完成' };
   const nextStatus = prev[d.status];
+  const isPayable = payments.SALE_TYPES.includes(d.doc_type) && d.status !== '已作废';
   const payBlockHtml = (function () {
     const pr = get('SELECT * FROM document_payments WHERE doc_id=?', d.id);
-    const recs = all('SELECT * FROM payment_records WHERE doc_id=? ORDER BY paid_at ASC, id ASC', d.id);
+    const recs = payments.readRecords(d);
     if (!pr && !recs.length) return '';
-    const ttl = Number(d.total_amount) || 0;
-    const dep = Number(pr && pr.deposit) || 0;
-    const paid = Number(pr && pr.paid) || 0;
-    const recRows = recs.map(rr => `<tr><td class="text-nowrap">${esc(String(rr.paid_at || '').slice(0, 16))}</td><td class="text-end">${moneyFmt(rr.amount)}</td><td class="small">${esc(rr.note || '')}</td></tr>`).join('');
-    const isSales = ['pi', 'so', 'ci'].indexOf(d.doc_type) >= 0;
+    const ttl = payments.cents(d.total_amount);
+    const dep = payments.cents(pr?.deposit);
+    const paid = recs.length ? recs.reduce((sum, row) => sum + payments.cents(row.amount), 0) : payments.cents(pr?.paid);
+    const currency = esc(payments.currencyCode(d.currency));
+    const recRows = recs.map(rr => `<tr><td class="text-nowrap">${esc(String(rr.paid_at || '').slice(0, 16))}</td><td class="text-end text-nowrap">${esc(rr.received_currency)} ${moneyFmt(rr.received_amount)}</td><td class="text-end text-nowrap">${currency} ${moneyFmt(rr.amount)}</td><td class="small">${esc(rr.note || '')}</td></tr>`).join('');
     return `<div class="row g-3 mt-1">
-      <div class="col-12">${card({ title: '收款记录（货款）', actions: isSales ? `<a class="btn btn-sm btn-outline-primary" href="/payments/${d.id}/edit">登记收款</a>` : '', body: `<div class="table-responsive"><table class="table table-sm align-middle">
-        <thead><tr><th>收款时间</th><th class="text-end">金额</th><th>备注</th></tr></thead><tbody>${recRows || '<tr><td colspan="3" class="text-muted">暂无分笔收款记录</td></tr>'}</tbody></table></div>
-        <div class="small d-flex flex-wrap gap-4 mt-2"><span>单据金额：<b>${esc(d.currency || '')} ${moneyFmt(ttl)}</b></span><span>定金：<b>${moneyFmt(dep)}</b></span><span>已付（累计）：<b class="text-success">${moneyFmt(paid)}</b></span><span>未付：<b>${moneyFmt(Math.max(ttl - paid, 0))}</b></span></div>` })}</div>
+      <div class="col-12">${card({ title: '收款记录', body: `<div class="table-responsive"><table class="table table-sm align-middle">
+        <thead><tr><th>收款时间</th><th class="text-end">实收原币</th><th class="text-end">冲抵金额</th><th>备注</th></tr></thead><tbody>${recRows || '<tr><td colspan="4" class="text-muted">暂无分笔收款记录</td></tr>'}</tbody></table></div>
+        <div class="small d-flex flex-wrap gap-4 mt-2"><span>单据金额 <b>${currency} ${moneyFmt(ttl / 100)}</b></span><span>已收定金 <b>${moneyFmt(dep / 100)}</b></span><span>已冲抵 <b class="text-success">${moneyFmt(paid / 100)}</b></span><span>待收 <b>${moneyFmt(Math.max(ttl - paid, 0) / 100)}</b></span>${paid > ttl ? `<span>超收 <b>${moneyFmt((paid - ttl) / 100)}</b></span>` : ''}</div>` })}</div>
     </div>`;
   })();
   const content = `
@@ -158,8 +161,10 @@ function documentDetailPage(ctx) {
         </form>
         ${nextStatus ? `<form method="post" action="/documents/${d.id}/status"><input type="hidden" name="status" value="${nextStatus}"><button class="btn btn-sm btn-success">标记为「${nextStatus}」</button></form>` : ''}
         ${d.doc_type === 'pi' ? `<a class="btn btn-sm btn-outline-primary" href="/documents/new?type=po&from_pi=${d.id}"><i class="bi bi-cart-plus"></i> 一键生成采购单</a>` : ''}
+        ${isPayable ? `<a class="btn btn-sm btn-outline-success" href="/payments/${d.id}/edit"><i class="bi bi-cash-coin me-1"></i>登记收款</a>` : ''}
         <a class="btn btn-sm btn-primary" href="/documents/${d.id}/print" target="_blank"><i class="bi bi-printer"></i> 打印 / PDF</a>
         <a class="btn btn-sm btn-outline-primary" href="/api/documents/${d.id}/pdf"><i class="bi bi-file-earmark-pdf"></i> 下载 PDF</a>
+        <a class="btn btn-sm btn-outline-primary" href="/api/documents/${d.id}/export.png" title="导出单据图片"><i class="bi bi-image"></i> 导出图片</a>
         ${!isPo ? `<button class="btn btn-sm btn-success" type="button" data-bs-toggle="collapse" data-bs-target="#waSharePanel" aria-expanded="false" aria-controls="waSharePanel"><i class="bi bi-whatsapp"></i> 发送到 WhatsApp</button>` : ''}
         <a class="btn btn-sm btn-outline-success" href="/api/documents/${d.id}/export.xlsx"><i class="bi bi-file-earmark-excel"></i> 导出 Excel</a>
         <a class="btn btn-sm btn-outline-secondary" href="/documents/${d.id}/edit"><i class="bi bi-pencil"></i> 编辑</a>
@@ -317,7 +322,8 @@ function documentFormPage(ctx) {
   const supOpts = [{ v: '', l: '— 请选择供应商 —' }].concat(suppliers.map(s => ({ v: String(s.id), l: s.name + (s.country ? '（' + s.country + '）' : '') })));
   const custOpts = [{ v: '', l: '— 请选择客户 —' }].concat(customers.map(c => ({ v: String(c.id), l: c.company_name + (c.country ? '（' + c.country + '）' : '') })));
   const tplOpts = templates.map(t => ({ v: String(t.id), l: (t.is_system ? '[系统] ' : '[自定义] ') + t.name }));
-  const curOpts = ['USD', 'EUR', 'CNY', 'GBP', 'JPY', 'AUD'].map(s => ({ v: s, l: s }));
+  def.currency = payments.currencyCode(def.currency);
+  const curOpts = payments.currencyOptions(def.currency);
   const customersJson = JSON.stringify(customers.map(c => ({ id: c.id, name: c.company_name, name_en: c.name_en || '', country: c.country || '' })));
 
   const itemRowsHtml = items.map((it, i) => itemRowHtml(it, i)).join('');

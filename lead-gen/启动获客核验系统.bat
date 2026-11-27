@@ -1,10 +1,10 @@
 @echo off
 chcp 65001 >nul
 cd /d "%~dp0"
-title 获客工作台 - Lead Suite
+title 获客核验系统 - Lead Verifier
 echo.
 echo ============================================
-echo    获客工作台正在启动...
+echo    获客核验系统正在启动...
 echo ============================================
 where node >nul 2>nul
 if errorlevel 1 (

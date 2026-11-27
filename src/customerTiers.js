@@ -53,7 +53,7 @@ function maxDate() {
 
 function currencyRate(currency) {
   const key = String(currency || 'CNY').trim().toUpperCase();
-  return CURRENCY_TO_CNY[key] || 1;
+  return key === 'NGN' ? 0 : (CURRENCY_TO_CNY[key] || 1);
 }
 
 function round(n, digits) {
@@ -144,7 +144,7 @@ function calculateForUser(userId, now) {
   const paidRows = all(`SELECT d.customer_id, d.currency, COALESCE(SUM(pr.amount),0) amount,
       COUNT(DISTINCT pr.doc_id) orders, MAX(pr.paid_at) last_paid
     FROM payment_records pr JOIN documents d ON d.id=pr.doc_id
-    WHERE d.user_id=? AND substr(COALESCE(pr.paid_at,d.created_at),1,19)>=?
+    WHERE d.user_id=? AND COALESCE(d.status,'')<>'已作废' AND substr(COALESCE(pr.paid_at,d.created_at),1,19)>=?
     GROUP BY d.customer_id, d.currency`, uid, since12);
   for (const row of paidRows) {
     const m = metric(row.customer_id);

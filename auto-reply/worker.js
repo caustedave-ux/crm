@@ -15,6 +15,8 @@ const CONFIG_PATH = path.join(DIR, 'config.json');
 const STATE_PATH = path.join(DIR, 'state.db');
 const PID_PATH = path.join(DIR, 'worker.pid');
 const CRM_DB_PATH = path.resolve(DIR, '..', 'data', 'crm.db');
+const FOLLOWUP_QUESTION_BLOCKED = '跟进草稿重复提问或询问国家';
+const FACEBOOK_CLOSING_TAG = 'facebook_invitation';
 
 let cfg = loadConfig();
 let state = null;
@@ -384,6 +386,11 @@ function recordLog(row) {
     row.reason || '', row.draft || '', Number(row.messageCount) || 0, Number(row.fileCount) || 0, row.at || nowStr());
 }
 
+function sentFacebookInvitation(chatKey) {
+  return state.prepare("SELECT msg_db_id FROM sent_log WHERE chat_key=? AND action='sent' AND reason LIKE ? ORDER BY id DESC LIMIT 1")
+    .get(chatKey, '%｜' + FACEBOOK_CLOSING_TAG);
+}
+
 /**
  * 客户给出具体需求转人工 → 给主系统写一条强弹窗通知（POST /api/notifications）。
  * 只在“客户给出具体需求”这类转人工事件调用（decision.notify 为真）；
@@ -510,6 +517,7 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
   const q = getQualification(chatKey);
   let verdict = null;
   let decision = null;
+  let offTopicClosing = false;
 
   if (logic.isQualified(q)) {
     // 已精准：不再重复调用 AI；只有客户明确提到新目的时才切换素材类型
@@ -531,9 +539,11 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
     verdict = judge.verdict;
     // 老客户直发要交叉核对会话是否已绑定客户（M4），只靠 AI 的 existingCustomer 信号不够
     decision = logic.decideQualification(verdict, q, cfg.qualify, { customerBound: !!chat.customer_id });
+    offTopicClosing = logic.shouldCloseOffTopic(verdict, decision, q)
+      && !logic.isRefusal(customerText) && (getFollowup(chatKey)?.not_interested_until || '') <= nowStr();
     // 保存判定状态；ask 分支的轮次先不加（M7：回复为空或发送失败不计轮数，成功发出追问后才加 1）
     saveQualification(chatKey, {
-      status: decision.status,
+      status: offTopicClosing ? 'pending' : decision.status,
       precision: decision.precision,
       purpose: decision.purpose,
       language: verdict.language,
@@ -563,6 +573,17 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
     log('INFO', name + '：' + decision.reason + '，不发消息');
     return true;
   }
+  if (offTopicClosing) {
+    const markClosed = () => state.prepare("UPDATE qualification SET status='done',updated_at=? WHERE chat_key=?").run(nowStr(), chatKey);
+    if (sentFacebookInvitation(chatKey)) {
+      markClosed();
+      return true;
+    }
+    const invitation = logic.facebookInvitation(verdict.language);
+    const delivered = await deliver(chat, chatKey, msgId, [{ type: 'text', text: invitation }], invitation, FACEBOOK_CLOSING_TAG);
+    if (delivered?.sent) markClosed();
+    return !!(delivered && (delivered.sent || delivered.dry || delivered.skipped));
+  }
   if (decision.action === 'hold') {
     recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'hold', reason: decision.reason + '｜' + verdict.evidence, draft: verdict.reply });
     log('WARN', name + '：' + decision.reason);
@@ -571,6 +592,10 @@ async function processQualified(item, chat, chatKey, msgId, customerText, hitSen
     return true;
   }
   if (decision.action === 'ask') {
+    if (verdict.suppressed) {
+      recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'skip', reason: '回复草稿重复提问或询问国家' });
+      return true;
+    }
     if (!verdict.reply) {
       recordLog({ msgDbId: msgId, chatKey, chatName: name, action: 'error', reason: 'AI 未生成追问文本' });
       return false;
@@ -686,12 +711,23 @@ function buildJudgeContext(item, chat, hitSensitive) {
   if (adBits.length) profile += '｜客户来自广告：' + adBits.join('；');
   if (hitSensitive && hitSensitive.length) profile += '｜客户消息命中词：' + hitSensitive.join('、');
   let transcript = '';
+  let hasOutgoing = false;
+  let previousQuestions = [];
   try {
     const rows = crm.prepare(`SELECT from_me, text FROM wa_messages
       WHERE account_id=? AND chat_jid=? ORDER BY id DESC LIMIT 20`).all(item.account_id, item.chat_jid).reverse();
     transcript = rows.map(m => (Number(m.from_me) ? '我方' : '客户') + '：' + String(m.text || '').slice(0, 500)).join('\n');
+    hasOutgoing = !!crm.prepare('SELECT 1 FROM wa_messages WHERE account_id=? AND chat_jid=? AND from_me=1 LIMIT 1')
+      .get(item.account_id, item.chat_jid);
+    if (hasOutgoing) {
+      const asked = crm.prepare(`SELECT text FROM wa_messages WHERE account_id=? AND chat_jid=? AND from_me=1
+        AND (instr(text,'?')>0 OR instr(text,'？')>0 OR instr(text,'؟')>0) ORDER BY id DESC LIMIT 40`)
+        .all(item.account_id, item.chat_jid);
+      previousQuestions = [...new Set(asked.flatMap(row => row.text.match(/[^.!?\n。！？؟]+[?？؟]/g) || [])
+        .map(question => question.trim().slice(-280)))].slice(0, 40);
+    }
   } catch (e) { transcript = '客户最新消息：' + item.text; }
-  return { customerText: item.text, transcript, customerProfile: profile };
+  return { customerText: item.text, transcript, customerProfile: profile, numberRegion: logic.phoneNumberRegion(chat), hasOutgoing, previousQuestions };
 }
 
 /** 统一投递：观察模式只记不发；真实模式逐条发送并二次确认
@@ -713,6 +749,10 @@ async function deliver(chat, chatKey, msgId, sends, summary, tag, opts) {
     return { sent: false, skipped: true };
   }
   const freshLast = getLastMsg(chat.account_id, chat.jid);
+  if (tag === FACEBOOK_CLOSING_TAG && (Number(getLastCustomerMsg(chat.account_id, chat.jid)?.id) !== Number(msgId)
+    || (opts?.skipHumanCheck && humanTookOver(chat, chatKey)))) {
+    return { sent: false, skipped: true };
+  }
   if (!opts || !opts.skipHumanCheck) {
     if (logic.humanReplied(freshLast) && Number(freshLast.id) > msgId) {
       recordLog({ msgDbId: msgId, chatKey, chatName: chat.name, action: 'skip', reason: '发送前人工已回复，放弃' });
@@ -901,6 +941,7 @@ async function processFollowup(q, fcfg) {
   // AI 判过明确无采购意向且在 14 天内 → 不跟进
   try {
     const flags = JSON.parse(q.risk_flags || '[]');
+    if (logic.hasBlockingRisk(flags)) return;
     if (flags.includes('no_purchase_intent')) {
       const upd = logic.parseTs(q.updated_at || '');
       if (upd !== null && Date.now() - upd < 14 * 86400000) return;
@@ -910,16 +951,25 @@ async function processFollowup(q, fcfg) {
   if (humanTookOver(chat, chatKey)) return;
   const lastCustomer = getLastCustomerMsg(accountId, jid);
   if (!lastCustomer) return;
+  if (logic.isRefusal(lastCustomer.text) || logic.HARD_STOP_RE.test(lastCustomer.text || '')) return;
+  const priorInvitation = sentFacebookInvitation(chatKey);
+  if (Number(priorInvitation?.msg_db_id) === Number(lastCustomer.id)) return;
+  const draftBlocked = !!state.prepare("SELECT 1 FROM sent_log WHERE chat_key=? AND msg_db_id=? AND action='skip' AND reason=? LIMIT 1")
+    .get(chatKey, lastCustomer.id, FOLLOWUP_QUESTION_BLOCKED);
   const silence = logic.silenceHours(lastCustomer.ts, Date.now());
-  const lastFuAt = fu.last_followup_at || '';
+  const minSilence = Number(fcfg.minSilenceHours) || 24;
+  const maxFollowups = Number(fcfg.maxFollowups) || 2;
+  if (draftBlocked && (silence === null || silence < minSilence * (maxFollowups + 1))) return;
+  const lastFuAt = fu.last_followup_at || (draftBlocked ? lastAutoReplyAt(chatKey) : '');
   const silenceSinceFu = lastFuAt ? logic.silenceHours(lastFuAt, Date.now()) : null;
   const due = logic.followupDue({
-    followupsSent: Number(fu.followups_sent) || 0,
+    followupsSent: draftBlocked ? maxFollowups : Number(fu.followups_sent) || 0,
     closingSent: !!fu.closing_sent,
     silenceHours: silence,
     silenceSinceFollowupHours: silenceSinceFu,
   }, fcfg);
   if (!due.due) return;
+  if (due.kind === 'closing' && priorInvitation) return;
   // 与回复共用同一套冷却和每天限额
   const quotaHit = logic.quotaExceeded(sentToday(), cfg.dailyLimit) ||
     (!chatSentToday(chatKey) && Number(cfg.dailyUniqueCustomers) > 0 && sentCustomersToday() >= Number(cfg.dailyUniqueCustomers));
@@ -936,20 +986,29 @@ async function processFollowup(q, fcfg) {
   }
   // 生成跟进内容：角度轮换 + 避开已发过的内容
   const angle = due.kind === 'closing' ? 'closing' : (Number(fu.followups_sent) === 0 ? 'new' : 'offer');
-  const ctx = buildJudgeContext({ account_id: accountId, chat_jid: jid, text: lastCustomer.text }, chat, []);
-  const gen = await require('./qualify').generateFollowup({
-    customerProfile: ctx.customerProfile,
-    transcript: ctx.transcript,
-    language: q.language || 'en',
-    angle,
-    previousTexts: fu.last_followup_text ? [fu.last_followup_text] : [],
-  });
+  let gen;
+  if (angle === 'closing') {
+    gen = { ok: true, text: logic.facebookInvitation(q.language) };
+  } else {
+    const ctx = buildJudgeContext({ account_id: accountId, chat_jid: jid, text: lastCustomer.text }, chat, []);
+    gen = await require('./qualify').generateFollowup({
+      ...ctx,
+      language: q.language || 'en',
+      angle,
+      previousTexts: fu.last_followup_text ? [fu.last_followup_text] : [],
+    });
+  }
+  if (gen.suppressed) {
+    recordLog({ msgDbId: lastCustomer.id, chatKey, chatName: chat.name, action: 'skip', reason: FOLLOWUP_QUESTION_BLOCKED });
+    return;
+  }
   if (!gen.ok) {
     recordLog({ msgDbId: lastCustomer.id, chatKey, chatName: chat.name, action: 'error', reason: '跟进内容生成失败：' + gen.error });
     log('ERROR', '跟进内容生成失败 ' + (chat.name || jid) + '：' + gen.error);
     return;
   }
-  const delivered = await deliver(chat, chatKey, lastCustomer.id, [{ type: 'text', text: gen.text }], gen.text, 'followup:' + angle, { skipHumanCheck: true });
+  const tag = angle === 'closing' ? FACEBOOK_CLOSING_TAG : 'followup:' + angle;
+  const delivered = await deliver(chat, chatKey, lastCustomer.id, [{ type: 'text', text: gen.text }], gen.text, tag, { skipHumanCheck: true });
   if (delivered && delivered.sent) {
     saveFollowup(chatKey, {
       followupsSent: due.kind === 'closing' ? (Number(fu.followups_sent) || 0) : (Number(fu.followups_sent) || 0) + 1,
@@ -1025,7 +1084,9 @@ async function main() {
   log('INFO', '资格判定：' + ((cfg.qualify && cfg.qualify.enabled) ? '【开启·先判精准再发素材】' : '【关闭·v1 简单模式】'));
   initState();
   initCrm();
-  require('./qualify').init(cfg, crm, log);
+  const qualify = require('./qualify');
+  qualify.init(cfg, crm, log);
+  if (cfg.qualify && cfg.qualify.enabled) log('INFO', '回复与跟进话术版本：' + qualify.PROMPT_VERSION);
   cookieUserId = await resolveUserId();
   if (cookieUserId) log('INFO', '当前登录账号 user_id=' + cookieUserId);
   else log('WARN', '未能解析登录账号，将不做会话归属校验（请确保 cookie 与会话属于同一账号）');

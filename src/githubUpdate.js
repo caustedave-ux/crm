@@ -59,7 +59,7 @@ function safeName(name) {
   // 二次防御：即使白名单被误改，也拒绝任何数据/敏感路径特征
   const n = String(name || '').replace(/\\/g, '/');
   if (!n || n.includes('..') || n.startsWith('/') || /^[A-Za-z]:/.test(n)) return false;
-  if (/(^|\/)(data|uploads|node_modules|\.git|auto-reply|\.workbuddy|suite\/data)(\/|$)/i.test(n)) return false;
+  if (/(^|\/)(data|uploads|node_modules|\.git|auto-reply|\.workbuddy|lead-gen\/data)(\/|$)/i.test(n)) return false;
   if (/\.(db|db-wal|db-shm|sqlite|log|pem|key|env)$/i.test(n)) return false;
   return true;
 }

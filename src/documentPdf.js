@@ -155,4 +155,60 @@ async function generateDocumentPdf(documentRow) {
   }
 }
 
-module.exports = { generateDocumentPdf, findBrowser, safeFilename };
+async function generateImage(html, selector) {
+  const baseUrl = pdfBaseUrl();
+  const completeHtml = String(html || '').replace('<head>', '<head><base href="' + baseUrl + '/">');
+  let browser = null;
+  try {
+    browser = await puppeteer.launch({
+      executablePath: findBrowser(),
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-proxy-server'],
+    });
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1200, height: 1000, deviceScaleFactor: 2 });
+    await page.setRequestInterception(true);
+    page.on('request', request => {
+      let allowed = request.url() === 'about:blank';
+      try { allowed = allowed || new URL(request.url()).origin === baseUrl; } catch (error) {}
+      if (allowed) request.continue().catch(() => {});
+      else request.abort('blockedbyclient').catch(() => {});
+    });
+    await page.setContent(completeHtml, { waitUntil: 'networkidle0', timeout: 30000 });
+    await page.evaluate(async () => { if (document.fonts && document.fonts.ready) await document.fonts.ready; });
+    await waitForImages(page);
+    const element = await page.$(selector);
+    if (!element) throw new Error('没有找到可导出的单据内容');
+    const dimensions = await element.evaluate(node => ({ width: node.scrollWidth, height: node.scrollHeight }));
+    if (dimensions.width > 6000 || dimensions.height > 16000) throw new Error('图片尺寸超过限制，请拆分明细后再导出');
+    const image = Buffer.from(await element.screenshot({ type: 'png', captureBeyondViewport: true }));
+    if (image.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('图片生成失败');
+    return image;
+  } finally {
+    if (browser) {
+      try { await browser.close(); } catch (error) {}
+    }
+  }
+}
+
+async function generateDocumentImage(documentRow) {
+  if (!documentRow) throw new Error('单据不存在');
+  const items = Array.isArray(documentRow.items) ? documentRow.items : docx.itemsFromDoc(documentRow);
+  const contentHtml = docx.renderDocument(documentRow, items);
+  const html = '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">' +
+    '<link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">' +
+    '<link rel="stylesheet" href="/static/vendor/bootstrap-icons/bootstrap-icons.min.css">' +
+    '<link rel="stylesheet" href="/static/css/print.css">' +
+    '<style>html,body{margin:0!important;padding:24px!important;background:#eef0f4!important}' +
+    '.paper{width:1080px!important;min-width:0!important;max-width:none!important;box-sizing:border-box!important;' +
+    'margin:0 auto!important;padding:42px!important;background:#fff!important;box-shadow:0 2px 10px rgba(15,23,42,.12)!important}</style>' +
+    '</head><body class="print-body"><div class="paper" id="imagePaper">' + contentHtml + '</div></body></html>';
+  return generateImage(html, '#imagePaper');
+}
+
+function safeImageFilename(value) {
+  const base = String(value || 'document').replace(/[\\/:*?"<>|\x00-\x1f\x7f]/g, '_').trim() || 'document';
+  return base + '.png';
+}
+
+module.exports = { generateDocumentPdf, generateDocumentImage, generateImage, findBrowser, safeFilename, safeImageFilename };

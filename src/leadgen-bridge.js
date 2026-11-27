@@ -1,14 +1,14 @@
 'use strict';
-// ============ 获客工作台系统集成桥 ============
-// 主 CRM 通过它探测 / 拉起独立的 suite 服务（默认 5101），
-// 并把局域网客户端正确导向同一台主机的获客端口。不侵入 suite 代码。
+// ============ 获客核验系统集成桥 ============
+// 主 CRM 通过它探测 / 拉起独立的 lead-gen 服务（默认 5101），
+// 并把局域网客户端正确导向同一台主机的获客端口。不侵入 lead-gen 代码。
 const net = require('net');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
 const PORT = parseInt(process.env.LEADGEN_PORT || '5101', 10);
-const LG_DIR = path.join(__dirname, '..', 'suite');
+const LG_DIR = path.join(__dirname, '..', 'lead-gen');
 const ENTRY = path.join(LG_DIR, 'server.js');
 
 // 探测端口是否已监听（连接即算在线，随后立即断开）。
@@ -28,7 +28,7 @@ function isOnline() { return portOpen(PORT); }
 // 确保获客服务在线：已在线则直接返回；否则拉起并最多等待约 4 秒。
 async function ensureLeadGen() {
   if (await portOpen(PORT)) return { ok: true, action: 'already' };
-  if (!fs.existsSync(ENTRY)) return { ok: false, reason: '未找到 suite/server.js' };
+  if (!fs.existsSync(ENTRY)) return { ok: false, reason: '未找到 lead-gen/server.js' };
 
   let logFd = 'ignore';
   try { logFd = fs.openSync(path.join(LG_DIR, 'autostart.log'), 'a'); } catch (e) {}
@@ -44,7 +44,7 @@ async function ensureLeadGen() {
     });
     child.unref();
     if (typeof logFd === 'number') { try { fs.closeSync(logFd); } catch (e) {} }
-    console.log('[获客工作台] 已拉起独立服务，PID ' + child.pid + '，端口 ' + PORT);
+    console.log('[获客核验] 已拉起独立服务，PID ' + child.pid + '，端口 ' + PORT);
   } catch (e) {
     return { ok: false, reason: e.message };
   }
