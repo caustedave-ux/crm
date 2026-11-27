@@ -109,7 +109,7 @@ function registerRoutes(app, router) {
       if (now - v.firstFailAt > LOGIN_WINDOW_MS) loginFailures.delete(k);
     }
   }, 5 * 60 * 1000).unref();
-  router.post('/login', (ctx) => {
+  router.post('/login', async (ctx) => {
     const username = String(ctx.body.username || '').trim();
     const password = String(ctx.body.password || '');
     const failKey = getClientIp(ctx) + ':' + username.toLowerCase();
@@ -120,7 +120,7 @@ function registerRoutes(app, router) {
     }
     if (failEntry && now - failEntry.firstFailAt > LOGIN_WINDOW_MS) loginFailures.delete(failKey);
     const user = get('SELECT * FROM users WHERE username=? AND active=1', username);
-    if (!user || !auth.verifyPassword(password, user.password_hash)) {
+    if (!user || !(await auth.verifyPasswordAsync(password, user.password_hash))) {
       const prev = loginFailures.get(failKey);
       if (!prev || now - prev.firstFailAt > LOGIN_WINDOW_MS) loginFailures.set(failKey, { count: 1, firstFailAt: now });
       else prev.count += 1;
@@ -341,11 +341,11 @@ function registerRoutes(app, router) {
     for (const id of ids) {
       const customer = get('SELECT * FROM customers WHERE id=? AND user_id=? AND COALESCE(in_pool,0)=0', id, ctx.user.id);
       if (!customer) { skip++; continue; }
-      const docs = get('SELECT COUNT(*) c FROM documents WHERE customer_id=? AND user_id=?', id, ctx.user.id).c;
+      const docs = get('SELECT COUNT(*) c FROM documents WHERE customer_id=?', id).c;
       if (docs > 0) { skip++; continue; }
       run('DELETE FROM contacts WHERE customer_id=?', id);
       run('DELETE FROM activities WHERE customer_id=?', id);
-      run('DELETE FROM customers WHERE id=? AND user_id=?', id, ctx.user.id);
+      run('DELETE FROM customers WHERE id=?', id);
       n++;
     }
     const msg = '已批量删除 ' + n + ' 家客户' + (skip ? '；跳过 ' + skip + ' 家（非本人或存在单据）' : '');
@@ -475,8 +475,8 @@ function registerRoutes(app, router) {
     ok(ctx, '客户创建成功', '/customers/' + id);
   });
   router.post('/customers/:id/edit', (ctx) => {
-    const own = get('SELECT * FROM customers WHERE id=? AND user_id=? AND COALESCE(in_pool,0)=0', ctx.params.id, ctx.user.id);
-    if (!own) return fail(ctx, '客户不存在或无权编辑', '/customers');
+    const own = get('SELECT * FROM customers WHERE id=? AND COALESCE(in_pool,0)=0', ctx.params.id);
+    if (!own) return fail(ctx, '客户不存在', '/customers'); if (ctx.user.role !== 'admin' && own.user_id !== ctx.user.id) return fail(ctx, '无权限编辑该客户', '/customers');
     if (ctx.body.phone_code) ctx.body.phone = makePhone(ctx.body.phone_code, ctx.body.phone);
     // 未勾选的 checkbox 不会随表单提交，编辑页必须显式落为 0，否则无法解除“禁止联系”。
     ctx.body.do_not_contact = ctx.body.do_not_contact === '1' ? 1 : 0;
@@ -488,13 +488,13 @@ function registerRoutes(app, router) {
   });
   router.post('/customers/:id/delete', (ctx) => {
     const id = ctx.params.id;
-    const own = get('SELECT * FROM customers WHERE id=? AND user_id=? AND COALESCE(in_pool,0)=0', id, ctx.user.id);
-    if (!own) return fail(ctx, '客户不存在或无权删除', '/customers');
-    const docs = get('SELECT COUNT(*) c FROM documents WHERE customer_id=? AND user_id=?', id, ctx.user.id).c;
+    const own = get('SELECT * FROM customers WHERE id=? AND COALESCE(in_pool,0)=0', id);
+    if (!own) return fail(ctx, '客户不存在', '/customers'); if (ctx.user.role !== 'admin' && own.user_id !== ctx.user.id) return fail(ctx, '无权限删除该客户', '/customers');
+    const docs = get('SELECT COUNT(*) c FROM documents WHERE customer_id=?', id).c;
     if (docs > 0) return fail(ctx, '该客户下存在单据，无法删除', '/customers');
     run('DELETE FROM contacts WHERE customer_id=?', id);
     run('DELETE FROM activities WHERE customer_id=?', id);
-    run('DELETE FROM customers WHERE id=? AND user_id=?', id, ctx.user.id);
+    run('DELETE FROM customers WHERE id=?', id);
     ok(ctx, '客户已删除', '/customers');
   });
   router.post('/customers/:id/contacts/new', (ctx) => {
@@ -1831,21 +1831,21 @@ function registerRoutes(app, router) {
     setCompany(data);
     ok(ctx, '公司资料已保存', '/settings');
   });
-  router.post('/settings/password', (ctx) => {
+  router.post('/settings/password', async (ctx) => {
     const u = get('SELECT * FROM users WHERE id=?', ctx.user.id);
-    if (!auth.verifyPassword(ctx.body.current_password || '', u.password_hash)) return fail(ctx, '当前密码不正确', '/settings');
+    if (!(await auth.verifyPasswordAsync(ctx.body.current_password || '', u.password_hash))) return fail(ctx, '当前密码不正确', '/settings');
     if (String(ctx.body.new_password || '').length < 4) return fail(ctx, '新密码至少 4 位', '/settings');
     if (ctx.body.new_password !== ctx.body.confirm_password) return fail(ctx, '两次输入的新密码不一致', '/settings');
-    run('UPDATE users SET password_hash=? WHERE id=?', auth.hashPassword(ctx.body.new_password), u.id);
+    run('UPDATE users SET password_hash=? WHERE id=?', await auth.hashPasswordAsync(ctx.body.new_password), u.id);
     ok(ctx, '密码已修改，下次登录请使用新密码', '/settings');
   });
-  router.post('/settings/users/new', (ctx) => {
+  router.post('/settings/users/new', async (ctx) => {
     if (ctx.user.role !== 'admin') return ctx.res.json(403, { error: '仅管理员可操作' });
     const username = String(ctx.body.username || '').trim();
     if (!/^[A-Za-z0-9_]{2,20}$/.test(username)) return fail(ctx, '用户名需为 2-20 位字母/数字/下划线', '/settings');
     if (get('SELECT * FROM users WHERE username=?', username)) return fail(ctx, '用户名已存在', '/settings');
     run('INSERT INTO users(username,password_hash,display_name,role,active,created_at) VALUES(?,?,?,?,1,?)',
-      username, auth.hashPassword(ctx.body.password || '1234'), ctx.body.display_name || username, ctx.body.role === 'admin' ? 'admin' : 'staff', nowStr());
+      username, await auth.hashPasswordAsync(ctx.body.password || '1234'), ctx.body.display_name || username, ctx.body.role === 'admin' ? 'admin' : 'staff', nowStr());
     ok(ctx, '用户已添加', '/settings');
   });
   router.post('/settings/users/:id/toggle', (ctx) => {
@@ -1856,13 +1856,13 @@ function registerRoutes(app, router) {
     run('UPDATE users SET active=? WHERE id=?', u.active ? 0 : 1, u.id);
     ok(ctx, '已更新用户状态', '/settings');
   });
-  router.post('/settings/users/:id/password', (ctx) => {
+  router.post('/settings/users/:id/password', async (ctx) => {
     if (ctx.user.role !== 'admin') return ctx.res.json(403, {});
     const u = get('SELECT * FROM users WHERE id=?', ctx.params.id);
     if (!u) return ctx.res.redirect('/settings');
     const pw = String(ctx.body.new_password || '');
     if (pw.length < 4) return fail(ctx, '新密码至少 4 位', '/settings');
-    run('UPDATE users SET password_hash=? WHERE id=?', auth.hashPassword(pw), u.id);
+    run('UPDATE users SET password_hash=? WHERE id=?', await auth.hashPasswordAsync(pw), u.id);
     ok(ctx, '已重置 ' + u.display_name + ' 的密码', '/settings');
   });
   router.post('/settings/users/:id/delete', (ctx) => {
