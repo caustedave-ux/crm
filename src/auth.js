@@ -24,18 +24,18 @@ function parseCookies(header) {
   if (!header) return out;
   for (const part of header.split(';')) {
     const i = part.indexOf('=');
-    if (i > 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+    if (i > 0) { const k = part.slice(0, i).trim(); const v = part.slice(i + 1).trim(); try { out[k] = decodeURIComponent(v); } catch { out[k] = v; } }
   }
   return out;
 }
 
 function findUserBySession(token) {
   if (!token) return null;
-  const row = get('SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>=? AND u.active=1', token, nowStr());
+  const row = get('SELECT u.id, u.username, u.display_name, u.role, u.active, u.created_at FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>=? AND u.active=1', token, nowStr());
   return row || null;
 }
 
-function createSession(userId) {
+function createSession(userId) { run('DELETE FROM sessions WHERE expires_at < ?', nowStr());
   const token = randomToken(32);
   const exp = new Date(Date.now() + SESSION_DAYS * 86400000);
   const expStr = exp.getFullYear() + '-' + String(exp.getMonth() + 1).padStart(2, '0') + '-' + String(exp.getDate()).padStart(2, '0') + ' 23:59:59';
