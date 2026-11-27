@@ -1,6 +1,9 @@
 'use strict';
 // ============ 登录 / 会话鉴权 ============
 const crypto = require('crypto');
+const util = require('util');
+const scryptAsync = util.promisify(crypto.scrypt);
+const MAX_PASSWORD_LEN = 1024;
 const { run, get, all } = require('./db');
 const { nowStr, randomToken } = require('./util');
 
@@ -15,6 +18,23 @@ function verifyPassword(password, stored) {
   if (!stored || !stored.includes(':')) return false;
   const [salt, hash] = stored.split(':');
   const test = crypto.scryptSync(String(password), salt, 64);
+  const expect = Buffer.from(hash, 'hex');
+  return test.length === expect.length && crypto.timingSafeEqual(test, expect);
+}
+async function hashPasswordAsync(password) {
+  const pwd = String(password == null ? '' : password);
+  if (pwd.length > MAX_PASSWORD_LEN) throw new Error('Password exceeds maximum length');
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derived = await scryptAsync(pwd, salt, 64);
+  return salt + ':' + derived.toString('hex');
+}
+async function verifyPasswordAsync(password, stored) {
+  if (!stored || !stored.includes(':')) return false;
+  const pwd = String(password == null ? '' : password);
+  if (pwd.length > MAX_PASSWORD_LEN) return false;
+  const [salt, hash] = stored.split(':');
+  if (!salt || !hash) return false;
+  const test = await scryptAsync(pwd, salt, 64);
   const expect = Buffer.from(hash, 'hex');
   return test.length === expect.length && crypto.timingSafeEqual(test, expect);
 }
@@ -70,4 +90,4 @@ function requireAdmin(req, res, next) {
   return res.json(403, { error: '无权限，仅管理员可操作' });
 }
 
-module.exports = { hashPassword, verifyPassword, parseCookies, authUser, createSession, destroySession, findUserBySession, requireAuth, requireAdmin };
+module.exports = { hashPasswordAsync, verifyPasswordAsync, hashPassword, verifyPassword, parseCookies, authUser, createSession, destroySession, findUserBySession, requireAuth, requireAdmin };
