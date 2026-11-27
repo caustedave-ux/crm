@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const dbx = require('./db');
-const { run, get, all, getCompany, setCompany, getSetting, setSetting, DOC_TYPES, DOC_TYPE_MAP, DOC_STATUS, syncProductToSupplier } = dbx;
+const { run, get, all, transaction, getCompany, setCompany, getSetting, setSetting, DOC_TYPES, DOC_TYPE_MAP, DOC_STATUS, syncProductToSupplier } = dbx;
 const auth = require('./auth');
 const docx = require('./documents');
 const documentPdf = require('./documentPdf');
@@ -95,13 +95,38 @@ function registerRoutes(app, router) {
     if (auth.authUser(ctx.req, ctx.res)) return ctx.res.redirect('/dashboard');
     ctx.res.send(loginPage({ flash: [], next: ctx.query.next || '/dashboard' }));
   });
+  const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+  const LOGIN_MAX_ATTEMPTS = 5;
+  const loginFailures = new Map();
+  function getClientIp(ctx) {
+    const fwd = ctx.req && ctx.req.headers && ctx.req.headers['x-forwarded-for'];
+    if (fwd) return String(fwd).split(',')[0].trim() || 'unknown';
+    return (ctx.req && ctx.req.socket && ctx.req.socket.remoteAddress) || 'unknown';
+  }
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, v] of loginFailures.entries()) {
+      if (now - v.firstFailAt > LOGIN_WINDOW_MS) loginFailures.delete(k);
+    }
+  }, 5 * 60 * 1000).unref();
   router.post('/login', (ctx) => {
     const username = String(ctx.body.username || '').trim();
     const password = String(ctx.body.password || '');
+    const failKey = getClientIp(ctx) + ':' + username.toLowerCase();
+    const now = Date.now();
+    const failEntry = loginFailures.get(failKey);
+    if (failEntry && now - failEntry.firstFailAt <= LOGIN_WINDOW_MS && failEntry.count >= LOGIN_MAX_ATTEMPTS) {
+      return ctx.res.send(loginPage({ flash: [{ category: 'danger', msg: '登录失败次数过多，请 15 分钟后再试' }], next: ctx.body.next || '/dashboard' }));
+    }
+    if (failEntry && now - failEntry.firstFailAt > LOGIN_WINDOW_MS) loginFailures.delete(failKey);
     const user = get('SELECT * FROM users WHERE username=? AND active=1', username);
     if (!user || !auth.verifyPassword(password, user.password_hash)) {
+      const prev = loginFailures.get(failKey);
+      if (!prev || now - prev.firstFailAt > LOGIN_WINDOW_MS) loginFailures.set(failKey, { count: 1, firstFailAt: now });
+      else prev.count += 1;
       return ctx.res.send(loginPage({ flash: [{ category: 'danger', msg: '用户名或密码错误' }], next: ctx.body.next || '/dashboard' }));
     }
+    loginFailures.delete(failKey);
     const token = auth.createSession(user.id);
     ctx.res.setCookie('crm_sid', token, { maxAge: 30 * 86400 });
     let next = String(ctx.body.next || '/dashboard');
@@ -268,7 +293,7 @@ function registerRoutes(app, router) {
       });
       ctx.res.end(image);
     } catch (error) {
-      ctx.res.json(500, { error: '报价图片生成失败：' + error.message });
+      console.error('报价图片生成失败:', error); ctx.res.json(500, { error: '报价图片生成失败，请稍后重试' });
     }
   });
   router.get('/templates', (ctx) => ctx.res.send(pagesDocs.templatesPage(ctx)));
@@ -939,7 +964,7 @@ function registerRoutes(app, router) {
       const r = await wa.draftReply(ctx.user.id, chat.id);
       ctx.res.json(r.ok ? 200 : 400, r);
     } catch (e) {
-      ctx.res.json(500, { ok: false, error: e.message });
+      console.error('请求处理失败:', e); ctx.res.json(500, { ok: false, error: '请求处理失败，请稍后重试' });
     }
   });
 
@@ -968,7 +993,7 @@ function registerRoutes(app, router) {
       const r = await wa.callTranslate(text, target);
       return ctx.res.json(r.ok ? 200 : 400, r);
     } catch (e) {
-      return ctx.res.json(500, { ok: false, error: e.message });
+      console.error('翻译请求失败:', e); return ctx.res.json(500, { ok: false, error: '翻译暂时失败，请稍后重试' });
     }
   });
 
@@ -1669,7 +1694,7 @@ function registerRoutes(app, router) {
       });
       ctx.res.end(pdf);
     } catch (e) {
-      ctx.res.json(500, { error: 'PDF 生成失败：' + e.message });
+      console.error('PDF 生成失败:', e); ctx.res.json(500, { error: 'PDF 生成失败，请稍后重试' });
     }
   });
 
@@ -1688,7 +1713,7 @@ function registerRoutes(app, router) {
       });
       ctx.res.end(imageBuffer);
     } catch (error) {
-      ctx.res.json(500, { error: '单据图片生成失败：' + error.message });
+      console.error('单据图片生成失败:', error); ctx.res.json(500, { error: '单据图片生成失败，请稍后重试' });
     }
   });
 
@@ -2779,6 +2804,7 @@ function syncEmbeddedContacts(customerId, b) {
     const m = k.match(/^ct_(?:name|id|delete)__(\d+)$/);
     if (m && idxs.indexOf(m[1]) < 0) idxs.push(m[1]);
   }
+  transaction(() => {
   const idxNewId = {};
   const kept = [];
   for (const idx of idxs) {
@@ -2813,6 +2839,7 @@ function syncEmbeddedContacts(customerId, b) {
   }
   if (!pcid && kept.length) pcid = kept[0];
   if (pcid) run('UPDATE contacts SET is_primary=1 WHERE id=? AND customer_id=?', pcid, customerId);
+  });
 }
 function insertActivity(customerId, b, user, id) {
   const actDate = b.activity_date ? b.activity_date.replace('T', ' ') : nowStr();
