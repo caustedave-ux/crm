@@ -13,10 +13,13 @@ const DB_PATH = process.env.CRM_DB || path.join(DATA_DIR, 'crm.db');
 const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA journal_mode=WAL;');
 db.exec('PRAGMA foreign_keys=ON;');
-
-function run(sql, ...p) { return db.prepare(sql).run(...p); }
-function get(sql, ...p) { return db.prepare(sql).get(...p); }
-function all(sql, ...p) { return db.prepare(sql).all(...p); }
+db.exec('PRAGMA busy_timeout = 5000;');
+const STMT_CACHE_MAX = 200; const stmtCache = new Map();
+function prepareCached(sql) { let s = stmtCache.get(sql); if (s) { stmtCache.delete(sql); stmtCache.set(sql, s); return s; } s = db.prepare(sql); if (stmtCache.size >= STMT_CACHE_MAX) stmtCache.delete(stmtCache.keys().next().value); stmtCache.set(sql, s); return s; }
+function transaction(fn) { db.exec('BEGIN'); try { const r = fn(); db.exec('COMMIT'); return r; } catch (e) { try { db.exec('ROLLBACK'); } catch (_) {} throw e; } }
+function run(sql, ...p) { return prepareCached(sql).run(...p); }
+function get(sql, ...p) { return prepareCached(sql).get(...p); }
+function all(sql, ...p) { return prepareCached(sql).all(...p); }
 
 // ---------- 建表 ----------
 db.exec(`
@@ -1140,7 +1143,7 @@ function backupNow() {
     const allFiles = fs.readdirSync(dir).filter(n => n.startsWith('crm-') && n.endsWith('.db'))
       .map(n => ({ n, p: path.join(dir, n) }))
       .sort((a, b) => fs.statSync(b.p).mtimeMs - fs.statSync(a.p).mtimeMs);
-    for (const x of allFiles.slice(30)) { try { fs.unlinkSync(x.p); } catch (e) {} }
+    for (const x of allFiles.slice(30)) { try { fs.unlinkSync(x.p); } catch (e) { console.warn('清理旧备份失败:', x.p, e.message); } }
     return file;
   } catch (e) {
     console.error('数据库自动备份失败：', e.message);
@@ -1148,7 +1151,7 @@ function backupNow() {
   }
 }
 
-module.exports = { db, run, get, all, getSetting, setSetting, getCompany, setCompany, seedBase, ensureDefaultTemplates, DB_PATH, DOC_TYPES, DOC_TYPE_MAP, DOC_STATUS, backupNow, syncProductToSupplier };
+module.exports = { db, run, get, all, transaction, getSetting, setSetting, getCompany, setCompany, seedBase, ensureDefaultTemplates, DB_PATH, DOC_TYPES, DOC_TYPE_MAP, DOC_STATUS, backupNow, syncProductToSupplier };
 
 
 
