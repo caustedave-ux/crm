@@ -107,9 +107,9 @@ function questionTerms(question) {
 
 function relevantArticles(question, limit) {
   const terms = questionTerms(question);
-  if (!terms.length) return [];
+  const maxLimit = Math.max(1, Math.min(8, Number(limit) || 4)); if (!terms.length) return all('SELECT id,title,category,tags,content,product_id,updated_at FROM knowledge_articles ORDER BY updated_at DESC,id DESC LIMIT ?', maxLimit);
   const rows = all(`SELECT id,title,category,tags,content,product_id,updated_at
-    FROM knowledge_articles ORDER BY updated_at DESC,id DESC LIMIT 1000`);
+    FROM knowledge_articles WHERE ${terms.slice(0, 12).map(() => "(title LIKE ? ESCAPE '\\' OR tags LIKE ? ESCAPE '\\' OR content LIKE ? ESCAPE '\\')").join(' OR ')} ORDER BY updated_at DESC,id DESC LIMIT 120`, ...terms.slice(0, 12).flatMap(t => { const l = '%' + t.replace(/[\\%_]/g, '\\$&') + '%'; return [l, l, l]; })); if (!rows.length) return all('SELECT id,title,category,tags,content,product_id,updated_at FROM knowledge_articles ORDER BY updated_at DESC,id DESC LIMIT ?', maxLimit);
   const ranked = rows.map(article => {
     const title = String(article.title || '').toLowerCase();
     const tags = String(article.tags || '').toLowerCase();
