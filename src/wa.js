@@ -31,19 +31,29 @@ function waNow() {
   const p = n => String(n).padStart(2, '0');
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
 }
+let waLogQueue = Promise.resolve();
+function enqueueWaLogWrite(line, checkRotate) {
+  waLogQueue = waLogQueue.then(async () => {
+    try {
+      await fs.promises.appendFile(WA_LOG, line, 'utf8');
+      if (checkRotate) {
+        const st = await fs.promises.stat(WA_LOG);
+        if (st.size > 2 * 1024 * 1024) {
+          await fs.promises.rename(WA_LOG, WA_LOG + '.1'); // 2MB 轮转
+        }
+      }
+    } catch (e) {}
+  }).catch(() => {});
+}
 function waLog(...args) {
   const msg = args.map(a => (a && a.message) ? a.message : String(a)).join(' ');
   process.stdout.write('[wa] ' + msg + '\n');
-  try {
-    fs.appendFileSync(WA_LOG, waNow() + '  ' + msg + '\n', 'utf8');
-    const st = fs.statSync(WA_LOG);
-    if (st.size > 2 * 1024 * 1024) fs.renameSync(WA_LOG, WA_LOG + '.1');   // 2MB 轮转
-  } catch (e) {}
+  enqueueWaLogWrite(waNow() + ' ' + msg + '\n', true);
 }
 function waErr(...args) {
   const msg = args.map(a => (a && a.stack) ? a.stack : String(a)).join(' ');
   process.stderr.write('[wa] ' + msg + '\n');
-  try { fs.appendFileSync(WA_LOG, waNow() + '  !! ' + msg + '\n', 'utf8'); } catch (e) {}
+  enqueueWaLogWrite(waNow() + ' !! ' + msg + '\n', false);
 }
 
 const sessions = new Map();   // userId -> { sock, qr, status, error }
@@ -217,8 +227,8 @@ function buildAgent() {
     const { HttpsProxyAgent } = require('https-proxy-agent');
     return new HttpsProxyAgent(url);
   } catch (e) {
-    waErr('代理初始化失败：', e.message);
-    return null;
+    waErr('代理配置无效，已阻断直连:', e.message);
+    throw e;
   }
 }
 
@@ -234,8 +244,8 @@ function buildFetchDispatcher() {
     mediaDispatcherCache = { url, dispatcher: new ProxyAgent(url) };
     return mediaDispatcherCache.dispatcher;
   } catch (e) {
-    waErr('媒体下载代理初始化失败：', e.message);
-    return null;
+    waErr('媒体下载代理配置无效，已阻断直连:', e.message);
+    throw e;
   }
 }
 
