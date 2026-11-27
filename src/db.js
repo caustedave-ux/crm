@@ -1151,7 +1151,36 @@ function backupNow() {
   }
 }
 
-module.exports = { db, run, get, all, transaction, getSetting, setSetting, getCompany, setCompany, seedBase, ensureDefaultTemplates, DB_PATH, DOC_TYPES, DOC_TYPE_MAP, DOC_STATUS, backupNow, syncProductToSupplier };
+
+async function backupNowAsync() {
+  try {
+    const dir = path.join(DATA_DIR, 'backups');
+    await fs.promises.mkdir(dir, { recursive: true });
+    db.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+    const stamp = nowStr().replace(/[-: ]/g, '').slice(0, 14);
+    const file = path.join(dir, 'crm-' + stamp + '.db');
+    await fs.promises.copyFile(DB_PATH, file);
+    const names = (await fs.promises.readdir(dir)).filter(n => n.startsWith('crm-') && n.endsWith('.db'));
+    const stats = await Promise.all(names.map(async n => {
+      const p = path.join(dir, n);
+      const st = await fs.promises.stat(p);
+      return { n, p, mtimeMs: st.mtimeMs };
+    }));
+    stats.sort((a, b) => b.mtimeMs - a.mtimeMs);
+    for (const x of stats.slice(30)) {
+      try {
+        await fs.promises.unlink(x.p);
+      } catch (e) {
+        console.warn('清理旧备份失败:', x.p, e.message);
+      }
+    }
+    return file;
+  } catch (e) {
+    console.error('数据库自动备份失败:', e.message);
+    return null;
+  }
+}
+module.exports = { backupNowAsync, db, run, get, all, transaction, getSetting, setSetting, getCompany, setCompany, seedBase, ensureDefaultTemplates, DB_PATH, DOC_TYPES, DOC_TYPE_MAP, DOC_STATUS, backupNow, syncProductToSupplier };
 
 
 
