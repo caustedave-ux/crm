@@ -193,7 +193,8 @@ async function waitReady(timeoutMs) {
         rows.push({ route: 'POST /knowledge/:id ownership', status: forbiddenEdit.status === 302 && unchanged.title === kbTitle + ' Updated' ? 200 : 'ERR', note: '他人文章拒绝编辑' });
       }
     }
-
+    for (const p of ['/', '/customers', '/settings']) { try { const res = await fetch(BASE + p, { redirect: 'manual' }); const loc = res.headers.get('location') || ''; const ok = (res.status === 302 && /\/login(\?|$)/.test(loc)) || res.status === 401 || res.status === 403; rows.push({ route: 'UNAUTH ' + p, status: ok ? res.status : 'ERR', note: ok ? (res.status === 302 ? '→ ' + loc : '已拦截') : ('未拦截未登录访问: ' + res.status + (loc ? ' → ' + loc : '')) }); } catch (e) { rows.push({ route: 'UNAUTH ' + p, status: 'ERR', note: e.message }); } }
+    try { const res = await fetch(BASE + '/login', { redirect: 'manual' }); rows.push({ route: 'UNAUTH /login', status: res.status === 200 ? 200 : 'ERR', note: res.status === 200 ? '' : ('预期 200，实际 ' + res.status) }); } catch (e) { rows.push({ route: 'UNAUTH /login', status: 'ERR', note: e.message }); }
     const bad = rows.filter(r => r.status === 404 || r.status === 'ERR' || r.status === 'AUTH' || (typeof r.status === 'number' && r.status >= 500));
     const width = Math.max(...rows.map(r => r.route.length)) + 2;
     console.log('');
