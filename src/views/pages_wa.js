@@ -6,7 +6,7 @@ const { card, pageHead, badge } = require('./ui');
 const { all, get, getSetting, run, DOC_TYPE_MAP } = require('../db');
 const wa = require('../wa');
 const autoReplyControl = require('../autoReplyControl');
-const knowledgeBase = require('../knowledgeBase');
+const { chatNumber } = require('../waCustomerVerification');
 
 const WA_CATEGORY = Object.freeze({
   new: { key: 'new', label: '新询盘', className: 'wa-category-new' },
@@ -17,13 +17,6 @@ const WA_CATEGORY = Object.freeze({
 });
 const WA_CATEGORY_ORDER = ['new', 'following', 'won', 'lost', 'none'];
 const WA_CATEGORY_FILTERS = new Set(WA_CATEGORY_ORDER);
-
-function compareInboxChats(a, b) {
-  const unreadRank = row => Number(row && row.unread) > 0 ? 1 : 0;
-  return (unreadRank(b) - unreadRank(a)) ||
-    String((b && b.last_msg_at) || '').localeCompare(String((a && a.last_msg_at) || '')) ||
-    ((Number(b && b.id) || 0) - (Number(a && a.id) || 0));
-}
 
 function dayOf(value) {
   const s = String(value || '').trim();
@@ -103,14 +96,11 @@ function chatInsightsSql(whereSql, limit) {
       GROUP BY customer_id
     ) d ON d.customer_id=c.customer_id
     WHERE ${whereSql}
-    ORDER BY (CASE WHEN COALESCE(c.pinned_at,'')<>'' THEN 0 ELSE 1 END),
-      COALESCE(c.pinned_at,'') DESC,
-      (CASE WHEN COALESCE(c.unread,0)>0 THEN 0 ELSE 1 END),
-      COALESCE(c.last_msg_at,'') DESC, c.id DESC LIMIT ${safeLimit}`;
+    ORDER BY c.last_msg_at DESC, c.id DESC LIMIT ${safeLimit}`;
 }
 
-function loadChatInsights(userId, whereSql, whereArgs, limit) {
-  return all(chatInsightsSql(whereSql, limit), userId, userId, ...(whereArgs || []));
+function loadChatInsights(userId, whereSql, whereArgs, limit, offset = 0) {
+  return all(chatInsightsSql(whereSql, limit) + ' OFFSET ?', userId, userId, ...whereArgs, offset);
 }
 
 /* ---------------- 会话页 ---------------- */
@@ -304,7 +294,7 @@ function chatAvatarHtml(chat, eager) {
   return `<span class="wa-avatar-initials">${initials}</span><img src="/api/wa/avatar/${Number(chat.id)}" alt="${esc(chatLabel(chat))}"${loading} data-fallback="${fallback}" onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;this.removeAttribute('data-fallback');}else{this.remove();}">`;
 }
 
-function chatListHtml(chats, activeId, hrefFor, backUrl) {
+function chatListHtml(chats, activeId, hrefFor, backUrl, filter) {
   if (!chats.length) return `<div class="text-muted small py-3">
     没有符合条件的会话。<br>
     <span style="font-size:14px">清空搜索或切换筛选试试，或等待客户发来新消息。</span>
@@ -346,14 +336,10 @@ function chatListHtml(chats, activeId, hrefFor, backUrl) {
   </div>
 </div>`;
   };
-  const pinnedChats = chats.filter(isPinned)
-    .slice()
-    .sort((a, b) => String(b.pinned_at || '').localeCompare(String(a.pinned_at || '')));
-  const regularChats = chats.filter(c => !isPinned(c)).slice().sort(compareInboxChats);
-  const pinnedHtml = pinnedChats.length
-    ? `<div class="wa-pin-group-label"><i class="bi bi-pin-angle-fill"></i><span>置顶会话</span><b>${pinnedChats.length}</b></div>${pinnedChats.map(renderChat).join('')}`
+  const pinnedHtml = filter === 'pinned'
+    ? `<div class="wa-pin-group-label"><i class="bi bi-pin-angle-fill"></i><span>置顶会话</span><b>${chats.length}</b></div>`
     : '';
-  return pinnedHtml + regularChats.map(renderChat).join('');
+  return pinnedHtml + chats.map(renderChat).join('');
 }
 
 function parseQuotedPreview(value) {
@@ -475,10 +461,91 @@ function msgHtml(m, chat, byWaId) {
   </div>`;
 }
 
+const HISTORY_PAGE_SIZE = 30;
+const CHAT_PAGE_SIZE = 100;
+const CHAT_IS_PINNED = "TRIM(COALESCE(c.pinned_at,'')) <> ''";
+const CHAT_FILTERS = {
+  unread: 'c.unread > 0',
+  unbound: 'c.customer_id IS NULL',
+  bound: 'c.customer_id IS NOT NULL',
+  pinned: CHAT_IS_PINNED,
+};
+
+function searchMessageHistory(userId, filter, keyword, offset, todayRange) {
+  const pattern = '%' + keyword.replace(/[/%_]/g, '/$&') + '%';
+  const dateFilter = todayRange ? 'AND m.from_me=0 AND m.ts>=? AND m.ts<?' : '';
+  const textFilter = keyword ? "AND (m.text LIKE ? ESCAPE '/' OR m.translated LIKE ? ESCAPE '/' OR m.media_name LIKE ? ESCAPE '/')" : '';
+  return all(`SELECT m.id, m.text, m.translated, m.media_name, m.kind, m.ts, m.from_me, m.sender_name,
+      c.id AS chat_id, c.name, c.phone, c.jid, cu.company_name AS customer_name
+    FROM wa_chats c
+    JOIN wa_messages m ON m.account_id=c.account_id AND m.chat_jid=c.jid
+    LEFT JOIN customers cu ON cu.id=c.customer_id AND cu.user_id=?
+    WHERE ${wa.visibleChatsSql()} AND ${CHAT_FILTERS[filter] || '1=1'}
+      ${dateFilter} ${textFilter}
+    ORDER BY m.ts DESC, m.id DESC LIMIT ? OFFSET ?`,
+  userId, userId, userId, ...(todayRange || []), ...(keyword ? [pattern, pattern, pattern] : []),
+  HISTORY_PAGE_SIZE + 1, offset);
+}
+
+function historyPreview(message, keyword) {
+  const fields = [message.text, message.translated, message.media_name].filter(Boolean);
+  for (const field of fields) {
+    const index = field.toLowerCase().indexOf(keyword.toLowerCase());
+    if (index < 0) continue;
+    const start = Math.max(0, index - 24);
+    const end = Math.min(field.length, index + keyword.length + 60);
+    return (start ? '…' : '') + esc(field.slice(start, index))
+      + '<mark>' + esc(field.slice(index, index + keyword.length)) + '</mark>'
+      + esc(field.slice(index + keyword.length, end)) + (end < field.length ? '…' : '');
+  }
+  return esc(String(fields[0] || '').slice(0, 100));
+}
+
+function customerVerificationResultHtml({ number, country, type, valid, customers, business, web, links }) {
+  const externalLink = (url, label) => `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}<i class="bi bi-box-arrow-up-right ms-1" aria-hidden="true"></i></a>`;
+  const businessContent = business.state === 'complete'
+    ? `<ul class="list-unstyled mb-0">${business.fields.map(({ label, value }) => `<li><b>${esc(label)}</b> ${esc(value)}</li>`).join('')}
+       ${business.websites.map(url => `<li>${externalLink(url, url)}</li>`).join('')}</ul>`
+    : '<p>' + (business.state === 'empty' ? '未找到公开商家资料。' : '暂时无法查询，请检查当前 WhatsApp 账号的连接状态。') + '</p>';
+  const webContent = web.results.length
+    ? `<ul class="list-unstyled mb-0">${web.results.map(row => `<li class="wa-verify-web-result">
+        ${externalLink(row.url, row.title || row.host)}<small>${esc(row.host)} · ${esc(row.match)}</small>
+        ${row.snippet ? `<p>${esc(row.snippet)}</p>` : ''}
+      </li>`).join('')}</ul>`
+    : '<p>' + (web.state === 'complete' ? '搜索未返回含该号码的摘要。' : '公开网页搜索暂时不可用。') + '</p>';
+  return `
+    <section class="wa-verify-section"><h3>号码信息</h3>
+      <p><b dir="ltr">${esc(number)}</b> · ${esc(country || '地区未识别')} · ${esc(type)}</p>
+      <p>${valid ? '符合该地区的号码规则。' : '未通过号码规则校验，已跳过外部查询。'}</p>
+    </section>
+    <section class="wa-verify-section"><h3>CRM 同号档案</h3>
+      ${customers.length ? `<ul class="list-unstyled mb-0">${customers.map(customer => `<li>
+        <a href="/customers/${Number(customer.id)}">${esc(customer.name)}</a>${customer.country ? ' · ' + esc(customer.country) : ''}
+      </li>`).join('')}</ul>` : '<p>当前账号的客户和联系人中没有同号记录。</p>'}
+    </section>
+    ${valid ? `<section class="wa-verify-section"><h3>WhatsApp 商家资料</h3>${businessContent}</section>
+      <section class="wa-verify-section"><h3>公开网页线索 · ${esc(web.source)}</h3>${webContent}</section>
+      <section class="wa-verify-section"><h3>继续查找</h3><ul class="list-inline mb-0">${links.map(({ url, label }) =>
+        `<li class="list-inline-item">${externalLink(url, label)}</li>`).join('')}</ul>
+        <p class="wa-ai-hint mb-0">号码格式、同号记录和网页摘要仅供交叉核对，无法单独证明客户身份。</p>
+      </section>` : ''}`;
+}
+
 function sessionPage(ctx) {
-  const q = String(ctx.query.q || '').trim();
+  const q = String(ctx.query.q || '').trim().slice(0, 120);
+  const metric = ['messages', 'active'].includes(ctx.query.metric) ? ctx.query.metric : '';
+  const today = todayStr();
+  const todayRange = [today + ' 00:00', addDays(today, 1) + ' 00:00'];
+  const showHistory = metric === 'messages' || (!metric && !!q);
+  const metricParam = metric ? '&metric=' + metric : '';
   const requestedFilter = String(ctx.query.filter || '');
   const filter = ['all', 'unread', 'unbound', 'bound', 'pinned'].includes(requestedFilter) ? requestedFilter : 'all';
+  const requestedHistoryPage = Number(ctx.query.message_page || 1);
+  const historyPage = Number.isSafeInteger(requestedHistoryPage) && requestedHistoryPage > 0
+    && requestedHistoryPage <= Math.floor(Number.MAX_SAFE_INTEGER / HISTORY_PAGE_SIZE) ? requestedHistoryPage : 1;
+  const historyMatches = showHistory ? searchMessageHistory(ctx.user.id, filter, q,
+    (historyPage - 1) * HISTORY_PAGE_SIZE, metric === 'messages' ? todayRange : null) : [];
+  const requestedMessageId = Number(ctx.query.message || 0);
   const baseWhere = `(${wa.visibleChatsSql()})`;
   const stats = get(`SELECT COUNT(*) total,
       COALESCE(SUM(CASE WHEN COALESCE(c.unread,0)>0 THEN c.unread ELSE 0 END),0) unread_msgs,
@@ -487,49 +554,51 @@ function sessionPage(ctx) {
     FROM wa_chats c WHERE ${baseWhere}`, ctx.user.id, ctx.user.id);
   const todayMessages = get(`SELECT COUNT(*) AS count FROM wa_messages m
     JOIN wa_chats c ON c.account_id=m.account_id AND c.jid=m.chat_jid
-    WHERE ${wa.visibleChatsSql()} AND m.from_me=0 AND substr(m.ts,1,10)=?`, ctx.user.id, ctx.user.id, todayStr()).count;
+    WHERE ${baseWhere} AND m.from_me=0 AND m.ts>=? AND m.ts<?`, ctx.user.id, ctx.user.id, ...todayRange).count;
   const activeConversations = get(`SELECT COUNT(*) AS count FROM wa_chats c
-    WHERE ${wa.visibleChatsSql()} AND COALESCE(c.last_inbound_at,'')>=?`, ctx.user.id, ctx.user.id, todayStr() + ' 00:00').count;
-  const dueFollowups = get("SELECT COUNT(*) AS count FROM activities WHERE user_id=? AND archived=0 AND COALESCE(next_follow_date,'')<>'' AND next_follow_date<=?", ctx.user.id, todayStr()).count;
-  const weekQuotes = get("SELECT COUNT(*) AS count FROM quote_history WHERE user_id=? AND quote_date>=?", ctx.user.id, addDays(todayStr(), -6)).count;
+    WHERE ${baseWhere} AND c.last_inbound_at>=? AND c.last_inbound_at<?`, ctx.user.id, ctx.user.id, ...todayRange).count;
+  const dueFollowups = get(`SELECT COUNT(*) AS count FROM activities a JOIN customers c ON c.id=a.customer_id
+    WHERE a.user_id=? AND a.archived=0 AND a.next_follow_date<>'' AND a.next_follow_date<=?`, ctx.user.id, today).count;
   const clauses = [baseWhere];
   const args = [ctx.user.id, ctx.user.id];
+  if (metric === 'active') {
+    clauses.push('c.last_inbound_at>=? AND c.last_inbound_at<?');
+    args.push(...todayRange);
+  }
   if (q) {
     clauses.push(`(COALESCE(c.name,'') LIKE ? OR COALESCE(c.phone,'') LIKE ? OR
       COALESCE(c.last_msg_text,'') LIKE ? OR COALESCE(cu.company_name,'') LIKE ? OR COALESCE(c.remark,'') LIKE ?)`);
     const like = '%' + q + '%';
     args.push(like, like, like, like, like);
   }
-  const allChats = loadChatInsights(ctx.user.id, clauses.join(' AND '), args, 5000);
-  let chats = allChats;
-  const isPinned = row => String(row.pinned_at || '').trim() !== '';
-  if (filter === 'all') {
-    chats = chats.filter(row => !isPinned(row));
-  } else if (filter === 'pinned') {
-    chats = chats.filter(isPinned);
-  } else {
-    if (filter === 'unread') chats = chats.filter(row => Number(row.unread) > 0 && !isPinned(row));
-    else if (filter === 'unbound') chats = chats.filter(row => !row.customer_id);
-    else if (filter === 'bound') chats = chats.filter(row => !!row.customer_id);
-    // “全部”只显示普通会话；其他业务筛选仍保留置顶会话，避免漏掉待办。
-    if (!q && filter !== 'all' && filter !== 'unread') {
-      const pinnedRows = allChats.filter(isPinned);
-      if (pinnedRows.length) {
-        const rest = chats.filter(row => !isPinned(row));
-        chats = pinnedRows.concat(rest);
-      }
-    }
+  if (filter !== 'all') {
+    clauses.push(!q && (filter === 'bound' || filter === 'unbound')
+      ? `(${CHAT_FILTERS[filter]} OR ${CHAT_IS_PINNED})`
+      : CHAT_FILTERS[filter]);
   }
-  // 先完成筛选，再限制渲染数量；避免置顶/已读会话占满 300 条后挤掉未读会话。
-  chats = chats.slice(0, 300);
+  const chatWhere = clauses.join(' AND ');
+  let chatTotal = 0;
+  if (metric !== 'messages') {
+    chatTotal = filter === 'all' && !q ? Number(metric === 'active' ? activeConversations : stats.total) : Number(get(`SELECT COUNT(*) AS total
+    FROM wa_chats c LEFT JOIN customers cu ON cu.id=c.customer_id WHERE ${chatWhere}`, ...args).total);
+  }
+  const chatPageCount = Math.max(1, Math.ceil(chatTotal / CHAT_PAGE_SIZE));
+  const requestedChatPage = Number(ctx.query.chat_page || 1);
+  const chatPage = Number.isSafeInteger(requestedChatPage)
+    ? Math.max(1, Math.min(requestedChatPage, chatPageCount)) : 1;
+  const chats = metric === 'messages' ? []
+    : loadChatInsights(ctx.user.id, chatWhere, args, CHAT_PAGE_SIZE, (chatPage - 1) * CHAT_PAGE_SIZE);
   const activeId = ctx.query.chat || '';
   let active = activeId
     ? (loadChatInsights(ctx.user.id, `c.id=? AND ${wa.visibleChatsSql()}`, [activeId, ctx.user.id, ctx.user.id], 1)[0] || null)
     : null;
-  const customers = all('SELECT id, company_name, whatsapp, phone, country, status, email, contact_person, image FROM customers WHERE user_id=? ORDER BY company_name', ctx.user.id);
+  const customers = all('SELECT id, company_name, whatsapp, phone, country, status, email, contact_person, image, in_pool FROM customers WHERE user_id=? ORDER BY company_name', ctx.user.id);
   const v = wa.accountView(ctx.user.id);
   const autoReply = autoReplyControl.status();
-  if (active) {
+  const selectedHistoryMessage = active && Number.isSafeInteger(requestedMessageId) && requestedMessageId > 0
+    ? get('SELECT * FROM wa_messages WHERE id=? AND account_id=? AND chat_jid=?', requestedMessageId, active.account_id, active.jid)
+    : null;
+  if (active && !selectedHistoryMessage) {
     if (!active.customer_id && active.phone && !active.is_group) {
       try { wa.autoBindChat(active); } catch (e) {}
       active = loadChatInsights(ctx.user.id, `c.id=? AND ${wa.visibleChatsSql()}`, [active.id, ctx.user.id, ctx.user.id], 1)[0] || null;
@@ -550,9 +619,12 @@ function sessionPage(ctx) {
   const backParams = [];
   if (active) backParams.push('chat=' + active.id);
   if (filter !== 'all') backParams.push('filter=' + encodeURIComponent(filter));
+  if (metric) backParams.push('metric=' + metric);
   if (q) backParams.push('q=' + encodeURIComponent(q));
+  if (chatPage > 1) backParams.push('chat_page=' + chatPage);
   const backUrl = '/whatsapp/session' + (backParams.length ? '?' + backParams.join('&') : '');
-  const quickReplies = all('SELECT * FROM wa_quick_replies WHERE user_id=? ORDER BY usage_count DESC, id DESC LIMIT 30', ctx.user.id);
+  const historyPageParam = historyPage > 1 ? '&message_page=' + historyPage : '';
+  const quickReplies = active ? all('SELECT id,title,content FROM wa_quick_replies WHERE user_id=? ORDER BY created_at DESC, id DESC', ctx.user.id) : [];
   const inboxLast = get(`SELECT MAX(m.id) AS id
     FROM wa_messages m
     JOIN wa_chats c ON c.account_id=m.account_id AND c.jid=m.chat_jid
@@ -566,9 +638,15 @@ function sessionPage(ctx) {
   let receiptState = 0;
   let activeMessages = [];
   if (active) {
-    const msgs = all(`SELECT * FROM (
-        SELECT * FROM wa_messages WHERE account_id=? AND chat_jid=? ORDER BY ts DESC, id DESC LIMIT 500
-      ) ORDER BY ts ASC, id ASC`, active.account_id, active.jid);
+    const msgs = selectedHistoryMessage
+      ? [
+          ...all(`SELECT * FROM wa_messages WHERE account_id=? AND chat_jid=? AND (ts,id)>(?,?)
+            ORDER BY ts ASC, id ASC LIMIT 20`, active.account_id, active.jid, selectedHistoryMessage.ts, selectedHistoryMessage.id).reverse(),
+          selectedHistoryMessage,
+          ...all(`SELECT * FROM wa_messages WHERE account_id=? AND chat_jid=? AND (ts,id)<(?,?)
+            ORDER BY ts DESC, id DESC LIMIT 20`, active.account_id, active.jid, selectedHistoryMessage.ts, selectedHistoryMessage.id),
+        ]
+      : all(`SELECT * FROM wa_messages WHERE account_id=? AND chat_jid=? ORDER BY ts DESC, id DESC LIMIT 500`, active.account_id, active.jid);
     activeMessages = msgs;
     const msgIds = new Set(msgs.map(m => Number(m.id)));
     // 引用目标可能早于当前 500 条消息；补入一条目标消息，点击引用时才能滚动到原消息。
@@ -583,14 +661,15 @@ function sessionPage(ctx) {
           msgIds.add(Number(row.id));
         }
       }
-      msgs.sort((a, b) => String(a.ts || '').localeCompare(String(b.ts || '')) || Number(a.id) - Number(b.id));
+      msgs.sort((a, b) => String(b.ts || '').localeCompare(String(a.ts || '')) || Number(b.id) - Number(a.id));
     }
     const msgByWaId = new Map(msgs.map(m => [String(m.msg_id), m]));
-    lastId = msgs.length ? msgs[msgs.length - 1].id : 0;
-    mediaSaved = msgs.filter(m => !!m.media_path && ['image', 'video', 'audio', 'document', 'sticker'].includes(m.kind)).length;
-    const receiptStateRow = get(`SELECT COALESCE(SUM(CASE WHEN from_me=1 THEN COALESCE(receipt_status,0) ELSE 0 END),0) AS n
+    const cursors = get(`SELECT MAX(id) AS last_id, COUNT(NULLIF(media_path,'')) AS media_saved,
+      COALESCE(SUM(CASE WHEN from_me=1 THEN COALESCE(receipt_status,0) ELSE 0 END),0) AS receipt_state
       FROM wa_messages WHERE account_id=? AND chat_jid=?`, active.account_id, active.jid);
-    receiptState = Number(receiptStateRow && receiptStateRow.n) || 0;
+    lastId = Number(cursors.last_id) || 0;
+    mediaSaved = Number(cursors.media_saved) || 0;
+    receiptState = Number(cursors.receipt_state) || 0;
     const currentSearch = activeCustomer ? `#${activeCustomer.id} · ${activeCustomer.company_name}` : '';
     const activeRemark = String(active.remark || '').trim();
     if (active.ad_source_id || active.ad_ctwa_clid || active.ad_ref) {
@@ -702,7 +781,11 @@ function sessionPage(ctx) {
             <button class="btn btn-sm btn-outline-primary text-nowrap" ${active.customer_id ? '' : 'disabled title="先绑定客户"'}>立即同步跟进</button>
         </form>
       </div>
-      <div id="waMsgs" class="wa-messages">${msgs.map(m => msgHtml(m, active, msgByWaId)).join('') || '<div class="text-muted small py-4 text-center">暂无消息</div>'}</div>
+      ${selectedHistoryMessage ? `<div class="wa-history-context d-flex align-items-center justify-content-between flex-wrap gap-2 px-3 py-2 border-bottom">
+        <span>历史消息 · ${esc(selectedHistoryMessage.ts)}</span>
+        <a href="${esc(backUrl + historyPageParam)}">返回最新消息</a>
+      </div>` : ''}
+      <div id="waMsgs" class="wa-messages">${msgs.toReversed().map(m => msgHtml(m, active, msgByWaId)).join('') || '<div class="text-muted small py-4 text-center">暂无消息</div>'}</div>
       ${'' /* 翻译/快捷短语面板放在输入框前面（2026-11-23）：从右侧 AI 面板搬过来，默认收起，点附件边的按钮展开；放在输入框下面会被 sticky 置底的输入框盖住、点不到。面板在 #waSendForm 外面，里面的管理表单才不会嵌套进发送表单。 */}
       <div id="waComposeTranslatePanel" class="wa-compose-panel d-none" aria-label="翻译工具">
         <div class="wa-ai-section-title"><i class="bi bi-translate"></i><span>翻译输入框内容</span></div>
@@ -715,12 +798,12 @@ function sessionPage(ctx) {
       </div>
       <div id="waComposePhrasesPanel" class="wa-compose-panel d-none" aria-label="快捷短语">
         <div class="wa-ai-section-title"><i class="bi bi-lightning"></i><span>快捷短语</span></div>
-        <label class="wa-ai-field-label" for="waQuickReply">选择并填入聊天输入框</label>
-        <select class="form-select form-select-sm" id="waQuickReply"><option value="">选择快捷回复…</option>${quickReplies.map(reply => `<option value="${esc(reply.content)}">${esc(reply.title)}</option>`).join('')}</select>
+        <label class="wa-ai-field-label" for="waQuickReply">选择快捷回复，或在输入框键入 /编号</label>
+        <select class="form-select form-select-sm" id="waQuickReply"><option value="">选择快捷回复…</option>${quickReplies.map(reply => `<option value="${esc(reply.content)}" data-code="${Number(reply.id)}">/${Number(reply.id)} · ${esc(reply.title)}</option>`).join('')}</select>
         <div class="wa-compose-phrases-manage">
           <div class="small text-muted mt-2 mb-1">管理快捷回复</div>
           <div class="d-flex flex-wrap gap-2 mt-2">
-            ${quickReplies.map(r => `<form method="post" action="/whatsapp/quick-replies/${r.id}/delete" class="d-inline"><input type="hidden" name="chat_id" value="${active.id}"><button class="btn btn-sm btn-light border">${esc(r.title)} ×</button></form>`).join('') || '<span class="small text-muted">还没有快捷回复</span>'}
+            ${quickReplies.map(r => `<form method="post" action="/whatsapp/quick-replies/${r.id}/delete" class="d-inline"><input type="hidden" name="chat_id" value="${active.id}"><button class="btn btn-sm btn-light border">/${Number(r.id)} · ${esc(r.title)} ×</button></form>`).join('') || '<span class="small text-muted">还没有快捷回复</span>'}
           </div>
           <div class="input-group input-group-sm mt-2">
             <input class="form-control" name="title" form="waSaveReply" placeholder="名称，如：询问型号和数量" required>
@@ -755,19 +838,47 @@ function sessionPage(ctx) {
           <div id="waAttachmentItems" class="wa-attachment-items"></div>
         </div>
         <div class="d-flex gap-2 align-items-end mt-2">
-          <textarea class="form-control" name="text" rows="3" placeholder="输入消息，可粘贴图片，Ctrl+Enter 发送" id="waText"></textarea>
+          <textarea class="form-control" name="text" rows="3" placeholder="输入消息或粘贴图片，/编号 快捷回复，Ctrl+Enter 发送" id="waText" aria-describedby="waQuickReplyHint"></textarea>
           <button class="btn btn-primary" ${v.status === 'online' ? '' : 'disabled'}><i class="bi bi-send me-1"></i>发送</button>
         </div>
+        <div class="form-text mt-1" id="waQuickReplyHint" role="status" hidden></div>
         ${v.status === 'online' ? '' : '<div class="form-text text-danger">当前未连接，无法发送。</div>'}
       </form>
 `;
   }
 
 
-  const filterUrl = (f) => '/whatsapp/session?filter=' + f + (q ? '&q=' + encodeURIComponent(q) : '');
+  const filterUrl = (f) => '/whatsapp/session?filter=' + f + metricParam + (q ? '&q=' + encodeURIComponent(q) : '');
   const chatUrl = (id) => '/whatsapp/session?chat=' + id
     + (filter !== 'all' ? '&filter=' + encodeURIComponent(filter) : '')
-    + (q ? '&q=' + encodeURIComponent(q) : '');
+    + metricParam
+    + (q ? '&q=' + encodeURIComponent(q) : '')
+    + (chatPage > 1 ? '&chat_page=' + chatPage : '');
+  const historyPageUrl = (number) => filterUrl(filter) + (active ? '&chat=' + active.id : '')
+    + (chatPage > 1 ? '&chat_page=' + chatPage : '') + '&message_page=' + number;
+  const chatPageUrl = (number) => filterUrl(filter) + (active ? '&chat=' + active.id : '')
+    + historyPageParam + (selectedHistoryMessage ? '&message=' + selectedHistoryMessage.id : '') + '&chat_page=' + number;
+  const chatPaginationHtml = chatPageCount > 1 ? `<nav class="d-flex flex-wrap align-items-center justify-content-between gap-1 px-2 py-2 border-top" aria-label="会话分页">
+      ${chatPage > 1 ? `<a class="btn btn-sm btn-outline-secondary" href="${esc(chatPageUrl(chatPage - 1))}">上一页</a>` : '<span class="btn btn-sm disabled" aria-disabled="true">上一页</span>'}
+      <span class="small text-muted" aria-current="page">${chatPage} / ${chatPageCount} 页</span>
+      ${chatPage < chatPageCount ? `<a class="btn btn-sm btn-outline-secondary" href="${esc(chatPageUrl(chatPage + 1))}">下一页</a>` : '<span class="btn btn-sm disabled" aria-disabled="true">下一页</span>'}
+    </nav>` : '';
+  const historyTitle = metric === 'messages' ? '今日客户消息' : '聊天记录';
+  const historyResultsHtml = showHistory ? `<section class="wa-history-results" aria-label="${metric === 'messages' ? historyTitle : '聊天记录搜索结果'}">
+      <div class="px-2 py-2 fw-semibold">${historyTitle}</div>
+      ${historyMatches.slice(0, HISTORY_PAGE_SIZE).map(message => {
+        const preview = wa.quotePreview(message);
+        const content = q ? historyPreview(message, q) : esc((preview.mediaName || preview.text).slice(0, 100));
+        return `<a class="wa-history-result" href="${esc(chatUrl(message.chat_id) + historyPageParam + '&message=' + message.id + '#wa-msg-' + message.id)}">
+        <div class="wa-history-meta"><strong>${esc(chatLabel(message))}</strong><time>${esc(message.ts)}</time></div>
+        <div class="wa-history-preview">${Number(message.from_me) === 1 ? '我方：' : ''}${content}</div>
+      </a>`;
+      }).join('') || `<p class="text-muted small px-2 pb-2 mb-0">${metric === 'messages' ? '没有符合筛选条件的今日客户消息。' : '没有匹配的聊天记录。'}</p>`}
+      ${historyPage > 1 || historyMatches.length > HISTORY_PAGE_SIZE ? `<nav class="d-flex gap-2 px-2 py-2" aria-label="聊天记录分页">
+        ${historyPage > 1 ? `<a class="btn btn-sm btn-outline-secondary" href="${esc(historyPageUrl(historyPage - 1))}">上一页</a>` : ''}
+        ${historyMatches.length > HISTORY_PAGE_SIZE ? `<a class="btn btn-sm btn-outline-secondary" href="${esc(historyPageUrl(historyPage + 1))}">下一页</a>` : ''}
+      </nav>` : ''}
+    </section>` : '';
   let sideHtml = '<div class="text-muted small py-5 text-center">选择会话后查看客户档案和跟进状态</div>';
   if (active) {
     const lastAct = activeCustomer ? get("SELECT * FROM activities WHERE customer_id=? AND user_id=? ORDER BY activity_date DESC, id DESC LIMIT 1", activeCustomer.id, ctx.user.id) : null;
@@ -814,9 +925,8 @@ function sessionPage(ctx) {
         <div class="form-text">绑定后自动安排首次跟进，日期为创建当天加 3 天。</div>
       </form>`}`;
   }
-  const latestInbound = activeMessages.slice().reverse().find(message => !Number(message.from_me) && String(message.text || '').trim());
+  const latestInbound = activeMessages.find(message => !Number(message.from_me) && String(message.text || '').trim());
   const latestInboundText = String(latestInbound && latestInbound.text || '').trim();
-  const matchedKnowledge = latestInboundText ? knowledgeBase.relevantArticles(latestInboundText, 5) : [];
   const relatedActivities = activeCustomer ? all(`SELECT type,subject,content,outcome,activity_date,next_follow_date,archived
     FROM activities WHERE customer_id=? AND user_id=? ORDER BY activity_date DESC,id DESC LIMIT 16`, activeCustomer.id, ctx.user.id) : [];
   const followupTabHtml = relatedActivities.length ? relatedActivities.map(row => `<div class="wa-workbench-record">
@@ -825,31 +935,57 @@ function sessionPage(ctx) {
     ${row.content && row.subject ? `<div class="wa-workbench-record-copy">${esc(String(row.content).slice(0, 500))}</div>` : ''}
     ${row.outcome ? `<div class="wa-workbench-record-copy">结果：${esc(row.outcome)}</div>` : ''}
     ${row.next_follow_date ? `<div class="wa-workbench-record-next">下次跟进：${esc(row.next_follow_date)}</div>` : ''}
-  </div>`).join('') : '<div class="wa-panel-empty">绑定 CRM 客户后，这里会显示已有跟进记录。</div>';
-  const fileMessages = activeMessages.filter(message => message.media_path && ['image', 'video', 'audio', 'document', 'sticker'].includes(message.kind)).slice().reverse();
+  </div>`).join('') : (activeCustomer ? '<div class="wa-panel-empty">暂无跟进记录。</div>' : '<div class="wa-panel-empty">绑定 CRM 客户后，这里会显示已有跟进记录。</div>');
+  const fileMessages = activeMessages.filter(message => message.media_path && ['image', 'video', 'audio', 'document', 'sticker'].includes(message.kind));
   const filesTabHtml = fileMessages.length ? `<div class="wa-files-grid">${fileMessages.map(message => {
     const url = messageMediaUrl(message);
     const label = message.media_name || ({ image: '图片', video: '视频', audio: '语音', sticker: '贴纸' }[message.kind] || '附件');
     const isImage = message.kind === 'image';
     return `<a class="wa-file-tile" href="${esc(url)}" target="_blank" rel="noopener"><span class="wa-file-thumb">${isImage ? `<img src="${esc(url)}" alt="" loading="lazy">` : `<i class="bi ${message.kind === 'audio' ? 'bi-file-music' : message.kind === 'video' ? 'bi-file-play' : 'bi-file-earmark'}"></i>`}</span><span><b>${esc(label)}</b><small>${esc(String(message.ts || '').slice(0, 16))}</small></span></a>`;
   }).join('')}</div>` : '<div class="wa-panel-empty">当前会话还没有已保存的图片或文件。</div>';
-  const customerQuotes = activeCustomer ? all(`SELECT id,quote_no,quote_date,product_name,model,currency,amount,status
-    FROM quote_history WHERE user_id=? AND customer_id=? ORDER BY quote_date DESC,id DESC LIMIT 12`, ctx.user.id, activeCustomer.id) : [];
-  const orderRows = activeCustomer ? all(`SELECT id,doc_no,doc_type,issue_date,currency,total_amount,status
-    FROM documents WHERE user_id=? AND customer_id=? ORDER BY COALESCE(NULLIF(issue_date,''),created_at) DESC,id DESC LIMIT 12`, ctx.user.id, activeCustomer.id) : [];
-  const orderQuoteRowsHtml = [
-    ...customerQuotes.map(row => `<a class="wa-order-row" href="/quotes/${Number(row.id)}/edit"><span><b>${esc(row.quote_no || '历史报价')}</b><small>${esc(row.product_name || '')}${row.model ? ' · ' + esc(row.model) : ''} · ${esc(row.quote_date || '')}</small></span><span><b>${esc(row.currency || 'USD')} ${Number(row.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b><small>${esc(row.status || '')}</small></span></a>`),
-    ...orderRows.map(row => `<a class="wa-order-row" href="/documents/${Number(row.id)}"><span><b>${esc(row.doc_no || '单据')}</b><small>${esc(DOC_TYPE_MAP[row.doc_type] ? DOC_TYPE_MAP[row.doc_type].name : row.doc_type)} · ${esc(row.issue_date || '')}</small></span><span><b>${esc(row.currency || 'USD')} ${Number(row.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b><small>${esc(row.status || '')}</small></span></a>`),
-  ].join('') || '<div class="wa-panel-empty">绑定 CRM 客户后，这里会显示真实报价和订单。</div>';
+  const customerQuotes = activeCustomer ? all(`SELECT id,quote_no,product_name,model,currency,amount,status,
+    COALESCE(NULLIF(quote_date,''),created_at) AS sort_date
+    FROM quote_history WHERE user_id=? AND customer_id=? ORDER BY sort_date DESC,id DESC LIMIT 12`, ctx.user.id, activeCustomer.id) : [];
+  const orderRows = activeCustomer ? all(`SELECT id,doc_no,doc_type,
+    COALESCE(NULLIF(issue_date,''),created_at) AS sort_date,currency,total_amount,status
+    FROM documents WHERE user_id=? AND customer_id=? ORDER BY sort_date DESC,id DESC LIMIT 12`, ctx.user.id, activeCustomer.id) : [];
+  const orderQuoteRows = [
+    ...customerQuotes.map(row => ({ ...row, isQuote: true })),
+    ...orderRows,
+  ].sort((a, b) => String(b.sort_date || '').localeCompare(String(a.sort_date || '')) || Number(b.id) - Number(a.id));
+  const orderQuoteRowsHtml = orderQuoteRows.map(row => {
+    const url = row.isQuote ? '/quotes/' + Number(row.id) + '/edit' : '/documents/' + Number(row.id);
+    const title = row.isQuote ? row.quote_no || '历史报价' : row.doc_no || '单据';
+    const detail = row.isQuote ? [row.product_name, row.model].filter(Boolean).join(' · ')
+      : (DOC_TYPE_MAP[row.doc_type]?.name || row.doc_type);
+    const caption = [detail, String(row.sort_date || '').slice(0, 10)].filter(Boolean).join(' · ');
+    const amount = Number((row.isQuote ? row.amount : row.total_amount) || 0).toLocaleString('en-US', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2,
+    });
+    return `<a class="wa-order-row" href="${url}"><span><b>${esc(title)}</b><small>${esc(caption)}</small></span><span><b>${esc(row.currency || 'USD')} ${amount}</b><small>${esc(row.status || '')}</small></span></a>`;
+  }).join('');
+  const orderQuotePanelHtml = orderQuoteRowsHtml || `<div class="wa-panel-empty">
+    <div>
+      <p class="mb-0">${activeCustomer ? '该客户暂无报价或订单记录。' : '绑定 CRM 客户后，可查看或添加报价与订单。'}</p>
+      ${activeCustomer && !Number(activeCustomer.in_pool) ? `<div class="dropdown mt-3">
+        <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>添加</button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="/documents/new?type=so&amp;customer_id=${Number(activeCustomer.id)}" target="_blank" rel="noopener">新建订单</a></li>
+          <li><a class="dropdown-item" href="/quotes/new?customer_id=${Number(activeCustomer.id)}" target="_blank" rel="noopener">新建报价</a></li>
+        </ul>
+      </div>` : ''}
+    </div>
+  </div>`;
   const activeProfile = activeCustomer ? `<div class="wa-profile-summary">
     <span class="wa-avatar wa-avatar-lg">${chatAvatarHtml(active, true)}</span><div class="min-w-0"><a href="/customers/${activeCustomer.id}" class="wa-profile-name">${esc(activeCustomer.company_name)}</a><div class="wa-profile-meta">${esc(activeCustomer.country || '国家/地区未填写')}${activeCustomer.status ? ' · ' + esc(activeCustomer.status) : ''}</div></div>
     <a href="/customers/${activeCustomer.id}" class="btn btn-sm btn-outline-secondary ms-auto">客户档案</a>
   </div>` : '<div class="wa-unbound-notice"><i class="bi bi-person-exclamation"></i><span>当前会话尚未绑定客户。可在“客户信息”页完成绑定或新建客户。</span></div>';
-  const aiKnowledgeHtml = matchedKnowledge.length ? matchedKnowledge.map(article => `<a class="wa-ai-knowledge-row" href="/knowledge?article=${Number(article.id)}"><span class="badge text-bg-light">${esc(article.category)}</span><b>${esc(article.title)}</b><i class="bi bi-arrow-up-right"></i></a>`).join('') : '<div class="wa-panel-empty">最近入站消息没有匹配到知识库内容。可先补充消息，或直接搜索知识库。</div>';
+  const verificationPhone = chatNumber(active);
+  const verificationNumber = verificationPhone?.isPossible() ? verificationPhone.number : '';
   const aiPanelHtml = `<aside class="wa-ai-pane" aria-label="AI 智能助手">
     <div class="wa-ai-pane-head"><span class="wa-ai-mark"><i class="bi bi-stars"></i></span><div><b>AI 智能助手</b><small>只生成草稿，不自动发送</small></div></div>
     <div class="wa-ai-tabs" role="tablist" aria-label="AI 工具">
-      <button type="button" role="tab" aria-selected="true" class="active" data-wa-ai-tab="reply">智能回复</button><button type="button" role="tab" aria-selected="false" data-wa-ai-tab="knowledge">知识检索</button>
+      <button type="button" role="tab" aria-selected="true" class="active" data-wa-ai-tab="reply">智能回复</button><button type="button" role="tab" aria-selected="false" data-wa-ai-tab="verify">客户验证</button>
     </div>
     <section class="wa-ai-tab-panel active" role="tabpanel" data-wa-ai-panel="reply">
       <div class="wa-ai-section-title"><i class="bi bi-person-lines-fill"></i><span>客户与会话</span></div>
@@ -859,29 +995,32 @@ function sessionPage(ctx) {
       <button class="btn btn-sm btn-primary w-100 mt-3" type="button" id="waAiDraft"><i class="bi bi-stars me-1"></i>根据当前对话起草</button>
       <div class="wa-ai-state" id="waAiState" aria-live="polite"></div>
       <div class="wa-ai-safety-note"><i class="bi bi-shield-check"></i><span>草稿只填入聊天输入框，确认后由你手动发送。</span></div>
-      <div class="wa-ai-inline-knowledge">
-        <div class="wa-ai-section-title"><i class="bi bi-journal-richtext"></i><span>引用知识</span><a href="/knowledge${latestInboundText ? '?search=' + encodeURIComponent(latestInboundText.split(/\\s+/).slice(0, 4).join(' ')) : ''}">知识库</a></div>
-        <div class="wa-ai-knowledge-list">${aiKnowledgeHtml}</div>
-      </div>
     </section>
-    <section class="wa-ai-tab-panel" role="tabpanel" data-wa-ai-panel="knowledge" hidden>
-      <div class="wa-ai-section-title"><i class="bi bi-journal-richtext"></i><span>相关知识</span></div>
-      ${latestInboundText ? `<div class="wa-ai-context-copy mb-2">按最近入站消息检索：${esc(latestInboundText.slice(0, 180))}</div>` : ''}
-      <div class="wa-ai-knowledge-list">${aiKnowledgeHtml}</div>
-      <a class="btn btn-sm btn-outline-secondary w-100 mt-3" href="/knowledge${latestInboundText ? '?search=' + encodeURIComponent(latestInboundText.split(/\\s+/).slice(0, 4).join(' ')) : ''}"><i class="bi bi-search me-1"></i>打开知识库</a>
+    <section class="wa-ai-tab-panel" role="tabpanel" data-wa-ai-panel="verify" data-number="${esc(verificationNumber)}" hidden>
+      ${verificationNumber ? `
+        <div class="wa-ai-section-title"><i class="bi bi-telephone" aria-hidden="true"></i><span>当前会话号码</span></div>
+        <div class="wa-ai-context-copy"><b dir="ltr">${esc(verificationNumber)}</b></div>
+        <p class="wa-ai-hint">查询 CRM、WhatsApp 商家资料和公开网页。搜索服务只接收用于查询的电话号码。</p>
+        <button class="btn btn-sm btn-primary w-100" type="button" id="waVerifyCustomer" data-chat-id="${Number(active.id)}"><i class="bi bi-person-check me-1" aria-hidden="true"></i>查找号码线索</button>
+        <div class="wa-ai-state" id="waVerifyState" role="status"></div>
+        <div id="waVerifyResults" class="wa-verify-results"></div>`
+        : '<div class="wa-panel-empty">' + (active ? '当前会话没有可核验的单人国际号码。' : '请先选择一个会话。') + '</div>'}
     </section>
   </aside>`;
   const content = `
     ${pageHead('WhatsApp', '客户会话 · CRM 档案 · AI 销售助手', `<div class="d-flex gap-2 flex-wrap align-items-center"><span class="badge text-bg-light">${stats.total || 0} 个会话</span><span class="badge text-bg-danger">${stats.unread_msgs || 0} 条未读</span><span class="badge text-bg-warning">${stats.unbound || 0} 个待绑定</span></div>`)}
-    <div class="wa-workbench-metrics">
-      <div><i class="bi bi-chat-dots"></i><span><b>${Number(todayMessages) || 0}</b><small>今日客户消息</small></span></div>
-      <div><i class="bi bi-people"></i><span><b>${Number(activeConversations) || 0}</b><small>今日活跃会话</small></span></div>
-      <div><i class="bi bi-calendar2-check"></i><span><b>${Number(dueFollowups) || 0}</b><small>待处理跟进</small></span></div>
-      <div><i class="bi bi-send"></i><span><b>${Number(weekQuotes) || 0}</b><small>近 7 天报价</small></span></div>
-    </div>
+    <nav class="wa-workbench-metrics" aria-label="WhatsApp 工作台快捷入口">
+      ${[
+        ['messages', 'bi-chat-dots', todayMessages, '今日客户消息', '/whatsapp/session?metric=messages'],
+        ['active', 'bi-people', activeConversations, '今日活跃会话', '/whatsapp/session?metric=active'],
+        ['', 'bi-calendar2-check', dueFollowups, '待处理跟进', '/followups?view=due'],
+      ].map(([key, icon, count, label, href]) => `<a class="text-decoration-none" href="${href}"${key && key === metric ? ' aria-current="page"' : ''}>
+        <i class="bi ${icon}" aria-hidden="true"></i><span><b>${Number(count) || 0}</b><small>${label}</small></span><i class="bi bi-chevron-right wa-metric-arrow" aria-hidden="true"></i>
+      </a>`).join('')}
+    </nav>
     <div class="row g-3 wa-inbox wa-3col workbench-2" id="waInbox" data-inbox-last-id="${inboxLastId}">
       <div class="wa-left-column">${card({
-        title: '会话',
+        title: metric === 'active' ? '今日活跃会话' : '会话',
         actions: `<a class="btn btn-sm btn-outline-primary" href="#newChat" data-bs-toggle="collapse">新对话</a>`,
         body: `<div id="newChat" class="collapse mb-3">
           <form method="post" action="/whatsapp/new-chat">
@@ -891,19 +1030,22 @@ function sessionPage(ctx) {
           </form>
         </div>
         <div class="wa-filter-tabs">
-          <a class="${filter === 'all' ? 'active' : ''}" href="${filterUrl('all')}">全部 ${Number(stats.total) || 0}</a>
-          <a class="${filter === 'unread' ? 'active' : ''}${Number(stats.unread_msgs) > 0 ? ' unread-bounce' : ''}" href="${filterUrl('unread')}">未读 ${Number(stats.unread_msgs) || 0}</a>
-          <a class="wa-filter-pinned ${filter === 'pinned' ? 'active' : ''}" href="${filterUrl('pinned')}">置顶 ${Number(stats.pinned) || 0}</a>
-          <a class="${filter === 'unbound' ? 'active' : ''}" href="${filterUrl('unbound')}">待绑定</a>
-          <a class="${filter === 'bound' ? 'active' : ''}" href="${filterUrl('bound')}">已绑定</a>
+          <a class="${filter === 'all' ? 'active' : ''}" href="${esc(filterUrl('all'))}">全部${metric ? '' : ' ' + (Number(stats.total) || 0)}</a>
+          <a class="${filter === 'unread' ? 'active' : ''}${!metric && Number(stats.unread_msgs) > 0 ? ' unread-bounce' : ''}" href="${esc(filterUrl('unread'))}">未读${metric ? '' : ' ' + (Number(stats.unread_msgs) || 0)}</a>
+          <a class="wa-filter-pinned ${filter === 'pinned' ? 'active' : ''}" href="${esc(filterUrl('pinned'))}">置顶${metric ? '' : ' ' + (Number(stats.pinned) || 0)}</a>
+          <a class="${filter === 'unbound' ? 'active' : ''}" href="${esc(filterUrl('unbound'))}">待绑定</a>
+          <a class="${filter === 'bound' ? 'active' : ''}" href="${esc(filterUrl('bound'))}">已绑定</a>
+          ${metric ? '<a href="/whatsapp/session">返回全部会话</a>' : ''}
         </div>
-        <form method="get" action="/whatsapp/session" class="wa-search mb-2">
+        <form method="get" action="/whatsapp/session" class="wa-search mb-2" role="search" aria-label="搜索会话与聊天记录">
           <input type="hidden" name="filter" value="${filter}">
-          <div class="input-group input-group-sm"><span class="input-group-text"><i class="bi bi-search"></i></span><input class="form-control" name="q" value="${esc(q)}" placeholder="搜索姓名、手机号、客户或消息"><button class="btn btn-outline-secondary">搜索</button></div>
+          ${metric ? `<input type="hidden" name="metric" value="${metric}">` : ''}
+          <div class="input-group input-group-sm"><span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span><input class="form-control" type="search" name="q" maxlength="120" aria-label="姓名、号码或聊天内容" value="${esc(q)}" placeholder="姓名、号码或聊天内容"><button class="btn btn-outline-secondary">搜索</button></div>
         </form>
-        <div class="wa-chat-list">${chatListHtml(chats, active ? active.id : '', chatUrl, backUrl)}</div>`
+        <div class="wa-chat-list">${historyResultsHtml}${metric !== 'messages' && (!q || chats.length || metric === 'active') ? chatListHtml(chats, active ? active.id : '', chatUrl, backUrl, filter) : ''}</div>
+        ${chatPaginationHtml}`
       })}</div>
-      <div class="wa-center-column" id="waChatPanel" data-chat-id="${active ? active.id : ''}" data-last-id="${Number(lastId)}" data-media-saved="${mediaSaved}" data-receipt-state="${Number(receiptState)}">${card({
+      <div class="wa-center-column" id="waChatPanel" data-chat-id="${active ? active.id : ''}" data-history-id="${selectedHistoryMessage ? Number(selectedHistoryMessage.id) : ''}" data-last-id="${Number(lastId)}" data-media-saved="${mediaSaved}" data-receipt-state="${Number(receiptState)}">${card({
         title: '',
         body: `<div class="wa-main-tabs" role="tablist" aria-label="会话内容">
           <button type="button" class="active" data-wa-main-tab="chat"><i class="bi bi-chat-left-text"></i><span>聊天对话</span></button>
@@ -916,7 +1058,7 @@ function sessionPage(ctx) {
         <section class="wa-main-tab-panel" data-wa-main-panel="customer">${sideHtml}</section>
         <section class="wa-main-tab-panel wa-records-panel" data-wa-main-panel="followups">${followupTabHtml}</section>
         <section class="wa-main-tab-panel wa-records-panel" data-wa-main-panel="files">${filesTabHtml}</section>
-        <section class="wa-main-tab-panel wa-records-panel" data-wa-main-panel="orders">${orderQuoteRowsHtml}</section>`,
+        <section class="wa-main-tab-panel wa-records-panel" data-wa-main-panel="orders">${orderQuotePanelHtml}</section>`,
         bodyClass: 'wa-main-card-body'
       })}</div>
       <div class="wa-right-column">${aiPanelHtml}</div>
@@ -1088,9 +1230,65 @@ function sessionPage(ctx) {
           var chatId = Number(panel.dataset.chatId || 0);
           var lastId = Number(panel.dataset.lastId || 0);
           var box = document.getElementById('waMsgs');
-          if (box) box.scrollTop = box.scrollHeight;
+          if (panel.dataset.historyId) {
+            jumpToQuotedMessage({ dataset: { quoteTargetId: panel.dataset.historyId }, closest: null });
+          }
           var ta = document.getElementById('waText');
           var form = document.getElementById('waSendForm');
+          var quickReplySelect = document.getElementById('waQuickReply');
+          var quickReplyHint = document.getElementById('waQuickReplyHint');
+          var quickRepliesByCode = new Map(quickReplySelect ? Array.from(quickReplySelect.options)
+            .filter(function (option) { return option.dataset.code; })
+            .map(function (option) { return [option.dataset.code, option.value]; }) : []);
+          var insertedQuickReply = null;
+
+          function setQuickReplyHint(message) {
+            if (!quickReplyHint) return;
+            quickReplyHint.textContent = message;
+            quickReplyHint.hidden = !message;
+          }
+
+          function quickReplyCode() {
+            if (!ta || ta.value === insertedQuickReply) return '';
+            var command = ta.value.normalize('NFKC').match(/^\\s*\\/(\\d+)[ \\t]*$/);
+            return command ? command[1] : '';
+          }
+
+          function fillQuickReply(content) {
+            ta.value = content;
+            insertedQuickReply = ta.value;
+            ta.focus();
+            ta.setSelectionRange(content.length, content.length);
+            setQuickReplyHint('');
+            autoGrowWaText();
+          }
+
+          function expandQuickReply(code) {
+            if (!quickRepliesByCode.has(code)) return false;
+            fillQuickReply(quickRepliesByCode.get(code));
+            return true;
+          }
+
+          function checkQuickReplyInput(canExpand) {
+            var code = quickReplyCode();
+            if (!code) { setQuickReplyHint(''); return; }
+            var exact = quickRepliesByCode.has(code);
+            var longer = Array.from(quickRepliesByCode.keys()).filter(function (number) {
+              return number.length > code.length && number.startsWith(code);
+            });
+            if (exact && canExpand && (!longer.length || /[ \\t\\u3000]$/.test(ta.value))) {
+              expandQuickReply(code);
+              return;
+            }
+            if (exact) {
+              setQuickReplyHint('按空格或 Enter 展开 /' + code);
+            } else if (longer.length) {
+              setQuickReplyHint('可用编号 ' + longer.slice(0, 5).map(function (number) { return '/' + number; }).join('、'));
+            } else {
+              setQuickReplyHint('没有编号 /' + code + ' 的快捷回复');
+            }
+          }
+
           // 输入框自动长高（2026-11-22）：rows=3 起步，多打几行时跟着长，最高 160px 后框内滚动，
           // 避免原来 rows=2、打的字被截看不到。程序填入草稿后也要调一次（见下面各 ta.value 赋值处）。
           function autoGrowWaText() {
@@ -1108,13 +1306,25 @@ function sessionPage(ctx) {
             } catch (e) {}
           }
           if (ta && form) ta.addEventListener('keydown', function (e) {
+            if (e.isComposing || e.keyCode === 229) return;
+            if (e.key === 'Enter' && expandQuickReply(quickReplyCode())) {
+              e.preventDefault();
+              return;
+            }
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
               e.preventDefault();
               if (form.requestSubmit) form.requestSubmit();
             }
           });
           if (ta) {
-            ta.addEventListener('input', autoGrowWaText);
+            ta.addEventListener('input', function (e) {
+              if (ta.value !== insertedQuickReply) insertedQuickReply = null;
+              if (!e.isComposing) checkQuickReplyInput(!String(e.inputType).startsWith('delete'));
+              autoGrowWaText();
+            });
+            ta.addEventListener('compositionend', function () {
+              checkQuickReplyInput(true);
+            });
             autoGrowWaText();
           }
 
@@ -1415,6 +1625,7 @@ function sessionPage(ctx) {
             form.addEventListener('submit', function (e) {
               e.preventDefault();
               if (form.dataset.sending === '1') return;
+              if (expandQuickReply(quickReplyCode())) return;
               var files = attachmentFiles.slice();
               var text = ta ? ta.value.trim() : '';
               var quoteEl = document.getElementById('waQuoteId');
@@ -1526,9 +1737,9 @@ function sessionPage(ctx) {
               });
             });
           }
-          var qr = document.getElementById('waQuickReply');
-          if (qr && ta) qr.addEventListener('change', function () {
-            if (qr.value) { ta.value = qr.value; ta.focus(); autoGrowWaText(); }
+          if (quickReplySelect && ta) quickReplySelect.addEventListener('change', function () {
+            if (quickReplySelect.value) fillQuickReply(quickReplySelect.value);
+            quickReplySelect.value = '';
           });
           var ai = document.getElementById('waAiDraft');
           var aiState = document.getElementById('waAiState');
@@ -1537,7 +1748,7 @@ function sessionPage(ctx) {
             if (aiState) aiState.textContent = '正在读取对话并起草…';
             fetch('/api/wa/draft?chat_id=' + chatId, { headers: { 'Accept': 'application/json' } })
               .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'AI 起草失败'); return d; }); })
-              .then(function (d) { ta.value = d.text || ''; ta.focus(); autoGrowWaText(); if (aiState) aiState.textContent = '草稿已填入，请核对后发送'; })
+              .then(function (d) { ta.value = d.text || ''; setQuickReplyHint(''); ta.focus(); autoGrowWaText(); if (aiState) aiState.textContent = '草稿已填入，请核对后发送'; })
               .catch(function (e) { if (aiState) aiState.textContent = e.message || 'AI 起草失败'; })
               .finally(function () { ai.disabled = false; });
           });
@@ -1571,6 +1782,7 @@ function sessionPage(ctx) {
               });
             }).then(function (d) {
               ta.value = d.text || '';
+              setQuickReplyHint('');
               ta.focus();
               autoGrowWaText();
               try { sessionStorage.setItem('waDraft:' + chatId, ta.value); } catch (e) {}
@@ -1665,9 +1877,11 @@ function sessionPage(ctx) {
           }
           try {
             var draft = sessionStorage.getItem('waDraft:' + chatId);
-            if (draft && ta && !ta.value) { ta.value = draft; autoGrowWaText(); }
+            if (draft && ta && !ta.value) { ta.value = draft; checkQuickReplyInput(false); autoGrowWaText(); }
           } catch (e) {}
-          if (chatId) {
+          if (panel.dataset.historyId) {
+            pollNow = null;
+          } else if (chatId) {
             pollNow = function () {
               if (document.hidden || loading) return;
               var inboxAfter = Number(inbox.dataset.inboxLastId || 0);
@@ -1707,6 +1921,7 @@ function sessionPage(ctx) {
           }
           // 轮询刷新会重渲染整个收件箱，恢复之前展开的翻译/快捷短语面板（2026-11-23），恢复时不抢焦点。
           if (openComposePanel) toggleComposePanel(openComposePanel, true);
+          if (box && !panel.dataset.historyId) box.scrollTop = box.scrollHeight;
         }
 
         function setLoading(on) {
@@ -1734,13 +1949,24 @@ function sessionPage(ctx) {
           var panel = current.querySelector('#waChatPanel');
           var activeMainTab = current.querySelector('[data-wa-main-tab].active');
           var activeAiTab = current.querySelector('[data-wa-ai-tab].active');
+          var readingMessage = null;
+          var messagesRect = messages && messages.getBoundingClientRect();
+          var messagesAtBottom = !messages || messages.scrollHeight - messages.clientHeight - messages.scrollTop <= 24;
+          if (messagesRect && !messagesAtBottom) {
+            readingMessage = Array.prototype.find.call(messages.children, function (row) {
+              return row.id && row.getBoundingClientRect().bottom > messagesRect.top;
+            });
+          }
           return {
             windowX: window.scrollX || window.pageXOffset || 0,
             windowY: window.scrollY || window.pageYOffset || 0,
             listTop: list ? list.scrollTop : 0,
             messagesTop: messages ? messages.scrollTop : 0,
-            messagesAtBottom: messages ? (messages.scrollTop + messages.clientHeight >= messages.scrollHeight - 24) : true,
+            messagesAtBottom: messagesAtBottom,
+            readingMessageId: readingMessage ? readingMessage.id : '',
+            readingMessageOffset: readingMessage ? readingMessage.getBoundingClientRect().top - messagesRect.top : 0,
             chatId: panel ? String(panel.dataset.chatId || '') : '',
+            historyId: panel ? String(panel.dataset.historyId || '') : '',
             mainTab: activeMainTab ? activeMainTab.dataset.waMainTab : '',
             aiTab: activeAiTab ? activeAiTab.dataset.waAiTab : ''
           };
@@ -1774,12 +2000,20 @@ function sessionPage(ctx) {
               list.scrollTop = state.listTop;
               if (keepActive) keepActiveChatVisible(list);
             }
-            if (preserveMessages && !state.messagesAtBottom) {
-              var messages = next.querySelector('#waMsgs');
-              if (messages) messages.scrollTop = state.messagesTop;
-            }
             activateWorkbenchTab(next, 'main', state.mainTab);
             activateWorkbenchTab(next, 'ai', state.aiTab);
+            var messages = next.querySelector('#waMsgs');
+            if (messages && preserveMessages && !state.messagesAtBottom) {
+              var readingMessage = state.readingMessageId && document.getElementById(state.readingMessageId);
+              if (readingMessage && messages.contains(readingMessage)) {
+                var offset = readingMessage.getBoundingClientRect().top - messages.getBoundingClientRect().top;
+                messages.scrollTop += offset - state.readingMessageOffset;
+              } else {
+                messages.scrollTop = state.messagesTop;
+              }
+            } else if (messages && !next.querySelector('#waChatPanel').dataset.historyId) {
+              messages.scrollTop = messages.scrollHeight;
+            }
             try {
               window.scrollTo({ left: state.windowX, top: state.windowY, behavior: 'auto' });
             } catch (e) {
@@ -1808,6 +2042,33 @@ function sessionPage(ctx) {
           loadChat(window.location.href, { push: false, silent: true });
         }
 
+        function runCustomerVerification(button) {
+          var section = button.closest('[data-wa-ai-panel="verify"]');
+          var status = section.querySelector('#waVerifyState');
+          var results = section.querySelector('#waVerifyResults');
+          button.disabled = true;
+          section.setAttribute('aria-busy', 'true');
+          status.textContent = '正在查找号码线索…';
+          fetch('/api/wa/customer-verification', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: Number(button.dataset.chatId) })
+          }).then(function (response) {
+            return response.json().then(function (data) {
+              if (!response.ok || !data.ok) throw new Error(data.error || '客户验证失败');
+              return data.html;
+            });
+          }).then(function (html) {
+            results.innerHTML = html;
+            status.textContent = '查询完成';
+          }).catch(function (error) {
+            status.textContent = error.message || '暂时无法查询，请重试';
+          }).finally(function () {
+            section.removeAttribute('aria-busy');
+            button.disabled = false;
+          });
+        }
+
         function loadChat(url, options) {
           options = options || {};
           if (options.saveDraft !== false) saveDraft();
@@ -1831,7 +2092,17 @@ function sessionPage(ctx) {
             if (!current) throw new Error('收件箱容器不存在');
             var scrollState = captureChatScroll(current);
             var nextPanel = next.querySelector('#waChatPanel');
-            var preserveMessages = !!scrollState.chatId && !!nextPanel && String(nextPanel.dataset.chatId || '') === scrollState.chatId;
+            var preserveMessages = !!scrollState.chatId && !!nextPanel
+              && String(nextPanel.dataset.chatId || '') === scrollState.chatId
+              && String(nextPanel.dataset.historyId || '') === scrollState.historyId;
+            if (preserveMessages) {
+              var currentVerification = current.querySelector('[data-wa-ai-panel="verify"]');
+              var nextVerification = next.querySelector('[data-wa-ai-panel="verify"]');
+              if (currentVerification && nextVerification && currentVerification.dataset.number
+                && currentVerification.dataset.number === nextVerification.dataset.number) {
+                nextVerification.replaceWith(currentVerification);
+              }
+            }
             current.replaceWith(next);
             inbox = next;
             if (options.push !== false) {
@@ -2064,6 +2335,11 @@ function sessionPage(ctx) {
             activateWorkbenchTab(inbox, 'ai', aiTab.dataset.waAiTab);
             return;
           }
+          var verifyButton = e.target.closest ? e.target.closest('#waVerifyCustomer') : null;
+          if (verifyButton && inbox.contains(verifyButton) && !verifyButton.disabled) {
+            runCustomerVerification(verifyButton);
+            return;
+          }
           var adCopy = e.target.closest ? e.target.closest('.wa-ad-copy-id') : null;
           if (adCopy && inbox.contains(adCopy)) {
             e.preventDefault();
@@ -2111,18 +2387,14 @@ function sessionPage(ctx) {
           }, 250);
         });
         initConversation();
-        // 首次打开会话时把页面滚到底（2026-11-22）：消息区在页签/客户头/广告条下面，
-        // 不滚的话首屏只能看到一两行。滚到底后最新消息和完整输入框一次可见，
-        // 页签和客户头是 sticky 的，不会滚丢。只往下滚、不往上滚；
-        // 轮询刷新走 loadChat + restoreChatScroll，不经过这里，不会反复跳动。
-        try {
-          var _doc = document.documentElement;
-          var _max = Math.max(_doc.scrollHeight, document.body ? document.body.scrollHeight : 0) - (window.innerHeight || 0);
-          if (_max > (window.scrollY || 0) + 40) window.scrollTo(0, _max);
-        } catch (e) {}
+        var initialPanel = activePanel();
+        if (initialPanel && initialPanel.dataset.historyId) {
+          var initialHistory = document.getElementById('wa-msg-' + initialPanel.dataset.historyId);
+          if (initialHistory) initialHistory.scrollIntoView({ block: 'center' });
+        }
       })();
     </script>`;
   return page({ title: 'WhatsApp 会话', active: 'wa', user: ctx.user, content, flash: ctx.flash() });
 }
 
-module.exports = { sessionPage, accountCard, autoReplyBar, waSettingsCards, classifyWaChat, categoryOf, compareInboxChats, WA_CATEGORY };
+module.exports = { sessionPage, customerVerificationResultHtml, accountCard, autoReplyBar, waSettingsCards, classifyWaChat, categoryOf, WA_CATEGORY };

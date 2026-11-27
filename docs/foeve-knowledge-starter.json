@@ -1,0 +1,87 @@
+[
+  {
+    "title": "客户问 MOQ、现货和交期时怎么回",
+    "category": "问答",
+    "tags": "MOQ, 现货, 交期, stock, lead time",
+    "content": "先确认型号、表面处理、数量和收货地。现货要确认同批次可用数量，定制单要确认样品和大货各自的交期起算条件。报价注明单位是件、套还是箱。\n\n## 英文回复\n\n> Could you share the model, finish and quantity you need? I’ll check current stock, the MOQ and the lead time for that exact configuration."
+  },
+  {
+    "title": "客户第一次从中国进口时，先确认什么",
+    "category": "问答",
+    "tags": "首次进口, first import, destination, freight forwarder",
+    "content": "先问目的国、港口或城市、订单数量，以及买方是否已有货代。确认产品和包装后提供外箱尺寸、件数和毛重。把产品报价、运费和目的地费用分开说明。进口文件按货物和目的国要求与货代核对。\n\n## 英文回复\n\n> Is this your first shipment from China? Let me know the destination and whether you already have a freight forwarder. I can share the packing details so we can compare shipping options."
+  },
+  {
+    "title": "门用五金发货前验货清单",
+    "category": "历史经验",
+    "tags": "验货, QC, inspection, carton, 配件",
+    "content": "按确认样和订单抽查，记录型号、颜色、批次和抽查数量。\n\n- **执手与锁体**：检查磕碰、色差、执手回弹、斜舌和方舌动作、方轴间隙。\n- **锁芯和钥匙**：核对长度、钥匙数量和配套关系，试插拔与转动。\n- **配件**：将扣板、方轴、螺丝及其他附件与报价清单核对。\n- **包装**：核对箱唛、装量、尾箱、毛重和箱规。不同表面或型号分箱时逐箱核对。\n\n发现异常后记录照片、涉及数量和处理结果，再决定复检或放行。"
+  },
+  {
+    "title": "表面处理样确认与批量复检",
+    "category": "历史经验",
+    "tags": "拉丝, 哑黑, satin, finish, 色差, 批次",
+    "content": "把执手、面板、锁芯外露部分和合页放在同一扇门上对色。用实际安装环境的光线看颜色、光泽和拉丝方向，留存确认样编号、型号和表面代码。\n\n大货验货时拿留样复比。不同基材上的同名颜色可能存在差异，整套采购时分别确认。订单涉及盐雾、耐磨等指标时，提前核对测试方法、试样和适用报告。\n\n[FOEVE 展厅的表面对照方法](https://foeve.vip/insights/inside-foeve-door-hardware-showroom)"
+  },
+  {
+    "title": "EXW、FOB、CIF 在五金报价里如何写",
+    "category": "外贸术语",
+    "tags": "EXW, FOB, CIF, FCA, Incoterms, 贸易条款",
+    "content": "- **EXW**：写明交货地点和规则版本，核对提货、装车和出口手续由谁安排。\n- **FOB**：适用于海运或内河运输，写明装运港。集装箱在装船前交承运人的情况，可与货代确认 FCA 是否更适合。\n- **CIF**：写明目的港，核对运费和投保险别。货物风险在装运港装船时转移。买方另行核对目的港费用及进口环节。\n\n报价时写明条款、指定地点、规则版本和费用范围。\n\n[ICC Incoterms® 规则说明](https://iccwbo.org/business-solutions/incoterms-rules/)"
+  },
+  {
+    "title": "外箱装量、箱规和 CBM 怎么给货代",
+    "category": "外贸术语",
+    "tags": "carton, CBM, packing list, 毛重, 净重, 箱规",
+    "content": "按型号和包装版本记录每箱件数、外箱长宽高、净重、毛重和箱数。尾箱单列。多款混装时保留装箱对照表。\n\n**CBM** = 外箱长 × 宽 × 高，三边使用米。按每种箱型的单箱 CBM 乘箱数后求和。含托盘发运时，用打托后的尺寸确认计费体积。\n\n目录装量用于初估。若有定制内盒或分箱要求，按实际装箱资料报给货代。\n\n[FOEVE 产品目录](https://foeve.vip/catalog)"
+  },
+  {
+    "title": "OEM 打样与定制包装需要哪些资料",
+    "category": "工厂资料",
+    "tags": "OEM, logo, 打样, 包装, tooling, 项目单",
+    "content": "请客户提供目标型号或图纸、基材、表面样、预计数量、目标市场和交货时间。定制标识要收矢量文件、位置和尺寸。包装另收彩盒版面、条码、标签和箱唛要求。\n\n打样前核对模具或印刷费用。每次改样记录版次，保留确认样与确认日期。报价分列样品费、模具费、包装费和量产单价，写清交期起算条件。\n\n[FOEVE 工厂与 OEM 询盘](https://foeve.vip/factory#factory-inquiry)"
+  },
+  {
+    "title": "展厅视频怎么用来确认款式和样品",
+    "category": "工厂资料",
+    "tags": "showroom, 展厅, 执手, 锁体, 样品, finish",
+    "content": "用展厅视频筛选直柄、弯柄、面板形状和大致颜色，把截图、视频位置或目录款号留在同一条询盘。替换项目再索取现有面板和门边照片，照片里带尺，便于确认盖孔范围与锁体面板位置。\n\n初选后用图纸核对门厚、孔位和锁体配合，再请客户确认实物表面样。\n\n[FOEVE 展厅文章与视频](https://foeve.vip/insights/inside-foeve-door-hardware-showroom)"
+  },
+  {
+    "title": "门用五金询盘到报价的核对表",
+    "category": "报价政策",
+    "tags": "RFQ, quotation, 询盘, 报价, MOQ, lead time",
+    "content": "报价前拿到目录款号或现有五金照片、门型、门厚、用量、表面处理和目的地。换锁或工程询盘再索取锁体型号、门边照片和开孔图。每种配置按型号、表面和数量分行。\n\n写明套装包含哪些部件，锁体、锁芯和配件是否另计。单价、币种、计价单位、MOQ、打样与大货交期、包装、贸易条款和有效期分别列清。认证要求按项目条款和适用型号核对。\n\n## 英文追问\n\n> Could you send the item number or a photo, plus the door thickness, quantity and finish? For replacements, a photo of the door edge and the existing lock body would help us check the fit."
+  },
+  {
+    "title": "产品目录、单价和整套报价怎么对齐",
+    "category": "报价政策",
+    "tags": "catalogue, 报价单位, PCS, SET, MOQ, packing",
+    "content": "按目录款号找对应 CRM 产品。确认报价单位后，核对执手、面板、方轴、锁体、锁芯、钥匙、扣板和安装包的包含范围。客户要阶梯价时按实际数量分档，分别确认不同表面的 MOQ 和交期。\n\n收到不同供应商价格时，先把单件与整套、是否含锁体及包装换成同一口径。成交以当次报价、最终配置及订单为准。\n\n[FOEVE 产品目录](https://foeve.vip/catalog)"
+  },
+  {
+    "title": "SL8545 型号核对与配套询问",
+    "category": "产品资料",
+    "product": "SL8545",
+    "tags": "SL8545, 8545, 锁体, mortise, 尺寸图",
+    "content": "询盘出现 SL8545 时，打开关联产品档案，再按该款图纸核对后距、中心距、面板尺寸、方轴、锁芯和开向。确认客户问的是单独锁体还是配执手和锁芯的整套货。\n\n官网 8545 指南介绍的是展出的配套样品，可用来解释套装组成和测量方法。实际尺寸、材质、价格、起订量和交期以当前型号资料及书面报价为准。\n\n[FOEVE 8545 配套样品指南](https://foeve.vip/insights/zinc-alloy-door-handle-8545-lock-body)"
+  },
+  {
+    "title": "门锁换装怎么量 backset、中心距和锁芯",
+    "category": "选型指南",
+    "tags": "backset, PZ, centre distance, 门厚, 锁芯, 替换",
+    "content": "- **Backset（后距）**：从门边或图纸指定的锁体面板基准量到方轴中心。\n- **中心距（PZ）**：量执手方轴中心与锁芯中心的距离。长面板的两个孔都要对齐。\n- **锁芯长度**：分别量螺丝中心到两侧的距离，考虑门厚与装饰盖，确认锁芯形式和两侧长度。\n- **面板与开孔**：核对总长、宽度、螺丝孔距、方轴尺寸和斜舌方向，检查新面板能否盖住旧孔。\n\n请客户拍门正面和门边，照片里放尺。批量订单先试装一扇代表性门。\n\n[FOEVE Backset 测量指南](https://foeve.vip/insights/door-handle-backset)"
+  },
+  {
+    "title": "执手、合页与闭门器的选型要点",
+    "category": "选型指南",
+    "tags": "door handle, 合页, hinge, 闭门器, door closer, 门重",
+    "content": "**执手**先看门厚、材质、孔位和锁体配合，再定基材与表面。锌合金、黄铜或不锈钢等按具体款式和使用环境确认。\n\n**合页**确认门材、门宽、门重、安装方式、数量及表面。**闭门器**确认门宽、门重、开门方向、安装侧和门框空间，按型号图纸与力级选配。\n\n酒店或工程改造按门型做五金表。防火、逃生或无障碍门先取得项目规范和适用证书，按具体型号审核。\n\n[FOEVE 酒店改造门用五金指南](https://foeve.vip/insights/how-to-choose-door-handles-hotel-renovation)"
+  },
+  {
+    "title": "FOEVE 产品目录与门用五金选型入口",
+    "category": "选型指南",
+    "tags": "FOEVE, catalogue, 执手, 锁体, 锁芯, 门用五金",
+    "content": "[打开 FOEVE 产品目录并下载 PDF](https://foeve.vip/catalog)。目录可查执手、嵌入式锁体、表面处理参考和装箱数量。选款时记录目录款号和页码。\n\n## 按门型核对\n\n- **执手与分体锁**：量门厚、方轴和固定孔，确认面板能否覆盖旧孔以及锁体是否配套。\n- **锁体与锁芯**：核对后距、中心距、面板、螺丝孔和锁芯两侧长度。\n- **合页与闭门器**：记录门型、门宽、门重、开门方向和安装方式。\n- **酒店锁与指纹锁**：先拿门体尺寸、使用场景和管理方式，再确认功能配置与随货资料。\n\n收到询盘后，把款号、门型、用量和表面要求写在同一行。尺寸和套装范围按型号图确认，价格、MOQ 和交期以当次报价为准。\n\n[门执手系列](https://foeve.vip/collections/door-handles) · [展厅与 OEM 询盘](https://foeve.vip/factory)"
+  }
+]

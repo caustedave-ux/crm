@@ -13,7 +13,7 @@ const { db, run } = require('../src/db');
 const knowledge = require('../src/knowledgeBase');
 
 try {
-  assert.deepStrictEqual(knowledge.CATEGORIES, ['产品资料', '报价政策', '工厂资料', '外贸术语', '历史经验']);
+  assert.deepStrictEqual(knowledge.CATEGORIES, ['选型指南', '产品资料', '报价政策', '工厂资料', '外贸术语', '历史经验', '问答']);
   assert.strictEqual(knowledge.categoryCounts()['产品资料'], 0);
 
   const stamp = '2026-11-21 10:00:00';

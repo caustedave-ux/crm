@@ -3,7 +3,7 @@
  * 轻量网络层：基于 Node 内置 fetch，带超时 / 重试 / 限速 / UA 轮换 / HTML 工具。
  * 不引入额外依赖，保证独立目录零安装可运行。
  */
-const { getSetting } = require('./db');
+const getSetting = (...args) => require('./db').getSetting(...args);
 
 // undici ProxyAgent（复用主系统依赖，独立目录零安装）
 let ProxyAgent = null;

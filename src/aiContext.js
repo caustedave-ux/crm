@@ -1,6 +1,7 @@
 'use strict';
 // ============ AI 助理：把 CRM 数据库整理成上下文 ============
-const { get, all } = require('./db');
+const { all } = require('./db');
+const payments = require('./payments');
 const { nowStr } = require('./util');
 const knowledgeBase = require('./knowledgeBase');
 
@@ -20,10 +21,14 @@ function buildContext(user, question, knowledgeMatches) {
   const docs = all('SELECT * FROM documents WHERE user_id=? ORDER BY id DESC', uid);
   const acts = all('SELECT * FROM activities WHERE user_id=? ORDER BY id DESC', uid);
   const quotes = all('SELECT * FROM quote_history WHERE user_id=? ORDER BY id DESC LIMIT 100', uid);
-  const pay = get("SELECT COALESCE(SUM(p.paid),0) paid, COALESCE(SUM(d.total_amount),0) total FROM document_payments p JOIN documents d ON d.id=p.doc_id WHERE d.user_id=?", uid);
+  const received = new Map();
+  for (const row of payments.receiptTotals(uid)) {
+    const currency = payments.currencyCode(row.currency);
+    received.set(currency, (received.get(currency) || 0) + payments.cents(row.amount));
+  }
   const low = all('SELECT name, stock, stock_alert FROM products WHERE stock <= stock_alert');
 
-  L.push(`【CRM 数据总览（截至 ${nowStr()}）】客户 ${cus.length} 家、供应商 ${supps.length} 家、产品 ${prods.length} 款、单据 ${docs.length} 张、跟进记录 ${acts.length} 条、历史报价 ${quotes.length} 条。已登记收款合计：${money(pay ? pay.paid : 0)}；单据金额合计：${money(pay ? pay.total : 0)}。`);
+  L.push(`【CRM 数据总览（截至 ${nowStr()}）】客户 ${cus.length} 家、供应商 ${supps.length} 家、产品 ${prods.length} 款、单据 ${docs.length} 张、跟进记录 ${acts.length} 条、历史报价 ${quotes.length} 条。实收按到账币种汇总：${[...received].map(([currency, amount]) => currency + ' ' + money(amount / 100)).join('、') || '暂无'}。`);
   const matchedKnowledge = Array.isArray(knowledgeMatches) ? knowledgeMatches : knowledgeBase.relevantArticles(question, 4);
   if (matchedKnowledge.length) {
     // 已关联产品的“产品资料”只取正文作补充，不再重复报价格数字（价格/MOQ/交期以【产品】为准）

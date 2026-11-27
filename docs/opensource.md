@@ -2,6 +2,20 @@
 
 按 [AGENTS.md](../AGENTS.md) 的约定，每个功能动工前先调研开源实现，这里记一行：需求 → 候选 → 选中项 + 原因 → 改动点。
 
+## 2026-11-27 · WhatsApp 跟进 Facebook 收尾
+
+评估了 [XState](https://github.com/statelyai/xstate)（MIT）和现有 SQLite 跟进记录（公有领域）。采用现有记录，它已经包含跟进次数、消息发送结果和会话状态，可用来判断收尾时机并避免重复邀请。改动位于 `auto-reply/logic.js`、`auto-reply/worker.js` 和 `auto-reply/qualify.js`。
+
+## 2026-11-26 · WhatsApp 自动回复按区号识别地区
+
+复用客户验证已选型的 [libphonenumber-js](https://github.com/catamphetamine/libphonenumber-js)（MIT）完整号码元数据，可区分共用区号的地区。自动回复和主动跟进按需询问城市，并参考同一会话已经问过的问题。改动位于 `auto-reply/logic.js`、`auto-reply/qualify.js` 和 `auto-reply/worker.js`。
+
+## 2026-11-24 · WhatsApp 历史消息搜索
+
+WhatsApp 会话、消息和关联业务记录复用 SQLite 内置的 [ORDER BY](https://sqlite.org/lang_select.html#the_order_by_clause)（公有领域）按时间降序排列。订单与报价在服务端视图中按各自业务日期合并，同一时间按记录 ID 排序。
+
+评估了 [MiniSearch](https://github.com/lucaong/minisearch)（MIT）、[FlexSearch](https://github.com/nextapps-de/flexsearch)（Apache-2.0）和 SQLite 内置 [LIKE](https://sqlite.org/lang_expr.html#the_like_glob_regexp_match_and_extract_operators) 与 [FTS5](https://sqlite.org/fts5.html)（公有领域）。在当前约 1.3 万条消息的数据量下，带权限条件的原库查询平均约 9 毫秒。选用 SQLite 参数化 LIKE，支持中文子串和型号符号，直接复用现有会话可见性和数据库。WhatsApp 收件箱显示分页结果与匹配摘要，点击后加载该消息附近的历史记录。
+
 ## 2026-10-21 · WhatsApp 聊天记录导入 CRM（2026-10-30 已移除入口）
 
 **需求**：把客户在 WhatsApp 里的聊天记录指定导入 CRM，成本尽可能低。
@@ -505,3 +519,83 @@
 - 2026-11-22 产品管理 × 知识库产品资料合并：需求 → 产品管理与知识库各存一份产品资料（价格/MOQ 两边不一致），按 GitHub 开源 PIM 的数据模型合并，products 为唯一事实源，文章挂 product_id。候选 → ① UnoPim（MIT，属性族/变体/完整度）、② Akeneo PIM（行业标准父子两级模型）、③ Part-DB（五金件形态，附件/阶梯价）；三个都是 PHP 栈，装进来等于再养一套系统，只照搬模型。选中 → 混合模型：UnoPim 的属性族（按锁体/把手/锁芯/合页配专属参数 specs JSON）+ Akeneo 的父子两级思路（变体放二期）+ Part-DB 的附件表（product_attachments）；改动点：src/db.js（product_categories / product_attachments 表、products 加 10 列、knowledge_articles 加 product_id、服装示例文章迁移删除）、tools/migrate-products.js（只出建议清单，不写库）、src/views/pages_core.js（详情页 5 页签、列表筛选、表单新字段）、src/views/pages_knowledge.js（关联产品芯片、必填关联）、src/knowledgeBase.js + src/aiContext.js（已关联文章降权、价格/MOQ/交期以 products 为准）、Excel 模板加 8 列；不动 supplier_products 同步逻辑。
 - 2026-11-22 分类添加按钮、客户 AI 摘要、AI 助手学知识库：需求 → ① 分类要能随时加（智能锁/门吸）；② 客户详情 AI 摘要与实际不符；③ AI 助手要按知识库学习、可引用、可保存。候选 → ① 分类：新引分类管理组件库（overkill：只是一张表 + 一个弹窗）；② 摘要：直接调 DeepSeek 每次现算（要等模型、不稳定，且根因是写死文案不是模型不行）；③ 助手：新引 RAG 框架（overkill：检索 relevantArticles 已有、提示词已在 buildPrompt 里）。选中 → 全部原生实现、零新依赖：① 分类用现有 Bootstrap modal + POST /products/categories；② 摘要默认按真实数据规则现算（buildCustomerAiSummary），另加 DeepSeek 重新生成按钮（复用 src/workbench.js 已有的 callDeepSeek）；③ 助手 /api/ai/chat 由本地 Codex CLI 改走 DeepSeek（复用 callDeepSeek，与设置页“系统全部 AI 共用 DeepSeek Key”一致），检索沿用 knowledgeBase.relevantArticles，保存问答用现有 knowledge_articles 表 + 新增“问答”分类；改动点：src/db.js（分类种子补齐）、src/routes.js（新增分类、AI 摘要、保存问答三个接口，聊天接口改 DeepSeek）、src/views/pages_core.js（分类弹窗/摘要面板）、src/views/pages_ai.js（改名 + 保存 UI）、src/knowledgeBase.js（加“问答”分类）。
 - 2026-11-23 客户给出具体需求转人工的右下角强弹窗：需求 → 客户给出具体需求时 CRM 所有页面右下角弹大卡片提醒人工，常驻到点【知道了】才消失，多条可叠加。候选 → ① Bootstrap 5 Toast（已随 Bootstrap 引入）：默认自动消失、需额外管多卡堆叠与自定义按钮，改造成本不比手写小；② 少量自定义 CSS + 原生 JS 轮询（本项目 lightbox 已用同一做法）。选中 ②，原因：零新依赖、零构建、行为完全按需求来（常驻、叠加、两个按钮、25 秒轮询、复用 crm_wa_sound 声音开关）；改动点：src/db.js（notifications 表）、src/routes.js（POST /api/notifications、GET /api/notifications、POST /api/notifications/:id/read，24 小时同会话同类未读去重）、src/views/layout.js（铃铛未读数 + 弹窗容器与轮询脚本）、static/css/style.css（.notify-toast-stack 样式）、auto-reply/worker.js（notifyHandoff，只在给出具体需求的转人工事件调用）。
+
+## 2026-11-23 · Google 地图采集 MVP（获客核验服务）
+
+**需求**：在独立获客核验服务里加地图采集：输关键词 + 城市/地区 + 半径，批量采 Google 地图上的商家（店名、地址、电话、网址、评分），去重后进线索库，再走现有核验流程。
+
+**候选**：
+
+| 项目 | 形态 / 许可证 | 结论 |
+| --- | --- | --- |
+| [@googlemaps/google-maps-services-js](https://github.com/googlemaps/google-maps-services-js)（官方 Node 客户端，Apache-2.0，v3.3.34） | npm 包，只包 Places API (Legacy)；Legacy 自 2026-10 起新项目不能再启用，新 API 不会加进这个库 | 否决：要 npm install（本任务不新增依赖），且走的是已停售的旧版 API |
+| [@googlemaps/places](https://docs.cloud.google.com/nodejs/docs/reference/places/latest)（官方 Places API (New) Node 客户端，Apache-2.0） | npm 包，仍在 preview | 否决：同样要 npm install；Places API (New) 本身就是纯 HTTPS + JSON，直接 fetch 更轻 |
+| [omkarcloud/google-maps-scraper](https://github.com/omkarcloud/google-maps-scraper)（约 3.9k★，MIT） | 桌面应用 + Python/Playwright 爬取地图页面 | 否决：爬虫违反 Google 服务条款、要浏览器与代理、不可靠；且本项目 2026-11-21 已明确否决地图爬虫 |
+| [gosom/google-maps-scraper](https://github.com/gosom/google-maps-scraper)（约 7.1k★，MIT） | Go 实现，需 Docker 或 Go 工具链 | 否决：同上是爬虫，且要另起运行时，与本项目 Node + SQLite 单机栈不合 |
+| 直接 fetch Places API (New) | Node 内置 global fetch，纯 HTTPS + JSON | **选中** |
+
+**选中理由**：零新增依赖、零构建，与本项目 Node 原生 http、无构建链的栈一致；走官方付费 API 而非爬虫，合规且稳定；字段按需拿（搜索只拿 id/名称/地址/坐标，详情只拿电话/网址/地址/评分等 Pro 档及以下字段，不碰 Enterprise 档），免费额度内基本不用花钱（Text Search Pro 与 Place Details Pro 各 5,000 次/月）。
+
+**与 2026-11-21 决策的关系**：2026-11-21 工作台首版时曾决定“不做海外 POI 批量采集”，理由是竞品用的地图爬虫违反合规红线且本机 Google 直连不可达。本次用户明确要求做地图采集，并已确认走官方 Places API（不是爬虫）与免费额度口径后下令开始；Key 由用户在数据源设置里自配，代码内不内嵌任何 Key。爬虫方案仍否决，本次只接官方 API。
+
+**改动点**（全部在 `lead-gen/`，主 CRM 业务规则不动）：
+
+- 新增 `lead-gen/src/places.js`：Places API (New) 客户端（geocode / searchText 翻页 / placeDetails）+ 采集编排（定位 → 搜索 → 逐家详情 → 按 importer 去重规则入库 + 写 website/phone/address 证据），Key 只从 settings 表读，API 报错转中文友好信息，Key 永不进日志/错误/URL。
+- `lead-gen/server.js`：新增 `GET /maps`、`POST /api/maps/search`（无 Key 直接报友好错、零请求）、`POST /api/maps/verify-batch`（复用现有 enqueue 入队核验）。
+- `lead-gen/src/views.js`：新增 `mapsPage()`（关键词/城市/半径/条数表单、预设快捷按钮、预估调用量、无 Key 提示、结果列表、去核验按钮）、导航加“地图采集”；`settingsPage` 加 Google Places API Key 输入框与 `google_places` 通道开关（默认关闭，配好 Key 后用户自己勾选；`/maps` 页只要 Key 配了就能用，不依赖开关）。
+- `lead-gen/src/db.js`：默认设置加 `google_places_key: ''`。
+- 新增 `lead-gen/static/maps.js`（前端交互）、`lead-gen/tools/test-maps-collect.js`（mock fetch 自测：无 Key 零请求、翻页与 60 上限、去重、fieldMask、报错转中文、定位与半径、预估调用量）；`lead-gen/package.json` 的 test 脚本接入新测试。
+- 根 `package.json` 版本 2.0.3 → 2.0.4。
+
+**验证**：`node --check` 全部通过；`cd lead-gen && npm test` 通过（含新测试）；根目录 `npm run check` 通过；临时库 + 临时端口拉起 lead-gen 服务验证 `/maps` 页面与无 Key 提示态。
+
+## 2026-11-23 · 获客核验 → 获客工作台一整套
+
+**需求**：用户说获客核验和他发的地图获客截图完全是两个东西，要求做成一整套、把获客核验去掉。对外名“获客工作台”，新服务与 `lead-gen/` 平级、端口仍 5101。
+
+**做法**：新建 `suite/`（与 `lead-gen/` 平级，端口仍 5101，启动文件 `suite/启动获客工作台.bat`）；数据迁移复制（`lead-gen/data/` 不动、不删除，数据由新服务承接）；旧核验引擎不搬（`verify.js` / `sources.js` / `socialReader.js` / `exporter.js` / `workflow.js` 等核验链路不进新服务）；地图用 Google Maps JS API script 标签引入，不新增依赖。
+
+**改动点**：
+
+- 主 CRM 侧（本轮改动，业务规则不动）：
+  - `src/views/layout.js`：侧栏入口 label「获客核验」→「获客工作台」（href `/leadgen`、target `_blank`、key、icon 不变）。
+  - `src/leadgen-bridge.js`：探测/拉起目标由 `lead-gen/` 改为 `suite/`（`LG_DIR` 指向 `suite`，`ENTRY` 随之改，`autostart.log` 路径随 `LG_DIR` 走），「未找到 lead-gen/server.js」改为「未找到 suite/server.js」，文件头注释的 lead-gen 字样改为 suite；`LEADGEN_PORT` 环境变量名不变。
+  - `src/views/pages_workbench.js`：工作台「客户背调」卡片改名为「获客工作台」，副文案改为「地图找客、AI 整理、开发信、WhatsApp」；地图页「去获客挖掘」按钮改为「去获客工作台」（href 与 target 不变）。
+  - `src/routes.js`：`GET /leadgen` 报错页 title 与 h5 改为「获客工作台」，启动脚本提示改为 `<code>suite/启动获客工作台.bat</code>`，路由上方注释改为「获客工作台入口」。
+  - 根 `package.json` 版本 2.0.5 → 2.0.6。
+- 新服务 `suite/`：`server.js`、`package.json`、`README.md`、`启动获客工作台.bat`、`src/db.js`、`src/web.js`、`src/crmAuth.js`、`src/net.js`、`src/normalize.js`、`src/importer.js`、`src/places.js`、`src/tasks.js`、`src/letters.js`、`src/views.js`、`static/app.css`、`static/maps.js`、`static/leads.js`、`static/import.js`、`static/settings.js`、`static/tasks.js`、`static/letters.js`、`tools/selftest.js`、`tools/test-tasks-letters.js`（与 `lead-gen/` 平级的新服务，另见其 README）。
+- `lead-gen/` 代码删除：除 `data/` 以外的全部文件从仓库删除（`data/leads.db` 等数据文件保留在本地、不进 GitHub、不删除）。
+
+**验证**：`node --check` 改过的 JS 文件全部通过；根目录 `npm run check` 通过。
+
+## 2026-11-23 · 获客核验 → 获客工作台一整套（lead-gen → suite）
+
+**需求**：旧获客核验服务（lead-gen/，端口 5101）整体升级为获客工作台（suite/，平级目录）：地图采集改任务制、新增 AI 任务流、开发信单发、线索详情加 WhatsApp 联系按钮；旧核验引擎与导出本次不搬；首次启动把旧线索库复制过来。
+
+**候选（地图展示方案）**：
+
+| 方案 | 形态 / 许可证 | 结论 |
+| --- | --- | --- |
+| Google Maps JS API script 标签直接引入（`https://maps.googleapis.com/maps/api/js?key=…&callback=…`） | 官方文档三选一之一，无 npm 包 | **选中**：零新增依赖、零构建，与本项目 Node 原生 http、无构建链的栈一致；Key 由服务端只渲染进地图页 |
+| [@googlemaps/js-api-loader](https://github.com/googlemaps/js-api-loader)（官方 loader，Apache-2.0） | npm 包，Promise/callback 封装动态加载 | 否决：要 `npm install`（本任务不新增依赖），且它本质上也是动态插同一个 script 标签；本项目没有构建链，收益抵不过依赖成本 |
+| 动态库导入（Dynamic Library Import，`google.maps.importLibrary`） | 官方新版内联 bootstrap loader，按需加载库 | 否决：写法比直接 script 标签复杂，且本页只需要一个 Map，省不出有意义的加载量；后续要按需加载其他库时再评估 |
+
+**选中理由**：直接 script 标签是 Google 官方文档给出的三种加载方式之一，与 js-api-loader 加载的是同一个 Maps JS API；本项目零依赖、零构建的既定栈下，直接引入最轻；地图脚本加载失败时前端降级只显示列表，不阻塞采集。
+
+**改动点**（全部在 `suite/`，主 CRM 业务规则不动，不动 `lead-gen/data/`）：
+
+- 新增 `suite/`：`server.js`（端口仍 5101，环境变量名保持 `LEADGEN_PORT`）、`src/db.js`（首次启动复制旧库：`.db` + `-wal` + `-shm`，新库 checkpoint + 行数校验，失败不崩启动；新增 `tasks` / `send_records` / `letter_templates` 三张表）、`src/views.js`（新导航：概览/地图采集/AI 任务流/线索库/开发信/WhatsApp 咨询/社媒获客专区（第二阶段占位）/数据源设置）、`src/places.js` / `src/net.js` / `src/normalize.js` / `src/importer.js` / `src/crmAuth.js` / `src/web.js`（复制，静态挂载由 `/lg-static/` 改为 `/static/`）、`static/app.css` / `static/maps.js`（任务制轮询 + 地图打点与半径圆）/ `static/leads.js` / `static/import.js` / `static/settings.js`、`tools/selftest.js`（迁移 + places mock + 导入去重，41 项，临时库）。
+- `src/tasks.js` / `src/letters.js` / `static/tasks.js` / `static/letters.js` 由 B 交付，`server.js` 与 `views.js` 按约定直接调其导出函数；`tools/test-tasks-letters.js` 同样由 B 交付，已接入 `npm test` 并联调通过（见下）。联调时发现并修掉的口径差：任务整理中状态 B 用 `organizing`（`db.js` 注释与 `views.js`/`maps.js` 的状态文案随之统一）；`letters.recordSend` 要驼峰参数 `{ leadId, templateId }`，前端 POST `/api/send-records` 发 snake_case，由 `server.js` 转换；`letters.js` 前端另用 `GET/POST/DELETE /api/letter-templates` 与 `GET /api/send-records`，`server.js` 已补齐；`views.js` 的任务流页与开发信页、线索详情开发信区已按 B 的前端元素 ID（`#taskList` / `#taskTimeline` / `#taskForm`、`#templateList` / `#templateForm` / `#templateSelect` / `#leadSelect` / `#letterPreviewSubject` 等）重构。
+- 不搬：旧核验引擎（`verify.js`、`sources.js`、`socialReader.js`、`workflow.js`、pipeline-demo、`exporter.js`）；`/verify`、`/api/verify`、`/api/verify-all`、`/api/maps/verify-batch` 已去掉，导出功能 V1 先不做。
+
+**验证**：`node --check` 全部通过；`node tools/selftest.js` 41/41 通过；`npm test`（含 B 的 `tools/test-tasks-letters.js`）72/72 通过；临时端口 + 临时库拉起服务真渲染 `/`、`/maps`、`/tasks`、`/leads`、`/letters`、`/settings`，确认无 Key 态与页面结构，以及建任务、开发信渲染/标记已发送的端到端接口。
+- 2026-11-24 WhatsApp 全部列表支持搜索置顶客户：需求 → 在“全部”筛选中按客户名字搜索时，结果也要包含已置顶会话。候选 → 参考 Chatwoot（约 40,440 stars，2026-11-24 有更新，1,636 个 open issues；仓库核心 MIT，enterprise/ 单独许可）的收件箱置顶交互；完整收件箱框架与当前原生 Node.js + SQLite 服务端渲染栈不兼容，也无需引入搜索库。选中 → 沿用现有 SQL 搜索条件，仅让“全部”在存在搜索词时包含置顶会话；空搜索时保持原列表筛选，置顶页签行为不变。改动点：src/views/pages_wa.js + tools/test-wa-inbox.js。
+- 2026-11-24 WhatsApp 会话列表分页。评估了 Chatwoot 收件箱（核心 MIT）和 SQLite（公有领域）配合现有 Bootstrap（MIT）控件的方案。选用后者，在服务端分页并保留筛选及搜索条件，沿用当前消息时间降序。改动涉及 `src/views/pages_wa.js` 和 `tools/test-wa-inbox.js`。
+- 2026-11-24 WhatsApp 聊天框按消息时间升序，聊天记录搜索按消息时间降序。沿用 SQLite（公有领域）查询和浏览器原生滚动实现，打开会话时定位到最新消息，刷新时保留历史阅读位置。改动涉及 `src/views/pages_wa.js` 和 `tools/test-wa-inbox.js`。
+- 2026-11-25 WhatsApp 客户验证。对比 [libphonenumber-js](https://github.com/catamphetamine/libphonenumber-js)（MIT，3,005 stars，最近推送 2026-11-10，38 个 open issues）、[Google libphonenumber](https://github.com/google/libphonenumber)（Apache-2.0，18,365 stars，最近推送 2026-11-24，123 个 open issues）和 [PhoneInfoga](https://github.com/sundowndev/phoneinfoga)（GPL-3.0，18,671 stars，最近推送 2026-08-25，173 个 open issues）。选用 libphonenumber-js 的完整号码元数据和 Node.js 接口，配合项目已有 Baileys 和 Bing 解析器，结合 CRM 同号档案、WhatsApp 商家资料和公开网页线索。服务端设置可选环境变量 `CRM_WA_VERIFICATION_SERPAPI_KEY` 后优先使用 Google 搜索接口，接口不可用时使用 Bing。实现位于 `src/waCustomerVerification.js`、`src/routes.js` 和 `src/views/pages_wa.js`。
+- 2026-11-25 WhatsApp 数字快捷回复。评估了 [Tribute.js](https://github.com/zurb/tribute) 5.1.3（MIT）、[autoComplete.js](https://github.com/TarekRaafat/autoComplete.js) 10.2.10（Apache-2.0）和项目已有的 [Bootstrap](https://github.com/twbs/bootstrap) 5.3.3（MIT）。复用 Bootstrap 选择器和浏览器输入事件，共用同一份快捷回复数据并使用现有记录 ID 作为固定编号。实现位于 `src/views/pages_wa.js`。
+- 2026-11-25 FOEVE 门用五金知识库。对比 Obsidian 的外部文档流程和 CRM 已有的 [Bootstrap](https://github.com/twbs/bootstrap) 5.3.3（MIT）、[markdown-it](https://github.com/markdown-it/markdown-it)（MIT）与 SQLite（公有领域）组合。沿用现有文本搜索、产品关联及 Markdown 渲染。业务分类和阅读页位于 `src/views/pages_knowledge.js`，首批资料位于 `docs/foeve-knowledge-starter.json`。
+- 2026-11-25 多币种货款管理。评估 [currency.js](https://github.com/scurker/currency.js) 2.0.4（MIT）、[Dinero.js](https://github.com/dinerojs/dinero.js) 2.0.2（MIT）及现有 SQLite（公有领域）和 Bootstrap（MIT）。沿用 SQLite 账本和 Bootstrap 表单，以整数分汇总。收款保存原币与实际冲抵金额，单据、客户和发货复用同一份记录。主要实现位于 `src/payments.js` 和 `src/views/pages_pay.js`。
+- 2026-11-25 WhatsApp 订单报价空白页。评估 [Floating UI](https://github.com/floating-ui/floating-ui)（MIT）和现有 [Bootstrap Dropdown](https://github.com/twbs/bootstrap)（MIT）。沿用现有下拉菜单及订单、报价表单，新建时带入当前客户。改动涉及 `src/views/pages_wa.js`、`src/views/pages_quotes.js`。
+- 2026-11-25 订单与报价导出 PNG。复用现有 [Puppeteer Core](https://github.com/puppeteer/puppeteer)（Apache-2.0）、本机浏览器及单据 HTML 模板，按当前登录用户验证归属后按需生成高清图片。订单沿用已保存的正式单据模板，报价采用客户版式且只包含售价与产品信息。实现位于 `src/documentPdf.js`、`src/quoteImage.js` 和对应导出路由。
+- 2026-11-25 WhatsApp 指标卡跳转。评估了 Bootstrap 5（MIT，约 175,130 stars，2026-11-24 更新，237 个 open issues）和 htmx 2（0BSD，约 49,661 stars，2026-11-20 更新，325 个 open issues）。复用 CRM 已内置的 Bootstrap 链接样式和服务端分页，支持今日来信、今日活跃会话和到期跟进，移除近 7 天报价卡。改动涉及 src/views/pages_wa.js、src/views/pages_core.js 和 static/css/style.css。

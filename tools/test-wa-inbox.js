@@ -23,15 +23,6 @@ const phone = '2348099998877';
 const jid = phone + '@s.whatsapp.net';
 const t = nowStr();
 
-console.log('=== 0. 会话列表未读优先 ===');
-const inboxOrder = [
-  { id: 1, unread: 0, last_msg_at: '2026-11-19 12:00:00' },
-  { id: 2, unread: 2, last_msg_at: '2026-11-19 09:00:00' },
-  { id: 3, unread: 1, last_msg_at: '2026-11-19 11:00:00' },
-  { id: 4, unread: 0, last_msg_at: '2026-11-19 13:00:00' }
-].sort(pagesWa.compareInboxChats);
-eq(inboxOrder.map(row => row.id).join(','), '3,2,4,1', '未读在前，未读内按最新消息排序');
-
 for (const id of [9994, 9995, 9996, 9997, 9998]) {
   run('DELETE FROM activities WHERE customer_id=?', id);
   run('DELETE FROM wa_imports WHERE customer_id=?', id);
@@ -253,7 +244,8 @@ eq(html.includes('keepActiveChatVisible') && html.includes('list.scrollTop = sta
 eq(html.includes('data-inbox-last-id='), true, '收件箱带有全局消息游标');
 eq(html.includes('inbox_changed') && html.includes('visibilitychange'), true, '全收件箱轮询并支持切回页面立即刷新');
 eq(html.includes('/api/wa/poll?inbox_after='), true, '没有选中会话时也会检查新消息');
-eq(html.includes('messagesAtBottom') && html.includes('preserveMessages && !state.messagesAtBottom'), true, '聊天内容刷新时保持历史阅读位置且底部继续跟随新消息');
+eq(html.includes('box.scrollTop = box.scrollHeight') && html.includes('preserveMessages && !state.messagesAtBottom') &&
+  html.includes('offset - state.readingMessageOffset'), true, '底部跟随新消息，向上阅读时保持原消息位置');
 const fs = require('fs');
 const sourcePath = require('path').join(__dirname, '..');
 const waSource = fs.readFileSync(require('path').join(sourcePath, 'src/wa.js'), 'utf8');
@@ -285,28 +277,25 @@ const cssSource = fs.readFileSync(require('path').join(sourcePath, 'static/css/s
 console.log('\n=== 9a. WhatsApp 工作台真实三栏布局 ===');
 eq(quotedHtml.includes('wa-workbench-metrics') && quotedHtml.includes('今日客户消息'), true, '工作台顶部指标从当前 CRM / WhatsApp 数据生成');
 eq(quotedHtml.includes('data-wa-main-tab="chat"') && quotedHtml.includes('data-wa-main-tab="customer"') && quotedHtml.includes('data-wa-main-tab="followups"') && quotedHtml.includes('data-wa-main-tab="files"') && quotedHtml.includes('data-wa-main-tab="orders"'), true, '中间会话区提供真实业务标签');
-eq(quotedHtml.includes('data-wa-ai-tab="reply"') && quotedHtml.includes('data-wa-ai-tab="knowledge"') && !quotedHtml.includes('data-wa-ai-tab="translate"') && !quotedHtml.includes('data-wa-ai-tab="phrases"'), true, '右侧 AI 助手只留智能回复和知识检索两个标签');
+eq(quotedHtml.includes('data-wa-ai-tab="reply"') && quotedHtml.includes('data-wa-ai-tab="verify"') && !quotedHtml.includes('知识检索') && !quotedHtml.includes('引用知识'), true, '右栏由智能回复和客户验证组成');
 eq(quotedHtml.includes('id="waComposeTranslateBtn"') && quotedHtml.includes('id="waComposePhrasesBtn"') && quotedHtml.includes('id="waComposeTranslatePanel"') && quotedHtml.includes('id="waComposePhrasesPanel"'), true, '翻译和快捷短语已搬到输入区附件边上');
+const savedPhraseId = Number(run('INSERT INTO wa_quick_replies(user_id,title,content) VALUES(?,?,?)',
+  user.id, '报价问候', '您好，<请确认>型号。').lastInsertRowid);
+run('INSERT INTO wa_quick_replies(user_id,title,content) VALUES(?,?,?)', otherUser.id, '其他账号短语', '其他账号文案');
+const quickReplyHtml = sessionPage({ query: { chat: String(quoteChat.id) }, user, flash: () => [] });
+eq(quickReplyHtml.includes('value="您好，&lt;请确认&gt;型号。" data-code="' + savedPhraseId + '">/' + savedPhraseId + ' · 报价问候'), true, '已保存快捷回复按固定编号显示并保留文案');
+eq(quickReplyHtml.includes('其他账号文案'), false, '数字快捷回复仅使用当前账号的文案');
 eq((quotedHtml.match(/id="waAiDraft"/g) || []).length, 1, 'AI 起草按钮只保留一份并连接现有 API');
 eq((quotedHtml.match(/id="waAiTranslate"/g) || []).length, 1, 'AI 翻译按钮只保留一份并连接现有 API');
-eq(quotedHtml.includes('role="tab" aria-selected="true" class="active" data-wa-ai-tab="reply"') && quotedHtml.includes('role="tabpanel" data-wa-ai-panel="knowledge" hidden'), true, 'AI 工具页签具备初始选中和面板可访问状态');
+eq(quotedHtml.includes('role="tab" aria-selected="true" class="active" data-wa-ai-tab="reply"') && quotedHtml.includes('role="tabpanel" data-wa-ai-panel="verify"'), true, '工具页签具备初始选中和面板可访问状态');
 eq(quotedHtml.includes('提供款式 2 和 3 的工艺细节'), false, '移除截图里的虚构客户示例');
 eq(quotedHtml.includes('AI 回复建议（英文）'), false, '移除截图里的静态 AI 回复示例');
 eq(cssSource.includes('.wa-inbox.wa-3col{display:grid;grid-template-columns:'), true, '桌面 WhatsApp 工作台使用固定三栏网格');
 eq(cssSource.includes('grid-template-columns:minmax(245px,.22fr) minmax(430px,.43fr) minmax(330px,.35fr)'), true, '三栏按截图扩大右侧 AI 助手的可用宽度');
 eq(cssSource.includes('body.page-wa .wa-inbox.wa-3col { grid-template-columns:'), true, '桌面三栏比例覆盖通用工作台断点规则');
 eq(cssSource.includes('.wa-compose .d-flex.align-items-end>button{flex:0 0 auto;white-space:nowrap;}'), true, '聊天发送按钮保持横向完整显示');
-const waKnowledgeId = Number(run(`INSERT INTO knowledge_articles(title,category,tags,content,created_by,created_at,updated_at)
-  VALUES(?,?,?,?,?,?,?)`, 'Door lock MOQ reference', '报价政策', 'door lock, MOQ, FOB', 'MOQ depends on model; confirm the target quantity.', user.id, t, t).lastInsertRowid);
-wa.storeMessage(acc.id, {
-  key: { remoteJid: quoteJid, id: 'wa-ai-kb-match', fromMe: false },
-  message: { conversation: 'Please quote door lock FOB for MOQ 500.' },
-  messageTimestamp: Math.floor(Date.now() / 1000) + 30,
-  pushName: 'Quote Tester',
-}, { live: true, autoTranslate: false });
-const aiKnowledgeHtml = sessionPage({ query: { chat: String(quoteChat.id) }, user, flash: () => [] });
-eq(aiKnowledgeHtml.includes('data-wa-ai-panel="knowledge"') && aiKnowledgeHtml.includes('/knowledge?article=' + waKnowledgeId), true, '知识检索展示匹配文章并链接来源');
-eq(aiKnowledgeHtml.includes('class="wa-ai-inline-knowledge"') && aiKnowledgeHtml.includes('/knowledge?article=' + waKnowledgeId), true, '智能回复页同时展示真实知识来源');
+eq(quotedHtml.includes('id="waVerifyCustomer" data-chat-id="' + quoteChat.id + '"'), true, '核验按钮以当前会话为查询目标');
+eq(sessionPage({ query: {}, user, flash: () => [] }).includes('id="waVerifyCustomer"'), false, '未选择会话时没有核验按钮');
 run("UPDATE wa_chats SET manual_category='', manual_category_at='' WHERE id=?", chat.id);
 
 console.log('\n=== 10. 图片下载完成后自动刷新 ===');
@@ -329,10 +318,16 @@ run("UPDATE wa_chats SET pinned_at='' WHERE account_id=?", acc.id);
 run('UPDATE wa_chats SET pinned_at=? WHERE id=?', t, chat.id);
 run('UPDATE wa_chats SET pinned_at=? WHERE id=?', '2026-01-01 00:00:00', quoteChat.id);
 run('UPDATE wa_chats SET unread=2 WHERE id IN (?,?,?)', chat.id, quoteChat.id, privateChat.id);
-const unreadWithoutPinned = sessionPage({ query: { filter: 'unread' }, user, flash: () => [] });
-eq(unreadWithoutPinned.includes('data-chat-id="' + chat.id + '"'), false, '未读筛选排除置顶会话');
-eq(unreadWithoutPinned.includes('data-chat-id="' + quoteChat.id + '"'), false, '未读筛选排除其他置顶会话');
-eq(unreadWithoutPinned.includes('data-chat-id="' + privateChat.id + '"'), true, '未读筛选仍显示未置顶会话');
+run('UPDATE wa_chats SET last_msg_at=? WHERE id=?', '2026-11-19 09:00:00', chat.id);
+run('UPDATE wa_chats SET last_msg_at=? WHERE id=?', '2026-11-19 11:00:00', quoteChat.id);
+run('UPDATE wa_chats SET last_msg_at=? WHERE id=?', '2026-11-19 12:00:00', privateChat.id);
+const unreadWithPinned = sessionPage({ query: { filter: 'unread' }, user, flash: () => [] });
+eq(unreadWithPinned.includes('data-chat-id="' + chat.id + '"'), true, '未读筛选包含置顶会话');
+eq(unreadWithPinned.includes('data-chat-id="' + quoteChat.id + '"'), true, '未读筛选包含其他置顶会话');
+eq(unreadWithPinned.includes('data-chat-id="' + privateChat.id + '"'), true, '未读筛选仍显示未置顶会话');
+const unreadRows = [...unreadWithPinned.matchAll(/class="wa-chat-swipe" data-chat-id="(\d+)"/g)].map(match => Number(match[1]));
+eq(unreadRows.filter(id => [chat.id, quoteChat.id, privateChat.id].includes(id)).join(','),
+  [privateChat.id, quoteChat.id, chat.id].join(','), '未读列表按消息时间排序，置顶状态不影响顺序');
 eq(get('SELECT pinned_at FROM wa_chats WHERE id=?', chat.id).pinned_at, t, '置顶时间写入数据库');
 eq(get('SELECT pinned_at FROM wa_chats WHERE id=?', quoteChat.id).pinned_at, '2026-01-01 00:00:00', '第二个会话也能独立置顶');
 const pinHtml = sessionPage({ query: { chat: String(chat.id), filter: 'pinned' }, user, flash: () => [] });
@@ -342,12 +337,15 @@ eq(pinHtml.includes('class="wa-pin-badge"'), true, '置顶会话显示明确标�
 eq(pinHtml.includes('action="/whatsapp/chat/' + chat.id + '/pin"'), true, '列表提供置顶开关');
 eq(pinHtml.includes('name="pin" value="0"'), true, '已置顶时按钮提交取消置顶');
 eq(pinHtml.includes('title="取消置顶"') && pinHtml.includes('已置顶'), true, '会话头部显示已置顶状态');
-const pinPos = pinHtml.indexOf('/whatsapp/session?chat=' + chat.id + '&amp;filter=pinned');
-const otherPinPos = pinHtml.indexOf('/whatsapp/session?chat=' + quoteChat.id + '&amp;filter=pinned');
-eq(pinPos >= 0 && otherPinPos >= 0 && pinPos < otherPinPos, true, '置顶栏按置顶时间排列多个置顶会话');
+const pinnedRows = [...pinHtml.matchAll(/class="wa-chat-swipe" data-chat-id="(\d+)"/g)].map(match => Number(match[1]));
+eq(pinnedRows.join(','), [quoteChat.id, chat.id].join(','), '置顶栏按最新消息时间排序');
 const allWithPinnedHtml = sessionPage({ query: { chat: String(chat.id) }, user, flash: () => [] });
-eq((allWithPinnedHtml.match(/class="wa-chat-item [^"]*is-pinned/g) || []).length, 0, '全部筛选不显示置顶会话');
-eq(allWithPinnedHtml.includes('class="wa-chat-item '), true, '全部筛选仍显示普通会话');
+eq((allWithPinnedHtml.match(/class="wa-chat-item [^"]*is-pinned/g) || []).length, 2, '全部筛选包含置顶会话');
+const allRows = [...allWithPinnedHtml.matchAll(/class="wa-chat-swipe" data-chat-id="(\d+)"/g)].map(match => Number(match[1]));
+eq(allRows.includes(privateChat.id), true, '全部筛选包含普通会话');
+eq(allRows.indexOf(privateChat.id) < allRows.indexOf(quoteChat.id) && allRows.indexOf(quoteChat.id) < allRows.indexOf(chat.id), true, '全部按最新消息时间排序');
+const allSearchPinnedHtml = sessionPage({ query: { filter: 'all', q: 'WA Inbox Test Co' }, user, flash: () => [] });
+eq(allSearchPinnedHtml.includes('data-chat-id="' + chat.id + '"'), true, '全部中按客户名搜索可找到已置顶会话');
 
 const pinnedOnly = sessionPage({ query: { filter: 'pinned' }, user, flash: () => [] });
 eq((pinnedOnly.match(/class="wa-chat-item [^"]*is-pinned/g) || []).length, 2, '置顶筛选显示全部置顶会话');
@@ -372,6 +370,88 @@ eq(routesSource.includes("router.post('/whatsapp/chat/:id/remark'"), true, '会�
 const remarkSearchHtml = sessionPage({ query: { q: '门锁报价' }, user, flash: () => [] });
 eq(remarkSearchHtml.includes('/whatsapp/session?chat=' + chat.id), true, '会话备注内容支持搜索');
 run("UPDATE wa_chats SET remark='', remark_updated_at='' WHERE id=?", chat.id);
+
+console.log('\n=== WhatsApp 历史消息搜索 ===');
+const historyText = '旧款门锁报价 HB_100% <确认>';
+const historyId = Number(run('INSERT INTO wa_messages(account_id,chat_jid,msg_id,text,translated,media_name,ts) VALUES(?,?,?,?,?,?,?)',
+  acc.id, jid, 'search-history-target', historyText, 'Historic lock sample', 'FOEVE-archive.pdf', '2020-01-01 10:00:00').lastInsertRowid);
+const neighborId = Number(run('INSERT INTO wa_messages(account_id,chat_jid,msg_id,text,ts) VALUES(?,?,?,?,?)',
+  acc.id, jid, 'search-history-neighbor', '相邻历史消息', '2020-01-01 10:00:00').lastInsertRowid);
+run(`WITH RECURSIVE filler(number) AS (SELECT 1 UNION ALL SELECT number+1 FROM filler WHERE number<505)
+  INSERT INTO wa_messages(account_id,chat_jid,msg_id,text,ts)
+  SELECT ?, ?, 'search-filler-' || number, 'history page sample', '2020-01-02 10:00:00' FROM filler`, acc.id, jid);
+const renderHistory = (query, viewer = user) => sessionPage({ query, user: viewer, flash: () => [] });
+const matchLink = '&amp;message=' + historyId + '#wa-msg-' + historyId;
+eq(renderHistory({ q: '门锁报价' }).includes(matchLink), true, '搜索可找到最近 500 条之外的中文消息');
+eq(renderHistory({ q: 'historic LOCK' }).includes(matchLink), true, '译文支持英文大小写搜索');
+eq(renderHistory({ q: 'archive.pdf' }).includes(matchLink), true, '按附件文件名搜索');
+eq(renderHistory({ q: 'HB_100%' }).includes('<mark>HB_100%</mark>'), true, '百分号和下划线按字面匹配');
+eq(renderHistory({ q: '<确认>' }).includes('<mark>&lt;确认&gt;</mark>'), true, '高亮片段转义 HTML');
+eq(renderHistory({ q: 'history page sample' }).includes('下一页'), true, '超过 30 条时可翻页');
+eq(renderHistory({ q: 'history page sample', message_page: '2' }).includes('上一页'), true, '第二页可返回第一页');
+console.log('\n=== WhatsApp 会话列表分页 ===');
+run(
+  "WITH RECURSIVE filler(number) AS (SELECT 1 UNION ALL SELECT number+1 FROM filler WHERE number<302) " +
+  "INSERT INTO wa_chats(account_id,jid,name,last_msg_at,customer_id) " +
+  "SELECT ?, 'page-fixture-' || number, 'history page sample', CASE WHEN number<=100 THEN '2020-01-03 10:00:00' ELSE '2020-01-02 10:00:00' END, ? FROM filler",
+  acc.id, 9998);
+const expectedChatIds = all("SELECT id FROM wa_chats WHERE account_id=? AND jid LIKE 'page-fixture-%' ORDER BY last_msg_at DESC, id DESC",
+  acc.id).map(row => Number(row.id));
+const pageQuery = { q: 'history page sample', filter: 'bound', chat: String(chat.id), message_page: '2' };
+const chatPages = [1, 2, 3, 4].map(number => renderHistory({ ...pageQuery, chat_page: String(number) }));
+const pageChatIds = chatPages.map(html => [...html.matchAll(/class="wa-chat-swipe" data-chat-id="(\d+)"/g)].map(match => Number(match[1])));
+eq(pageChatIds.map(ids => ids.length).join(','), '100,100,100,2', '超出旧上限的会话仍可翻到');
+eq(pageChatIds.flat().every((id, index) => id === expectedChatIds[index]), true, '跨页按时间和会话 ID 降序且无遗漏');
+eq(chatPages[0].includes('filter=bound&amp;q=history%20page%20sample&amp;chat=' + chat.id + '&amp;message_page=2&amp;chat_page=2'), true, '会话翻页保留筛选、搜索词和当前会话');
+eq(chatPages[1].includes('chat_page=2&amp;message_page=3'), true, '聊天记录翻页保留会话页码');
+eq(chatPages[3].includes('4 / 4 页'), true, '最后一页显示页码');
+run("DELETE FROM wa_chats WHERE account_id=? AND jid LIKE 'page-fixture-%'", acc.id);
+
+const oldMessageHtml = renderHistory({ q: '门锁报价', chat: String(chat.id), message: String(historyId) });
+eq(oldMessageHtml.includes('data-history-id="' + historyId + '"'), true, '结果链接定位目标消息');
+eq(oldMessageHtml.includes('相邻历史消息') && oldMessageHtml.includes('返回最新消息'), true, '显示历史上下文和返回入口');
+const historyTimelineIds = [...oldMessageHtml.matchAll(/id="wa-msg-(\d+)"/g)].map(match => Number(match[1]));
+eq(historyTimelineIds.includes(historyId) && historyTimelineIds.indexOf(historyId) < historyTimelineIds.indexOf(neighborId), true, '打开搜索命中时聊天框按时间和消息 ID 升序');
+const newerId = Number(run('INSERT INTO wa_messages(account_id,chat_jid,msg_id,text,ts) VALUES(?,?,?,?,?)',
+  acc.id, jid, 'search-newest-fixture', '最新消息测试 history page sample', '2099-01-01 10:00:00').lastInsertRowid);
+const backfilledId = Number(run('INSERT INTO wa_messages(account_id,chat_jid,msg_id,text,ts) VALUES(?,?,?,?,?)',
+  acc.id, jid, 'search-backfill', '晚同步的旧消息 history page sample', '2019-01-02 10:00:00').lastInsertRowid);
+const newestHtml = renderHistory({ chat: String(chat.id) });
+const timelineIds = [...newestHtml.matchAll(/id="wa-msg-(\d+)"/g)].map(match => Number(match[1]));
+const expectedTimelineIds = all('SELECT id FROM wa_messages WHERE account_id=? AND chat_jid=? ORDER BY ts DESC, id DESC LIMIT 500',
+  acc.id, jid).reverse().map(row => Number(row.id));
+eq(timelineIds.length === expectedTimelineIds.length && timelineIds.every((id, index) => id === expectedTimelineIds[index]), true, '聊天框中最近一批消息按时间和消息 ID 升序');
+eq(timelineIds.at(-1), newerId, '聊天框最新消息在最下方');
+const searchResultIds = [...renderHistory({ q: 'history page sample' }).matchAll(/#wa-msg-(\d+)/g)].map(match => Number(match[1]));
+eq(searchResultIds[0], newerId, '聊天记录搜索按消息时间降序');
+eq(searchResultIds[1] > searchResultIds[2], true, '同一时间的搜索结果按消息 ID 降序');
+eq(newestHtml.includes('id="wa-msg-' + backfilledId + '"'), false, '普通窗口只显示日期最新的一批消息');
+eq(newestHtml.includes('data-last-id="' + backfilledId + '"'), true, '轮询游标覆盖最新入库的补同步消息');
+const emptyOrders = renderHistory({ chat: String(chat.id) });
+eq(emptyOrders.includes('/documents/new?type=so&amp;customer_id=9998') && emptyOrders.includes('/quotes/new?customer_id=9998'),
+  true, '没有订单或报价时可为绑定客户新建销售订单或报价');
+eq(unboundHtml.includes('/documents/new?type=so&amp;customer_id='), false, '未绑定客户的会话没有订单添加入口');
+const quoteForm = require('../src/views/pages_quotes').quoteFormPage;
+const newQuoteHtml = quoteForm({ params: {}, query: { customer_id: '9998' }, user, flash: () => [] });
+eq(newQuoteHtml.includes('id="quoteCustomer" value="9998"'), true, '新建报价自动选中当前客户');
+const otherQuoteHtml = quoteForm({ params: {}, query: { customer_id: '9998' }, user: otherUser, flash: () => [] });
+eq(otherQuoteHtml.includes('id="quoteCustomer" value=""'), true, '其他账号不能预填该客户');
+const sortQuoteId = Number(run('INSERT INTO quote_history(user_id,customer_id,quote_no,quote_date) VALUES(?,?,?,?)',
+  user.id, 9998, 'WA-SORT-QUOTE', '2024-01-01').lastInsertRowid);
+const sortOrderId = Number(run('INSERT INTO documents(user_id,customer_id,doc_no,doc_type,issue_date) VALUES(?,?,?,?,?)',
+  user.id, 9998, 'WA-SORT-ORDER', 'so', '2025-01-01').lastInsertRowid);
+const mixedOrders = renderHistory({ chat: String(chat.id) });
+eq(mixedOrders.includes('/documents/new?type=so&amp;customer_id=9998'), false, '有记录时继续显示原订单报价列表');
+const sortedOrderPos = mixedOrders.indexOf('class="wa-order-row" href="/documents/' + sortOrderId + '"');
+const sortedQuotePos = mixedOrders.indexOf('class="wa-order-row" href="/quotes/' + sortQuoteId + '/edit"');
+eq(sortedOrderPos >= 0 && sortedQuotePos > sortedOrderPos, true, '订单与报价按日期混排');
+run('DELETE FROM quote_history WHERE id=?', sortQuoteId);
+run('DELETE FROM documents WHERE id=?', sortOrderId);
+eq(renderHistory({ q: '门锁报价', filter: 'unbound' }).includes(matchLink), false, '消息搜索继承会话筛选');
+eq(renderHistory({ q: '门锁报价' }, otherUser).includes(matchLink), false, '其他账号搜索结果看不到未授权记录');
+eq(renderHistory({ chat: String(chat.id), message: String(historyId) }, otherUser).includes('data-history-id="' + historyId + '"'), false, '直接打开未授权消息也不可见');
+eq(renderHistory({ chat: String(privateChat.id), message: String(historyId) }).includes('data-history-id="' + historyId + '"'), false, '消息必须属于指定会话');
+run("DELETE FROM wa_messages WHERE account_id=? AND chat_jid=? AND msg_id LIKE 'search-%'", acc.id, jid);
 
 console.log('\n=== 13. WhatsApp 会话左滑删除 ===');
 const swipeHtml = sessionPage({ query: { chat: String(chat.id) }, user, flash: () => [] });
@@ -662,6 +742,65 @@ eq(wa.isTranslationRefusal('不，兄弟。'), false, '正常短句译文不会�
     await new Promise((resolve) => app.server.listen(0, '127.0.0.1', resolve));
     localServer = app.server;
     const port = localServer.address().port;
+    const verificationUrl = 'http://127.0.0.1:' + port + '/api/wa/customer-verification';
+    const checkCustomer = (chatId, session = token) => originalFetch(verificationUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: 'crm_sid=' + session },
+      body: JSON.stringify({ chat_id: chatId }),
+    });
+    const previousSession = wa.sessions.get(user.id);
+    const previousSerpKey = process.env.CRM_WA_VERIFICATION_SERPAPI_KEY;
+    let profileJid = '';
+    let bingRequests = 0;
+    try {
+      delete process.env.CRM_WA_VERIFICATION_SERPAPI_KEY;
+      wa.sessions.set(user.id, { status: 'online', sock: { getBusinessProfile: async (jid) => {
+        profileJid = jid;
+        return { category: 'Hardware', description: '<Catalog>', website: ['javascript:alert(1)', 'https://example.com/'] };
+      } } });
+      global.fetch = async (url) => {
+        bingRequests++;
+        eq(new URL(url).hostname, 'www.bing.com', '联网验证使用指定搜索来源');
+        eq(new URL(url).searchParams.get('q').includes('+' + phone), true, '联网查询使用当前会话号码格式');
+        return { ok: true, text: async () => [
+          '<li class="b_algo"><h2><a href="https://example.com/contact">Business &lt;Contact&gt;</a></h2><p>Call +' + phone + '</p></li>',
+          '<li class="b_algo"><h2><a href="https://example.net/other">Unrelated result</a></h2><p>Other business</p></li>',
+        ].join('') };
+      };
+      const verified = await checkCustomer(chat.id);
+      const verifiedPayload = await verified.json();
+      eq(verified.status, 200, '客户验证接口返回成功');
+      eq(verifiedPayload.html.includes('WA Inbox Test Co') && verifiedPayload.html.includes('尼日利亚'), true, '识别号码地区并返回当前账号的同号客户');
+      eq(profileJid, jid, '使用当前 WhatsApp 账号查询会话的商家资料');
+      eq(verifiedPayload.html.includes('&lt;Catalog&gt;') && !verifiedPayload.html.includes('javascript:'), true, '商家资料安全显示');
+      eq(verifiedPayload.html.includes('Business &lt;Contact&gt;') && !verifiedPayload.html.includes('Unrelated result'), true, '公开网页只显示可在摘要核对号码的线索');
+      eq(verifiedPayload.html.includes('Google 地图') && verifiedPayload.html.includes('LinkedIn 企业'), true, '提供地图和企业主页的定向搜索入口');
+      const denied = await checkCustomer(chat.id, auth.createSession(otherUser.id));
+      eq(denied.status, 404, '拒绝其他账号核验未授权会话');
+      const groupChatId = Number(run('INSERT INTO wa_chats(account_id, jid, is_group) VALUES(?,?,1)', acc.id, 'verification-test@g.us').lastInsertRowid);
+      eq((await checkCustomer(groupChatId)).status, 400, '群聊没有单人号码，无法发起核验');
+      eq(bingRequests, 1, '未授权会话和群聊不发起联网请求');
+      run('DELETE FROM wa_chats WHERE id=?', groupChatId);
+
+      process.env.CRM_WA_VERIFICATION_SERPAPI_KEY = 'test-key';
+      global.fetch = async (url) => {
+        eq(new URL(url).hostname, 'serpapi.com', '配置 SerpAPI 后通过正式接口查询');
+        return { ok: true, json: async () => ({
+          organic_results: [{ title: 'Public company', link: 'https://example.org/contact', snippet: 'Tel. 0809 999 8877' }],
+        }) };
+      };
+      const apiResult = await (await checkCustomer(chat.id)).json();
+      eq(apiResult.html.includes('Google · SerpAPI') && apiResult.html.includes('本地格式吻合'), true, '显示接口来源并区分本地号码格式');
+      global.fetch = async () => ({ ok: false });
+      const offlineResult = await (await checkCustomer(chat.id)).json();
+      eq(offlineResult.html.includes('公开网页搜索暂时不可用') && offlineResult.html.includes('WA Inbox Test Co'), true, '网页搜索失败时仍返回 CRM 同号档案');
+    } finally {
+      global.fetch = originalFetch;
+      if (previousSerpKey === undefined) delete process.env.CRM_WA_VERIFICATION_SERPAPI_KEY;
+      else process.env.CRM_WA_VERIFICATION_SERPAPI_KEY = previousSerpKey;
+      if (previousSession) wa.sessions.set(user.id, previousSession);
+      else wa.sessions.delete(user.id);
+    }
     const response = await fetch('http://127.0.0.1:' + port + '/api/activities/' + manualId + '/whatsapp/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', Cookie: 'crm_sid=' + token },

@@ -1,4 +1,5 @@
 'use strict';
+const { currencyCode, currencyOptions } = require('../payments');
 // ============ 历史报价：与产品信息联动，新增后自动生成跟进 ============
 const { esc } = require('../util');
 const { page } = require('./layout');
@@ -58,7 +59,7 @@ function quotesPage(ctx) {
       <td class="text-end fw-bold">${esc(q.currency || 'USD')} ${moneyFmt(q.amount)}</td>
       <td>${quoteStatusBadge(q.status)}</td>
       <td>${follow}${q.followup_id ? `<div class="mt-1"><a class="small text-decoration-none" href="/followups?view=all&search=${encodeURIComponent(q.quote_no)}">查看跟进</a></div>` : ''}</td>
-      <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/quotes/${q.id}/edit">编辑</a><form class="d-inline" method="post" action="/quotes/${q.id}/delete" onsubmit="return confirm('确认删除这条历史报价？已生成的跟进记录会保留。')"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form></td>
+      <td class="text-end"><div class="d-flex justify-content-end gap-1 flex-wrap"><a class="btn btn-sm btn-outline-primary" href="/api/quotes/${q.id}/export.png" title="导出报价图片"><i class="bi bi-image"></i><span class="visually-hidden">导出图片</span></a><a class="btn btn-sm btn-outline-primary" href="/quotes/${q.id}/edit">编辑</a><form class="d-inline" method="post" action="/quotes/${q.id}/delete" onsubmit="return confirm('确认删除这条历史报价？已生成的跟进记录会保留。')"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form></div></td>
     </tr>`;
   }).join('') || emptyRow(8, '暂无历史报价，点击右上角新建报价记录');
   const content = `
@@ -140,14 +141,14 @@ function quoteFormPage(ctx) {
   const productId = existing ? String(v.product_id || '') : String(requestedProduct || '');
   const selectedProduct = products.find(p => String(p.id) === String(productId)) || null;
   const selectedProductLabel = selectedProduct ? ((selectedProduct.model ? selectedProduct.model + ' · ' : '') + selectedProduct.name + (selectedProduct.name_en ? ' / ' + selectedProduct.name_en : '')) : '';
-  const customerId = existing ? String(v.customer_id || '') : '';
+  const customerId = existing ? String(v.customer_id || '') : String(ctx.query.customer_id || '');
   const selectedCustomer = customers.find(c => String(c.id) === String(customerId)) || null;
   const selectedCustomerLabel = selectedCustomer ? selectedCustomer.company_name + (selectedCustomer.name_en ? ' / ' + selectedCustomer.name_en : '') : '';
   const qNo = existing ? v.quote_no : nextQuoteNo();
   const catCounts = {}; products.forEach(p => { const k = String(p.name_en || '').trim() || '__none__'; catCounts[k] = (catCounts[k] || 0) + 1; });
   const catKeys = Object.keys(catCounts).sort((a, b) => { if (a === '__none__') return 1; if (b === '__none__') return -1; return a.toLowerCase() < b.toLowerCase() ? -1 : 1; });
   const categoryOptions = '<option value="">全部英文品名分类</option>' + catKeys.map(k => '<option value="' + esc(k) + '">' + esc(k === '__none__' ? '（未填英文品名）' : k) + ' (' + catCounts[k] + ')</option>').join('');
-  const curOpts = ['USD', 'EUR', 'CNY', 'GBP', 'JPY'].map(s => ({ v: s, l: s }));
+  const curOpts = currencyOptions(v.currency);
   const statusOpts = ['已报价', '跟进中', '报价已接受', '已成交', '已失效'].map(s => ({ v: s, l: s }));
   const priorityList = ['高', '中', '低'].map(s => ({ v: s, l: s + '优先级' }));
   const productMap = {}; products.forEach(p => { productMap[p.id] = p; });
@@ -175,8 +176,9 @@ function quoteFormPage(ctx) {
   const customerJson = JSON.stringify(customerData).replace(/</g, '\\u003c');
   const contactJson = JSON.stringify(contactMap).replace(/</g, '\\u003c');
   const action = existing ? '/quotes/' + existing.id + '/edit' : '/quotes/new';
+  const imageAction = existing ? '<a class="btn btn-outline-primary" href="/api/quotes/' + existing.id + '/export.png" title="导出数据库中已保存的报价内容"><i class="bi bi-image"></i> 导出已保存图片</a>' : '';
   const content = `
-    ${pageHead(existing ? '编辑历史报价' : '新增历史报价', '图片、出厂价、供应商和上次报价集中在同一个报价工作台，保存后自动生成跟进记录', `<a class="btn btn-outline-secondary" href="/quotes">返回历史报价</a>`)}
+    ${pageHead(existing ? '编辑历史报价' : '新增历史报价', '图片、出厂价、供应商和上次报价集中在同一个报价工作台，保存后自动生成跟进记录', imageAction + '<a class="btn btn-outline-secondary" href="/quotes">返回历史报价</a>')}
     <div class="quote-workspace quote-3col workbench-2">
     <section class="quote-workspace-form">${card({ body: `<form method="post" action="${action}" id="quoteForm">
       <div class="row g-3">
@@ -184,7 +186,7 @@ function quoteFormPage(ctx) {
           <label class="form-label">客户 <span class="text-danger">*</span></label>
           <div class="position-relative">
             <input type="text" class="form-control" id="quoteCustomerSearch" value="${esc(selectedCustomerLabel)}" placeholder="输入客户名称搜索并添加" autocomplete="off">
-            <input type="hidden" name="customer_id" id="quoteCustomer" value="${esc(customerId)}">
+            <input type="hidden" name="customer_id" id="quoteCustomer" value="${esc(existing ? customerId : selectedCustomer?.id || '')}">
             <div id="quoteCustomerList" class="list-group position-absolute w-100 shadow" style="max-height:260px;overflow:auto;z-index:80;display:none"></div>
           </div>
           <div class="form-text">输入公司名称 / 英文名称后，从结果中点击添加</div>
@@ -213,7 +215,7 @@ function quoteFormPage(ctx) {
         <div class="col-md-3">${fld({ label: '有效期至', name: 'valid_until', value: v.valid_until || addDays(15), type: 'date' })}</div>
         <div class="col-md-3">${fld({ label: '联系人', name: 'contact_person', value: v.contact_person || (activity && activity.contact_person) || '', id: 'quoteContact' })}</div>
         <div class="col-md-3">${fld({ label: '报价状态', name: 'status', value: v.status || '已报价', type: 'select', options: statusOpts })}</div>
-        <div class="col-md-2">${fld({ label: '币种', name: 'currency', value: v.currency || 'USD', type: 'select', options: curOpts, id: 'quoteCurrency' })}</div>
+        <div class="col-md-2">${fld({ label: '币种', name: 'currency', value: currencyCode(v.currency), type: 'select', options: curOpts, id: 'quoteCurrency' })}</div>
         <input type="hidden" name="items_json" id="quoteItemsJson" value="${esc(initialItemsJson)}">
         <div class="col-12">
           <div class="border rounded-3 p-3 bg-light">

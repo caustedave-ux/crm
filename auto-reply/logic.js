@@ -1,6 +1,70 @@
 'use strict';
 // ============ 纯决策逻辑（不碰数据库、不发消息，便于独立自测） ============
 
+const { parsePhoneNumberFromString } = require('libphonenumber-js/max');
+const regionNames = new Intl.DisplayNames(['zh-CN'], { type: 'region' });
+const FACEBOOK_URL = 'https://www.facebook.com/caustechina/';
+const FACEBOOK_INVITATIONS = {
+  en: 'Feel free to follow our Facebook page for new door hardware designs.',
+  zh: '欢迎关注我们的 Facebook 主页，看看最新的门锁五金款式。',
+  fr: 'Suivez notre page Facebook pour découvrir nos nouveautés en quincaillerie de porte.',
+  ar: 'يمكنك متابعة صفحتنا على فيسبوك للاطلاع على أحدث تصاميم مستلزمات الأبواب.',
+  es: 'Puedes seguirnos en Facebook para ver nuestros nuevos diseños de herrajes para puertas.',
+  ru: 'Подписывайтесь на нашу страницу в Facebook, чтобы увидеть новые модели дверной фурнитуры.',
+  sw: 'Unaweza kufuata ukurasa wetu wa Facebook kuona miundo mipya ya vifaa vya milango.',
+};
+
+function facebookInvitation(language) {
+  const key = String(language || '').toLowerCase().split(/[-_]/)[0];
+  return (FACEBOOK_INVITATIONS[key] || FACEBOOK_INVITATIONS.en) + '\n' + FACEBOOK_URL;
+}
+
+function shouldCloseOffTopic(verdict, decision, current) {
+  const signals = verdict.signals || {};
+  return signals.consecutiveOffTopic === true && current?.status !== 'review'
+    && (decision.action === 'ask' || decision.action === 'hold')
+    && decision.precision === 'unknown' && !decision.notify && !decision.riskFlags?.length
+    && !signals.quantityGiven && !signals.wantsSampleOrTour && signals.purchaseIntent !== 'none';
+}
+
+function phoneNumberRegion(chat) {
+  if (!chat || Number(chat.is_group) || /@(?:g\.us|broadcast|newsletter)$/.test(chat.jid || '')) return '';
+  const jidNumber = /^(\d+)(?::\d+)?@s\.whatsapp\.net$/.exec(chat.jid || '');
+  const raw = String(jidNumber?.[1] || chat.phone || '').trim();
+  if (!/^\+?[\d()\s.-]+$/.test(raw)) return '';
+  const digits = raw.replace(/\D/g, '');
+  const number = parsePhoneNumberFromString('+' + (raw.startsWith('00') ? digits.slice(2) : digits), { extract: false });
+  return number?.country && number.isValid() ? regionNames.of(number.country) + ' (+' + number.countryCallingCode + ')' : '';
+}
+
+const questionTopics = [
+  /\b(?:smart locks?|mechanical locks?|digital locks?|electronic locks?|what (?:type|kind) of (?:door )?locks?|quel type de serrure)\b|(?:智能锁|机械锁|哪种锁|什么类型的锁|أقفال ذكية|أقفال ميكانيكية)/i,
+  /\b(?:which city|what city|city are you|city should|city for delivery|quelle ville|dans quelle ville|qu[eé] ciudad)\b|(?:哪个城市|哪座城市|几线城市|أي مدينة|أيّ مدينة)/i,
+  /\b(?:how many|what quantity|combien|cu[aá]nt[oa]s?|what volume)\b|(?:多少[件套箱个]|采购量|كم عدد)/i,
+  /\b(?:imported from china|import from china|import experience|importer de chine|importado de china)\b|(?:中国进口经验|从中国进口过|从中国采购过)/i,
+];
+
+function hasBlockedQuestion(text, previousQuestions) {
+  const questions = String(text || '').match(/[^.!?\n。！？؟]+[?？؟]/g) || [];
+  const earlierQuestions = previousQuestions.flatMap(previous => previous.match(/[^.!?\n。！？؟]+[?？؟]/g) || []);
+  return questions.some(question => {
+    if (/\b(?:what country|which country|what is your country|country are you|quel pays|qu[eé] pa[ií]s)\b|(?:哪个国家|哪国|أي بلد|أي دولة)/i.test(question)) return true;
+    const normalized = question.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+    return earlierQuestions.some(previous => {
+      const earlier = previous.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+      return (normalized.length >= 8 && earlier.includes(normalized))
+        || questionTopics.some(topic => topic.test(question) && topic.test(previous));
+    });
+  });
+}
+
+function trimRepeatedGreeting(text, hasOutgoing) {
+  const clean = String(text || '').trim();
+  if (!hasOutgoing) return clean;
+  const body = clean.replace(/^(?:(?:hi|hello|hey|good morning|good afternoon|good evening|bonjour|salut|hola|olá|jambo|habari)(?:[ \t]+[\p{L}\p{M}'’.-]+)?|您好|你好|早上好|مرحبًا|مرحبا|السلام عليكم)(?:\s*[,，!！:：.。]\s*|$)/iu, '').trim();
+  return body === clean ? clean : body.replace(/^\p{Ll}/u, letter => letter.toUpperCase());
+}
+
 /** 置顶判断：与 CRM 页面口径一致——pinned_at 非空即视为置顶 */
 function isPinned(row) {
   return String((row && row.pinned_at) || '').trim() !== '';
@@ -86,7 +150,8 @@ function followupDue(state, cfg) {
     // 收尾也要看总静默：停工/重启后静默 30 天的客户不再发收尾
     const h = s.silenceHours;
     if (h === null || h === undefined) return { due: false, kind: null, reason: '无客户消息时间，无法发收尾' };
-    if (h < min || h > max) return { due: false, kind: null, reason: '总静默 ' + Math.round(h) + ' 小时不在 ' + min + '–' + max + ' 小时窗口内，不发收尾' };
+    const closingMax = max + min;
+    if (h < min || h > closingMax) return { due: false, kind: null, reason: '总静默 ' + Math.round(h) + ' 小时不在 ' + min + '–' + closingMax + ' 小时窗口内，不发收尾' };
     const gap = s.silenceSinceFollowupHours;
     if (gap === null || gap === undefined) return { due: false, kind: null, reason: '无上次跟进时间，无法发收尾' };
     if (gap < min) return { due: false, kind: null, reason: '距上次跟进不足 ' + min + ' 小时' };
@@ -328,6 +393,8 @@ function parseVerdict(text) {
 }
 
 module.exports = {
+  facebookInvitation, shouldCloseOffTopic,
+  phoneNumberRegion, hasBlockedQuestion, trimRepeatedGreeting,
   isPinned, humanReplied, isSensitive, isCoolingDown, quotaExceeded, chooseDecision,
   normalizePrecision, normalizePurpose, normalizeConfidence, normalizeRiskFlags, hasBlockingRisk, strongSignalCount, HARD_STOP_RE, decideQualification, isQualified, parseVerdict,
   parseTs, silenceHours, isRefusal, followupDue, catalogHandoffReason, summarizeDugUp,

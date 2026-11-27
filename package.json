@@ -1,6 +1,6 @@
 {
   "name": "foreigntrade-crm",
-  "version": "2.0.1",
+  "version": "2.0.8",
   "description": "外贸AI客服工作台 2.0（HQ CRM 局域网共享版）- 深色紫色主题 + AI 报价助手 + WhatsApp 三栏 + 跟进看板",
   "main": "server.js",
   "private": true,
@@ -23,6 +23,7 @@
     "@whiskeysockets/baileys": "7.0.0-rc14",
     "exceljs": "^4.4.0",
     "https-proxy-agent": "^9.1.0",
+    "libphonenumber-js": "1.13.17",
     "markdown-it": "14.3.3",
     "puppeteer-core": "^25.16.0",
     "qrcode": "^1.5.4",

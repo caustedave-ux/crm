@@ -4,6 +4,7 @@ const MarkdownIt = require('markdown-it');
 const { all, get } = require('./db');
 
 const CATEGORIES = Object.freeze([
+  '选型指南',
   '产品资料',
   '报价政策',
   '工厂资料',

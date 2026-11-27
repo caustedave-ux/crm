@@ -73,11 +73,14 @@ CREATE TABLE IF NOT EXISTS payment_records(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   doc_id INTEGER NOT NULL,
   amount REAL DEFAULT 0,
+  received_currency TEXT,
+  received_amount REAL,
   paid_at TEXT,
   note TEXT,
   created_by TEXT,
   created_at TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_payment_records_doc ON payment_records(doc_id);
 CREATE TABLE IF NOT EXISTS document_shipments(
   doc_id INTEGER PRIMARY KEY,
   warehouse_address TEXT,
@@ -838,6 +841,8 @@ function migrate() {
   } catch (e) {}
 
   // 货款：旧 paid 数据转成分笔收款（仅一次，已有分笔的不复制）
+  ensureColumn('payment_records', 'received_currency', 'TEXT');
+  ensureColumn('payment_records', 'received_amount', 'REAL');
   try {
     const prowRows = all('SELECT * FROM document_payments');
     for (const pr of prowRows) {

@@ -13,13 +13,13 @@
  */
 const { fetchUrl, stripTags, decodeEntities, attr, metaContent } = require('./net');
 const norm = require('./normalize');
-const { getSetting, allSettings } = require('./db');
+const getSetting = (...args) => require('./db').getSetting(...args);
 
 const MAX = () => parseInt(getSetting('max_results_per_query', '8'), 10) || 8;
 const enc = q => encodeURIComponent(q);
 
 /** 解析 Bing HTML 结果为 [{title,url,snippet}] */
-function parseBing(html) {
+function parseBing(html, limit = MAX()) {
   const out = [];
   const blocks = html.split(/<li class="b_algo["\s]/).slice(1);
   for (const b of blocks) {
@@ -30,7 +30,7 @@ function parseBing(html) {
     const cap = b.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
     const snippet = cap ? stripTags(cap[1]) : '';
     if (href && href.startsWith('http')) out.push({ title, url: href, snippet });
-    if (out.length >= MAX()) break;
+    if (out.length >= limit) break;
   }
   return out;
 }
@@ -248,7 +248,7 @@ async function serpApi(lead, query) {
 async function collect(lead, opts = {}) {
   const allProviders = ['website', 'bing', 'linkedin_search', 'facebook_search', 'instagram_search', 'google_cse', 'serpapi'];
   // 设置页可关闭某些通道；未列出的源不请求，避免无效 Key/慢源拖慢整批核验
-  const rawSources = allSettings().enabled_sources;
+  const rawSources = require('./db').allSettings().enabled_sources;
   const configured = rawSources === undefined
     ? allProviders
     : String(rawSources).split(',').map(s => s.trim()).filter(Boolean);

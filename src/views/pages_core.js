@@ -1062,7 +1062,7 @@ function customerDetailPage(ctx) {
       <div class="col-12">${card({ title: '沟通时间线', actions: (isOwner ? `<a class="btn btn-sm btn-outline-primary" href="/customers/${c.id}/activities/new"><i class="bi bi-plus-lg me-1"></i>添加跟进</a>` : ''), body: actHtml })}</div>
     </div>
     <div class="row g-3 mt-1" id="customerDocuments">
-      <div class="col-12">${card({ title: '相关单据', actions: isOwner ? `<a class="btn btn-sm btn-outline-primary" href="/documents/new?customer_id=${c.id}">新建单据</a>` : '', body: docHtml })}</div>
+      <div class="col-12">${card({ title: '相关单据', actions: isOwner ? `<a class="btn btn-sm btn-outline-secondary" href="/payments?customer_id=${c.id}">查看货款</a> <a class="btn btn-sm btn-outline-primary" href="/documents/new?customer_id=${c.id}">新建单据</a>` : '', body: docHtml })}</div>
     </div>
     ${followupModalHtml()}
     ${completeFollowupModalHtml()}
@@ -2208,7 +2208,7 @@ function followupsPage(ctx) {
   const priority = ctx.query.priority || '';
   const tier = ['A', 'B', 'C', 'D'].includes(String(ctx.query.tier || '').toUpperCase()) ? String(ctx.query.tier).toUpperCase() : '';
   let view = ctx.query.view || (ctx.query.upcoming === '1' ? 'today' : 'pending');
-  if (!['pending', 'today', 'overdue', 'week', 'unscheduled', 'completed', 'all'].includes(view)) view = 'pending';
+  if (!['pending', 'due', 'today', 'overdue', 'week', 'unscheduled', 'completed', 'all'].includes(view)) view = 'pending';
   const ts = dateAfter(0);
   const weekEnd = dateAfter(7);
   const monthStartD = new Date(); monthStartD.setDate(1);
@@ -2226,6 +2226,7 @@ function followupsPage(ctx) {
 
   const where = ['a.user_id=?']; const params = [ctx.user.id];
   if (view === 'pending') where.push('a.archived=0');
+  if (view === 'due') { where.push("a.archived=0 AND a.next_follow_date<>'' AND a.next_follow_date<=?"); params.push(ts); }
   if (view === 'today') { where.push('a.archived=0 AND a.next_follow_date=?'); params.push(ts); }
   if (view === 'overdue') { where.push("a.archived=0 AND a.next_follow_date IS NOT NULL AND a.next_follow_date<>'' AND a.next_follow_date<?"); params.push(ts); }
   if (view === 'week') { where.push('a.archived=0 AND a.next_follow_date>? AND a.next_follow_date<=?'); params.push(ts, weekEnd); }
@@ -2267,6 +2268,7 @@ function followupsPage(ctx) {
   };
   const viewChips = [
     ['pending', '全部待办', stats.pending],
+    ['due', '待处理', stats.today + stats.overdue],
     ['today', '今天', stats.today],
     ['overdue', '已逾期', stats.overdue],
     ['week', '未来7天', stats.week],

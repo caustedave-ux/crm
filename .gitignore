@@ -27,6 +27,10 @@ apps/b2b-buyer-discovery/
 # ===== 商业素材（产品图/商品目录，39MB，不公开上传）=====
 auto-reply/materials/
 
+# ===== 运行时生成的真实业务数据（含客户姓名/聊天/订单，绝不公开）=====
+docs/每日跟进/
+auto-reply/worker.pid
+
 # ===== 调试/探针临时文件（下划线开头）=====
 _*.txt
 _*.cjs
