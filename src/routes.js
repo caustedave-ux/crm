@@ -31,7 +31,6 @@ const pagesBriefings = require('./views/pages_briefings');
 const { iso2Country, intlPhone } = require('./country');
 const { loginPage, page } = require('./views/layout');
 const websiteInquiry = require('./websiteInquiry');
-const leadgenBridge = require('./leadgen-bridge');
 const autoReplyControl = require('./autoReplyControl');
 const workbench = require('./workbench');
 const pagesWorkbench = require('./views/pages_workbench');
@@ -144,18 +143,6 @@ function registerRoutes(app, router) {
   router.post('/api/public/website-inquiry', (ctx) => websiteInquiry.handle(ctx));
 
   // ---------- 页面 ----------
-  // 获客工作台入口：受 CRM 登录保护，确保独立服务在线后跳到同主机的 5101 端口。
-  router.get('/leadgen', async (ctx) => {
-    const r = await leadgenBridge.ensureLeadGen();
-    if (!r.ok) {
-      return ctx.res.send(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>获客工作台</title>
-<link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css"></head>
-<body class="p-4"><div class="alert alert-warning"><h5>获客工作台服务暂不可用</h5>
-<p class="mb-2">${esc(r.reason || '未知原因')}。请确认已安装 Node.js，然后双击运行 <code>suite/启动获客工作台.bat</code> 后重试。</p>
-<a class="btn btn-sm btn-primary" href="/leadgen">重试</a> <a class="btn btn-sm btn-outline-secondary" href="/dashboard">返回 CRM</a></div></body></html>`);
-    }
-    ctx.res.redirect(leadgenBridge.targetFromReq(ctx.req));
-  });
   // ---------- AI 外贸工作台 ----------
   router.get('/workbench', (ctx) => ctx.res.send(pagesWorkbench.homePage(ctx)));
   router.get('/workbench/map', (ctx) => ctx.res.send(pagesWorkbench.mapPage(ctx)));

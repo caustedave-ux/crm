@@ -6,7 +6,6 @@ const { getSetting, all } = require('../db');
 
 const SKILLS = [
   { key: 'dev', icon: 'bi-globe2', title: '开发客户', sub: '发现全球商业机会', href: '/workbench/map' },
-  { key: 'background', icon: 'bi-person-badge', title: '获客工作台', sub: '地图找客、AI 整理、开发信、WhatsApp', href: '/leadgen', blank: true },
   { key: 'compose', icon: 'bi-envelope', title: '写开发信', sub: '让每一次触达更有效', href: '/workbench/compose' },
   { key: 'quote', icon: 'bi-currency-exchange', title: '报价谈判', sub: '专业报价，从容成交', href: '/workbench?skill=quote' },
   { key: 'marketing', icon: 'bi-megaphone', title: '营销推广', sub: '多渠道连接全球客户', href: '/workbench?skill=marketing' },
@@ -129,18 +128,17 @@ function mapPage(ctx) {
   </style>
   <div class="wb-wrap">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div><h4 style="margin:0;font-weight:800;color:#f1f1f8">客户国家分布</h4><div class="text-muted" style="font-size:14px">按国家聚合显示客户 ${points.reduce((a,p)=>a+p.customers.length,0)} 家、线索 ${points.reduce((a,p)=>a+p.leads.length,0)} 条 · 点击国家查看名单</div></div>
-      <a class="btn btn-sm btn-outline-secondary" href="/leadgen" target="_blank" rel="noopener"><i class="bi bi-funnel"></i> 去获客工作台</a>
+      <div><h4 style="margin:0;font-weight:800;color:#f1f1f8">客户国家分布</h4><div class="text-muted" style="font-size:14px">按国家聚合显示客户 ${points.reduce((a,p)=>a+p.customers.length,0)} 家 · 点击国家查看名单</div></div>
     </div>
     <div class="wb-map-wrap">
       <div class="wb-map-side">
         <h6>国家 / 地区分布</h6>
-        <div class="sub">按客户 + 线索数量排序</div>
+        <div class="sub">按客户数量排序</div>
         ${points.length ? points.map(p => `<a class="wb-country" href="#" data-country="${esc(p.country)}">
-          <span><span class="n">${esc(p.country)}</span><br><span class="c">客户 ${p.customers.length} · 线索 ${p.leads.length}</span></span>
-          <span class="pill">${p.total}</span></a>`).join('') : '<div class="text-muted small">暂无带国家的客户/线索</div>'}
+          <span><span class="n">${esc(p.country)}</span><br><span class="c">客户 ${p.customers.length}</span></span>
+          <span class="pill">${p.total}</span></a>`).join('') : '<div class="text-muted small">暂无带国家的客户</div>'}
       </div>
-      <div style="position:relative;padding:16px;overflow:auto;background:#fff" id="wbCountryPanel"><div class="text-muted small">点击左侧国家查看该国家/地区的客户与线索名单</div></div>
+      <div style="position:relative;padding:16px;overflow:auto;background:#fff" id="wbCountryPanel"><div class="text-muted small">点击左侧国家查看该国家/地区的客户名单</div></div>
     </div>
   </div>
   <script>
@@ -152,9 +150,8 @@ function mapPage(ctx) {
     var panel=document.getElementById('wbCountryPanel');
     function show(p){
       var names=(p.customers||[]).map(function(c){return c.name;}).join('、')||'无';
-      var leads=(p.leads||[]).map(function(c){return c.name;}).join('、')||'无';
       panel.innerHTML='<h6 style="font-weight:700;margin:0 0 8px">'+p.country+'（共 '+p.total+'）</h6>'
-        +'<div style="font-size:14px;line-height:2"><b>客户（'+p.customers.length+'）：</b>'+names+'<br><b>线索（'+p.leads.length+'）：</b>'+leads+'</div>';
+        +'<div style="font-size:14px;line-height:2"><b>客户（'+p.customers.length+'）：</b>'+names+'</div>';
     }
     document.querySelectorAll('.wb-country').forEach(function(a){
       a.addEventListener('click',function(e){

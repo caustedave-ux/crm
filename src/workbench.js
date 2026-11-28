@@ -88,15 +88,6 @@ function mapPoints(user) {
       add('customers', r.id, r.company_name, r.country, { status: r.status, industry: r.industry, website: r.website });
     }
   } catch (e) {}
-  // 获客线索库与主库不同文件，仅在同机可读时聚合；失败不影响客户点位。
-  try {
-    const path = require('node:path');
-    const { DatabaseSync } = require('node:sqlite');
-    const lgDb = new DatabaseSync(path.join(__dirname, '..', 'lead-gen', 'data', 'leads.db'), { readOnly: true });
-    const rows = lgDb.prepare('SELECT id,company_name,country,industry_hint,overall_score,stage FROM leads').all();
-    for (const r of rows) add('leads', r.id, r.company_name, r.country, { industry: r.industry_hint, score: r.overall_score, stage: r.stage });
-    lgDb.close();
-  } catch (e) {}
   return Object.values(groups).map(g => Object.assign(g, { total: g.customers.length + g.leads.length })).sort((a, b) => b.total - a.total);
 }
 
