@@ -327,8 +327,8 @@ eq(unreadWithPinned.includes('data-chat-id="' + quoteChat.id + '"'), true, '未�
 eq(unreadWithPinned.includes('data-chat-id="' + privateChat.id + '"'), true, '未读筛选仍显示未置顶会话');
 const unreadRows = [...unreadWithPinned.matchAll(/class="wa-chat-swipe" data-chat-id="(\d+)"/g)].map(match => Number(match[1]));
 eq(unreadRows.filter(id => [chat.id, quoteChat.id, privateChat.id].includes(id)).join(','),
-  [chat.id, quoteChat.id, privateChat.id].join(','), '未读列表里置顶会话固定排在最前，其余按消息时间排序');
-eq(unreadWithPinned.includes('class="wa-pin-group-label"') && unreadWithPinned.includes('置顶会话'), true, '未读列表把置顶会话单独分组置顶');
+  [privateChat.id, quoteChat.id, chat.id].join(','), '未读列表按消息时间倒序，置顶状态不影响顺序');
+eq(unreadWithPinned.includes('class="wa-pin-group-label"'), false, '全部/未读列表不出现置顶分组');
 eq(get('SELECT pinned_at FROM wa_chats WHERE id=?', chat.id).pinned_at, t, '置顶时间写入数据库');
 eq(get('SELECT pinned_at FROM wa_chats WHERE id=?', quoteChat.id).pinned_at, '2026-01-01 00:00:00', '第二个会话也能独立置顶');
 const pinHtml = sessionPage({ query: { chat: String(chat.id), filter: 'pinned' }, user, flash: () => [] });
@@ -339,12 +339,12 @@ eq(pinHtml.includes('action="/whatsapp/chat/' + chat.id + '/pin"'), true, '列�
 eq(pinHtml.includes('name="pin" value="0"'), true, '已置顶时按钮提交取消置顶');
 eq(pinHtml.includes('title="取消置顶"') && pinHtml.includes('已置顶'), true, '会话头部显示已置顶状态');
 const pinnedRows = [...pinHtml.matchAll(/class="wa-chat-swipe" data-chat-id="(\d+)"/g)].map(match => Number(match[1]));
-eq(pinnedRows.join(','), [chat.id, quoteChat.id].join(','), '置顶栏按置顶时间倒序排列');
+eq(pinnedRows.join(','), [quoteChat.id, chat.id].join(','), '置顶栏按最新消息时间倒序排列');
 const allWithPinnedHtml = sessionPage({ query: { chat: String(chat.id) }, user, flash: () => [] });
 eq((allWithPinnedHtml.match(/class="wa-chat-item [^"]*is-pinned/g) || []).length, 2, '全部筛选包含置顶会话');
 const allRows = [...allWithPinnedHtml.matchAll(/class="wa-chat-swipe" data-chat-id="(\d+)"/g)].map(match => Number(match[1]));
 eq(allRows.includes(privateChat.id), true, '全部筛选包含普通会话');
-eq(allRows.indexOf(chat.id) < allRows.indexOf(quoteChat.id) && allRows.indexOf(quoteChat.id) < allRows.indexOf(privateChat.id), true, '全部列表把置顶会话排在最前，其余按最新消息时间排序');
+eq(allRows.indexOf(privateChat.id) < allRows.indexOf(quoteChat.id) && allRows.indexOf(quoteChat.id) < allRows.indexOf(chat.id), true, '全部列表所有会话按最新消息时间倒序，置顶不特殊排序');
 const allSearchPinnedHtml = sessionPage({ query: { filter: 'all', q: 'WA Inbox Test Co' }, user, flash: () => [] });
 eq(allSearchPinnedHtml.includes('data-chat-id="' + chat.id + '"'), true, '全部中按客户名搜索可找到已置顶会话');
 

@@ -597,8 +597,6 @@ a:hover{color:var(--neo-coral);}
 .wa-swipe-delete-btn:hover,.wa-swipe-delete-btn:focus-visible{background:#8c2817;outline:none;}
 .wa-pin-group-label{display:flex;align-items:center;gap:5px;padding:6px 8px 5px;background:var(--neo-surface-2);border-bottom:1px solid var(--neo-line);color:var(--neo-muted);font-size:12px;font-weight:700;letter-spacing:.04em;}
 .wa-pin-group-label i{color:var(--neo-coral);}
-.wa-pin-group-rest{margin-top:6px;}
-.wa-pin-group-rest i{color:var(--neo-muted);}
 .wa-pin-group-label b{margin-left:auto;min-width:18px;padding:0 5px;border-radius:9px;background:var(--neo-surface);border:1px solid var(--neo-line);text-align:center;font-size:11px;}
 .wa-pin-form{display:flex;align-items:center;padding:0 5px;background:var(--wa-cat-bg);}
 .wa-pin-btn{border:0;background:transparent;color:var(--wa-cat-text,var(--neo-muted));opacity:.35;padding:4px 5px;border-radius:6px;line-height:1;font-size:15px;transition:opacity .12s ease,background .12s ease;}
