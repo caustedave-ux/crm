@@ -660,16 +660,22 @@ function settingsPage(ctx) {
   if (isAdmin) {
     const aiKey = dbx.getSetting("ai_api_key") || "";
     const aiClearHtml = aiKey ? "<label class=\"form-check mt-2\"><input class=\"form-check-input\" type=\"checkbox\" name=\"clear_ai_key\" value=\"1\"><span class=\"form-check-label small\">清除已保存的 API Key</span></label>" : "";
-    const tmapKey = dbx.getSetting("tmap_key") || "";
     parts.push(githubUpdateCard());
-    parts.push(card({ title: "腾讯地图 Key（AI 外贸工作台地图）", body: `<form method="post" action="/settings/tmap">
+    const aiCfg = require('../aiProvider').status();
+    const doubaoKeySet = aiCfg.doubaoConfigured;
+    const doubaoModelVal = dbx.getSetting("doubao_model") || "";
+    const aiPrefer = aiCfg.prefer || "doubao";
+    parts.push(card({ title: "AI 接入（豆包 / DeepSeek）", body: `<form method="post" action="/settings/ai-provider">
       <div class="row g-3">
-        <div class="col-md-8">${fld({ label: "腾讯位置服务 Key", name: "tmap_key", type: "password", value: "", placeholder: tmapKey ? "已配置，输入新值可替换；留空保持不变" : "请到腾讯位置服务控制台申请" })}</div>
-        <div class="col-md-4"><button class="btn btn-primary"><i class="bi bi-check-lg"></i> 保存地图 Key</button></div>
+        <div class="col-md-4">${fld({ label: "优先使用", name: "ai_provider", type: "select", value: aiPrefer, options: [{ v: "doubao", l: "豆包（火山方舟）" }, { v: "deepseek", l: "DeepSeek" }] })}</div>
+        <div class="col-md-8">${fld({ label: "豆包 模型 / 接入点 ID", name: "doubao_model", value: doubaoModelVal, placeholder: "ep-2026… 或 doubao-seed-1-6-…（留空用默认）" })}</div>
+        <div class="col-md-8">${fld({ label: "豆包 API Key（火山方舟）", name: "doubao_api_key", type: "password", value: "", placeholder: doubaoKeySet ? "已配置（••••），输入新值可替换；留空保持不变" : "在火山方舟控制台 → API Key 里创建" })}</div>
+        <div class="col-md-4 d-flex align-items-end"><button class="btn btn-primary w-100"><i class="bi bi-check-lg"></i> 保存 AI 接入</button></div>
       </div>
-      <div class="form-text mt-2">地图用于「AI 外贸工作台 → 客户开发地图」。海外底图属非默认场景，需自行申请 Key：<a href="https://lbs.qq.com/dev/console/application/mine" target="_blank" rel="noopener">腾讯位置服务控制台</a>，创建应用并勾选 JavaScript GL / WebServiceAPI。建议为该 Key 配置 Referer 白名单（仅填你访问 CRM 的地址），避免被盗用。系统不内嵌任何 Key。</div>
+      ${doubaoKeySet ? "<label class=\"form-check mt-2\"><input class=\"form-check-input\" type=\"checkbox\" name=\"clear_doubao_key\" value=\"1\"><span class=\"form-check-label small\">清除已保存的豆包 Key</span></label>" : ""}
+      <div class="form-text mt-2">当前生效：<b>${esc(aiCfg.ok ? aiCfg.label + ' · ' + aiCfg.model : '未配置（AI 功能不可用）')}</b>。豆包走火山方舟 OpenAI 兼容接口（ark.cn-beijing.volces.com/api/v3），Key 与模型都在 <a href="https://console.volcengine.com/ark" target="_blank" rel="noopener">火山方舟控制台</a> 获取；没填豆包 Key 时自动回落到下面的 DeepSeek。工作台对话、月度简报、「跟进中心 → AI 要点/话术」都用这一套。</div>
     </form>` }));
-    parts.push(card({ title: "DeepSeek 设置（系统全部 AI）", body: `<form method="post" action="/settings/ai">
+    parts.push(card({ title: "DeepSeek 设置（备用 AI）", body: `<form method="post" action="/settings/ai">
       <div class="row g-3">
         <div class="col-md-8">${fld({ label: "DeepSeek API Key", name: "api_key", type: "password", value: "", placeholder: aiKey ? "已配置（sk-••••••••），输入新值可替换；留空保持不变" : "sk-…" })}</div>
         <div class="col-md-4">${fld({ label: "模型", name: "model", value: dbx.getSetting("ai_model") || "deepseek-chat" })}</div>

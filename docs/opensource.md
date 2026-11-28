@@ -2,6 +2,14 @@
 
 按 [AGENTS.md](../AGENTS.md) 的约定，每个功能动工前先调研开源实现，这里记一行：需求 → 候选 → 选中项 + 原因 → 改动点。
 
+## 2026-11-28 · WhatsApp 发送独立站链接
+
+后台发送比较了 [Croner](https://github.com/Hexagon/croner)（MIT）和 Node.js 定时器。选用现有定时器模式与 SQLite，按账号持久化文案、间隔、额度和启停状态，并与手动发送共用发送记录。
+
+发送去重沿用 SQLite 中的会话发送记录和 WhatsApp 发件记录，按滚动 30 天更新候选列表，并在提交和实际发送前复查。
+
+评估了 [Bottleneck](https://github.com/SGrondin/bottleneck) 和 [p-queue](https://github.com/sindresorhus/p-queue)（均为 MIT）。沿用现有 SQLite（公有领域）记录、Bootstrap（MIT）表单及 WhatsApp 发送接口，将发送间隔、额度和去重记录保存在数据库中，重启后仍可检查。改动涉及 DB 建表、WhatsApp 路由和发送预览页。
+
 ## 2026-11-27 · WhatsApp 跟进 Facebook 收尾
 
 评估了 [XState](https://github.com/statelyai/xstate)（MIT）和现有 SQLite 跟进记录（公有领域）。采用现有记录，它已经包含跟进次数、消息发送结果和会话状态，可用来判断收尾时机并避免重复邀请。改动位于 `auto-reply/logic.js`、`auto-reply/worker.js` 和 `auto-reply/qualify.js`。

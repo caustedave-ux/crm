@@ -492,6 +492,11 @@ function whatsappFollowupModalHtml() {
         </div>
         <div class="modal-body">
           <div class="alert alert-warning py-2 small d-none" id="fuWaNotice"><i class="bi bi-exclamation-circle me-1"></i>客户档案未填写 WhatsApp 号码，请在下方输入含国际区号的号码。</div>
+          <div class="mb-3 d-none" id="fuWaChatWrap">
+            <label class="form-label" for="fuWaChatSelect">发送到哪个会话 <span class="text-muted small">（优先用已有的，不会新开窗口）</span></label>
+            <select class="form-select" id="fuWaChatSelect"></select>
+            <div class="form-text" id="fuWaChatHint"></div>
+          </div>
           <div class="mb-3">
             <label class="form-label">客户 WhatsApp 号码</label>
             <input type="tel" class="form-control" id="fuWaPhone" inputmode="tel" placeholder="+86 138 0013 8000" autocomplete="tel">
@@ -514,6 +519,161 @@ function whatsappFollowupModalHtml() {
   </div>
 </div>`;
 }
+function aiCoachModalHtml() {
+  return `<div class="modal fade" id="fuAiModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title"><i class="bi bi-stars me-1"></i>AI 聊天要点与回复话术</h5>
+          <div class="text-muted small mt-1" id="fuAiCustomer"></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+      </div>
+      <div class="modal-body">
+        <div id="fuAiLoading" class="text-center py-5 d-none">
+          <div class="spinner-border text-primary" role="status"></div>
+          <div class="mt-3 text-muted small">正在读聊天记录并生成要点和话术，通常 10–30 秒…</div>
+        </div>
+        <div id="fuAiError" class="alert alert-warning py-2 small d-none" role="alert"></div>
+        <div id="fuAiBody" class="d-none">
+          <div class="mb-3">
+            <div class="fw-semibold mb-2"><i class="bi bi-list-check me-1"></i>聊天要点</div>
+            <ul class="small mb-0 ps-3" id="fuAiSummary"></ul>
+          </div>
+          <div class="mb-3" id="fuAiStuckWrap">
+            <div class="fw-semibold mb-1"><i class="bi bi-exclamation-circle me-1"></i>卡在哪</div>
+            <div class="small text-muted" id="fuAiStuck"></div>
+          </div>
+          <div class="fw-semibold mb-2"><i class="bi bi-chat-quote me-1"></i>可直接发送的话术</div>
+          <div id="fuAiScripts"></div>
+          <div class="small text-muted mt-3" id="fuAiMeta"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">关闭</button>
+        <button type="button" class="btn btn-primary" id="fuAiRegen"><i class="bi bi-arrow-repeat me-1"></i>重新生成</button>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+function aiCoachScript() {
+  return `<script>
+(function () {
+  var modalEl = document.getElementById('fuAiModal');
+  if (!modalEl) return;
+  var bsModal = null;
+  var current = null;
+  var body = document.getElementById('fuAiBody');
+  var loading = document.getElementById('fuAiLoading');
+  var err = document.getElementById('fuAiError');
+  var summaryEl = document.getElementById('fuAiSummary');
+  var stuckEl = document.getElementById('fuAiStuck');
+  var stuckWrap = document.getElementById('fuAiStuckWrap');
+  var scriptsEl = document.getElementById('fuAiScripts');
+  var metaEl = document.getElementById('fuAiMeta');
+  var titleEl = document.getElementById('fuAiCustomer');
+  var regen = document.getElementById('fuAiRegen');
+
+  function show() {
+    if (!bsModal) bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+  }
+  function setLoading(on) {
+    loading.classList.toggle('d-none', !on);
+    body.classList.toggle('d-none', on);
+    regen.disabled = on;
+    err.classList.add('d-none');
+    if (on) { summaryEl.innerHTML = ''; scriptsEl.innerHTML = ''; metaEl.textContent = ''; }
+  }
+  function copyText(text, btn) {
+    var ok = function () { var old = btn.innerHTML; btn.innerHTML = '<i class="bi bi-check2"></i> 已复制'; setTimeout(function () { btn.innerHTML = old; }, 1400); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(ok).catch(function () { window.prompt('复制这段话术', text); });
+    } else { window.prompt('复制这段话术', text); }
+  }
+  function render(data) {
+    var points = (data && data.summary) || [];
+    summaryEl.innerHTML = '';
+    points.forEach(function (p) {
+      var li = document.createElement('li');
+      li.textContent = p;
+      summaryEl.appendChild(li);
+    });
+    if (!points.length) summaryEl.innerHTML = '<li class="text-muted">（AI 没有给出要点）</li>';
+    var stuck = String(data && data.stuck || '').trim();
+    stuckWrap.classList.toggle('d-none', !stuck);
+    stuckEl.textContent = stuck;
+    scriptsEl.innerHTML = '';
+    ((data && data.scripts) || []).forEach(function (s) {
+      var card = document.createElement('div');
+      card.className = 'border rounded p-2 mb-2';
+      card.style.background = 'rgba(255,255,255,.04)';
+      var head = document.createElement('div');
+      head.className = 'd-flex align-items-center justify-content-between mb-1';
+      var badge = document.createElement('span');
+      badge.className = 'badge text-bg-light border';
+      badge.textContent = s.lang || '客户语言';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-sm btn-outline-primary';
+      btn.innerHTML = '<i class="bi bi-clipboard"></i> 复制';
+      btn.addEventListener('click', function () { copyText(String(s.text || ''), btn); });
+      head.appendChild(badge); head.appendChild(btn);
+      var txt = document.createElement('div');
+      txt.className = 'small';
+      txt.style.whiteSpace = 'pre-wrap';
+      txt.style.lineHeight = '1.6';
+      txt.textContent = s.text || '';
+      card.appendChild(head); card.appendChild(txt);
+      if (s.zh) {
+        var zh = document.createElement('div');
+        zh.className = 'text-muted small mt-2';
+        zh.style.borderTop = '1px dashed rgba(255,255,255,.14)';
+        zh.style.paddingTop = '6px';
+        zh.textContent = '中文意思：' + s.zh;
+        card.appendChild(zh);
+      }
+      scriptsEl.appendChild(card);
+    });
+    if (!scriptsEl.children.length) scriptsEl.innerHTML = '<div class="text-muted small">（AI 没有返回话术，请重试）</div>';
+    var when = String(data && data.created_at || '').slice(0, 16);
+    metaEl.textContent = '来源：' + (data && (data.provider || '') ? (data.provider === 'doubao' ? '豆包' : 'DeepSeek') : 'AI')
+      + (data && data.model ? ' · ' + data.model : '')
+      + (when ? ' · 生成于 ' + when : '')
+      + (data && data.cached ? ' · 已用上次结果（点重新生成可更新）' : '')
+      + (data && data.hasChat === false ? ' · 该客户还没有聊天记录，仅按跟进记录生成' : '');
+  }
+  function run(force) {
+    if (!current) return;
+    setLoading(true);
+    fetch('/api/ai/followup-coach', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customer_id: Number(current.id), refresh: force ? 1 : 0 })
+    }).then(function (r) {
+      return r.json().then(function (j) { if (!r.ok || !j.ok) throw new Error(j.error || '生成失败'); return j; });
+    }).then(function (j) {
+      setLoading(false);
+      body.classList.remove('d-none');
+      render(j.data);
+    }).catch(function (e) {
+      setLoading(false);
+      err.textContent = e.message || '生成失败，请稍后重试';
+      err.classList.remove('d-none');
+    });
+  }
+  window.openAiCoach = function (btn) {
+    current = { id: btn.getAttribute('data-customer'), name: btn.getAttribute('data-name') || '' };
+    titleEl.textContent = current.name;
+    show();
+    run(false);
+  };
+  regen.addEventListener('click', function () { run(true); });
+})();
+</script>`;
+}
 function whatsappFollowupScript() {
   return `<script>
 (function () {
@@ -526,6 +686,10 @@ function whatsappFollowupScript() {
   var result = document.getElementById('fuWaResult');
   var submit = form.querySelector('button[type="submit"]');
   var modalEl = document.getElementById('fuWaModal');
+  var chatWrap = document.getElementById('fuWaChatWrap');
+  var chatSelect = document.getElementById('fuWaChatSelect');
+  var chatHint = document.getElementById('fuWaChatHint');
+  var currentCustomer = '';
   function updateCount() { count.textContent = String(message.value.length); }
   function updateNotice() { notice.classList.toggle('d-none', !!phone.value.trim()); }
   function clearResult() {
@@ -547,17 +711,61 @@ function whatsappFollowupScript() {
     submit.disabled = false;
     submit.innerHTML = '<i class="bi bi-send me-1"></i>发送 WhatsApp';
   }
+  function loadChats(customerId) {
+    chatWrap.classList.add('d-none');
+    chatSelect.innerHTML = '';
+    if (!customerId) return;
+    chatWrap.classList.remove('d-none');
+    chatSelect.disabled = true;
+    chatHint.textContent = '正在查找这个客户已有的 WhatsApp 会话…';
+    fetch('/api/customers/' + encodeURIComponent(customerId) + '/wa-chats', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        chatSelect.disabled = false;
+        if (!d || !d.ok) { chatHint.textContent = '查找会话失败，将按号码发送。'; return; }
+        if (!d.account) { chatHint.textContent = '当前账号还没登录 WhatsApp，请先到「WhatsApp → 登录」扫码。'; chatWrap.classList.add('d-none'); return; }
+        var chats = d.chats || [];
+        var def = document.createElement('option');
+        var placeholder = document.createElement('option');
+        if (chats.length) {
+          chats.forEach(function (c) {
+            var o = document.createElement('option');
+            o.value = String(c.id);
+            var who = c.name || c.phone || c.jid || '';
+            o.textContent = who + (c.phone && c.name ? ' · ' + c.phone : '')
+              + (c.bound ? '' : '（未绑定此客户）')
+              + (c.last_msg_at ? ' · 最近 ' + String(c.last_msg_at).slice(5, 16) : '')
+              + (c.unread ? ' · ' + c.unread + ' 条未读' : '');
+            chatSelect.appendChild(o);
+          });
+          if (d.boundChatId) chatSelect.value = String(d.boundChatId);
+          chatHint.textContent = '已找到 ' + chats.length + ' 个已有会话，默认发到最近的那个；号码栏只用于找不到会话时新建。';
+        } else {
+          placeholder.value = '';
+          placeholder.textContent = '（没有找到已有会话，将按号码新建）';
+          chatSelect.appendChild(placeholder);
+          chatHint.textContent = '这个客户在 WhatsApp 里还没找到会话，发送后会在会话列表里新建一条，建议先确认号码是否与客户现在用的号一致。';
+        }
+        chatSelect.classList.toggle('d-none', !chats.length);
+      })
+      .catch(function () {
+        chatSelect.disabled = false;
+        chatHint.textContent = '查找会话失败，将按号码发送。';
+      });
+  }
   window.openFollowupWa = function (btn) {
     form.reset();
     document.getElementById('fuWaActivityId').value = btn.getAttribute('data-id') || '';
     var name = btn.getAttribute('data-name') || '';
     var contact = btn.getAttribute('data-contact') || '';
+    currentCustomer = btn.getAttribute('data-customer') || '';
     document.getElementById('fuWaCustomer').textContent = name + (contact ? ' · ' + contact : '');
     phone.value = btn.getAttribute('data-phone') || '';
     updateNotice();
     updateCount();
     clearResult();
     resetButton();
+    loadChats(currentCustomer);
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
     setTimeout(function () { (phone.value.trim() ? message : phone).focus(); }, 180);
   };
@@ -582,6 +790,8 @@ function whatsappFollowupScript() {
     var data = new URLSearchParams();
     data.set('phone', phone.value.trim());
     data.set('text', text);
+    var chatId = chatSelect && !chatSelect.disabled && chatSelect.value ? chatSelect.value : '';
+    if (chatId) data.set('chat_id', chatId);
     fetch('/api/activities/' + encodeURIComponent(id) + '/whatsapp/send', {
       method: 'POST', credentials: 'same-origin',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', 'Accept': 'application/json' },
@@ -2323,7 +2533,8 @@ function followupsPage(ctx) {
         ${imagesThumb(a.images)}
       </div>
       <div class="fu-task-actions">
-        <button type="button" class="btn btn-sm btn-outline-success fu-wa-send" data-id="${a.id}" data-name="${esc(a.company_name)}" data-phone="${esc(waPhone)}" data-contact="${esc(a.contact_person || '')}" onclick="openFollowupWa(this)" title="直接给客户发送 WhatsApp"><i class="bi bi-whatsapp me-1"></i>WhatsApp</button>
+        <button type="button" class="btn btn-sm btn-outline-primary fu-ai-coach" data-customer="${a.customer_id}" data-name="${esc(a.company_name)}" onclick="openAiCoach(this)" title="读这个客户的 WhatsApp 聊天记录，生成要点和回复话术"><i class="bi bi-stars me-1"></i>AI 要点/话术</button>
+        <button type="button" class="btn btn-sm btn-outline-success fu-wa-send" data-id="${a.id}" data-customer="${a.customer_id}" data-name="${esc(a.company_name)}" data-phone="${esc(waPhone)}" data-contact="${esc(a.contact_person || '')}" onclick="openFollowupWa(this)" title="直接给客户发送 WhatsApp（会先定位到已有会话）"><i class="bi bi-whatsapp me-1"></i>WhatsApp</button>
         ${a.archived ? '' : `<button type="button" class="btn btn-sm btn-primary" data-id="${a.id}" data-name="${esc(a.company_name)}" data-type="${esc(a.type || '')}" data-contact="${esc(a.contact_person || '')}" data-priority="${esc(a.priority || '中')}" data-notes="${esc(a.next_follow_notes || '')}" data-next="${esc(nf)}" onclick="completeFu(this)"><i class="bi bi-check2-circle me-1"></i>完成</button>`}
         <a class="btn btn-sm btn-outline-secondary" href="/activities/${a.id}/edit?return_to=/followups"><i class="bi bi-pencil"></i></a>
         <form method="post" action="/activities/${a.id}/delete" onsubmit="return confirm('确认删除该跟进记录？')"><input type="hidden" name="return_to" value="/followups"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>
@@ -2365,8 +2576,10 @@ function followupsPage(ctx) {
     ${followupModalHtml()}
     ${completeFollowupModalHtml()}
     ${whatsappFollowupModalHtml()}
+    ${aiCoachModalHtml()}
     ${followupScript()}
     ${whatsappFollowupScript()}
+    ${aiCoachScript()}
     <script>
       (function () {
         var customers = ${customerSearchJson};

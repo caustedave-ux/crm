@@ -413,6 +413,32 @@ CREATE TABLE IF NOT EXISTS wa_messages(
   UNIQUE(account_id, msg_id)
 );
 CREATE INDEX IF NOT EXISTS idx_wa_messages_chat ON wa_messages(account_id, chat_jid, ts);
+-- AI 跟进要点与话术缓存（2026-11-28）：每位客户一条，重新生成时覆盖。
+CREATE TABLE IF NOT EXISTS ai_followup_notes(
+  user_id INTEGER NOT NULL,
+  customer_id INTEGER NOT NULL,
+  provider TEXT DEFAULT '',
+  model TEXT DEFAULT '',
+  content TEXT DEFAULT '',
+  created_at TEXT DEFAULT '',
+  PRIMARY KEY(user_id, customer_id)
+);
+CREATE TABLE IF NOT EXISTS wa_site_link_sends(
+  account_id INTEGER NOT NULL,
+  jid TEXT NOT NULL,
+  attempted_at INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  PRIMARY KEY(account_id,jid)
+);
+CREATE INDEX IF NOT EXISTS idx_wa_site_link_sends_time ON wa_site_link_sends(account_id,attempted_at);
+CREATE TABLE IF NOT EXISTS wa_site_link_jobs(
+  user_id INTEGER PRIMARY KEY,
+  enabled INTEGER NOT NULL DEFAULT 0,
+  daily_limit INTEGER NOT NULL,
+  gap_seconds INTEGER NOT NULL,
+  message TEXT NOT NULL,
+  last_error TEXT NOT NULL DEFAULT ''
+);
 CREATE TABLE IF NOT EXISTS wa_quick_replies(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
@@ -741,6 +767,8 @@ function migrate() {
   ensureColumn('wa_messages', 'delivered_at', "TEXT DEFAULT ''");
   ensureColumn('wa_messages', 'read_at', "TEXT DEFAULT ''");
   ensureColumn('wa_messages', 'receipt_updated_at', "TEXT DEFAULT ''");
+// 单条消息置顶（2026-11-28）：记录置顶时间，空串表示未置顶；置顶消息在会话顶部单独列一条，不随滚动消失。
+ensureColumn('wa_messages', 'pinned_at', "TEXT DEFAULT ''");
   // WhatsApp 导入台账：AI 摘要（按天一条，单独存，不改正文）
   ensureColumn('wa_imports', 'summary', "TEXT DEFAULT ''");
   // 物流跟踪：运单图片（物流单/面单拍照）

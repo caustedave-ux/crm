@@ -6,7 +6,6 @@ const { getSetting, all } = require('../db');
 
 const SKILLS = [
   { key: 'dev', icon: 'bi-globe2', title: '开发客户', sub: '发现全球商业机会', href: '/workbench/map' },
-  { key: 'background', icon: 'bi-person-badge', title: '获客工作台', sub: '地图找客、AI 整理、开发信、WhatsApp', href: '/leadgen', blank: true },
   { key: 'compose', icon: 'bi-envelope', title: '写开发信', sub: '让每一次触达更有效', href: '/workbench/compose' },
   { key: 'quote', icon: 'bi-currency-exchange', title: '报价谈判', sub: '专业报价，从容成交', href: '/workbench?skill=quote' },
   { key: 'marketing', icon: 'bi-megaphone', title: '营销推广', sub: '多渠道连接全球客户', href: '/workbench?skill=marketing' },
@@ -113,10 +112,6 @@ function homePage(ctx) {
 }
 
 function mapPage(ctx) {
-  const rawKey = String(getSetting('tmap_key') || '').trim();
-  // 合规：不内嵌任何真实 Key。未配置时用明确占位符并给出申请引导。
-  const key = rawKey || '请到腾讯位置服务开放平台申请自己的 Key 并替换此占位符';
-  const configured = !!rawKey;
   const points = require('../workbench').mapPoints(ctx.user);
   const content = `
   <style>
@@ -129,63 +124,45 @@ function mapPage(ctx) {
     .wb-country .n{font-weight:600;font-size:15px;}
     .wb-country .c{font-size:13px;color:#6b7688;}
     .wb-country .pill{background:#1f7a5e;color:#fff;border-radius:10px;padding:1px 8px;font-size:13px;}
-    #wbMap{width:100%;height:100%;min-height:560px;background:#eef3f7;}
-    .wb-map-tip{position:absolute;left:12px;bottom:12px;z-index:5;background:rgba(255,255,255,.94);border:1px solid #dde5ec;border-radius:8px;padding:7px 11px;font-size:13px;color:#6b7688;}
     @media(max-width:900px){.wb-map-wrap{grid-template-columns:1fr;}.wb-map-side{max-height:220px;}}
   </style>
   <div class="wb-wrap">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div><h4 style="margin:0;font-weight:800;color:#f1f1f8">客户开发地图</h4><div class="text-muted" style="font-size:14px">按国家聚合显示客户 ${points.reduce((a,p)=>a+p.customers.length,0)} 家、线索 ${points.reduce((a,p)=>a+p.leads.length,0)} 条 · 点击国家查看名单</div></div>
-      <a class="btn btn-sm btn-outline-secondary" href="/leadgen" target="_blank" rel="noopener"><i class="bi bi-funnel"></i> 去获客工作台</a>
+      <div><h4 style="margin:0;font-weight:800;color:#f1f1f8">客户国家分布</h4><div class="text-muted" style="font-size:14px">按国家聚合显示客户 ${points.reduce((a,p)=>a+p.customers.length,0)} 家、线索 ${points.reduce((a,p)=>a+p.leads.length,0)} 条 · 点击国家查看名单</div></div>
     </div>
-    ${configured ? '' : `<div class="alert alert-info py-2 small">地图需配置腾讯地图 Key（海外底图为非默认场景，需自行申请）。请到 <a href="https://lbs.qq.com/dev/console/application/mine" target="_blank" rel="noopener">腾讯位置服务控制台</a> 申请 Key（开通 WebServiceAPI / JavaScript GL），再到 <a href="/settings">系统设置</a> 填入。当前显示占位符，地图不会加载。</div>`}
     <div class="wb-map-wrap">
       <div class="wb-map-side">
         <h6>国家 / 地区分布</h6>
         <div class="sub">按客户 + 线索数量排序</div>
-        ${points.length ? points.map(p => `<a class="wb-country" href="#" data-lat="${p.lat}" data-lng="${p.lng}" data-country="${esc(p.country)}">
-          <span><span class="n">${esc(p.country)}</span>${p.estimated ? '<span class="c"> (坐标估算)</span>' : ''}<br><span class="c">客户 ${p.customers.length} · 线索 ${p.leads.length}</span></span>
+        ${points.length ? points.map(p => `<a class="wb-country" href="#" data-country="${esc(p.country)}">
+          <span><span class="n">${esc(p.country)}</span><br><span class="c">客户 ${p.customers.length} · 线索 ${p.leads.length}</span></span>
           <span class="pill">${p.total}</span></a>`).join('') : '<div class="text-muted small">暂无带国家的客户/线索</div>'}
       </div>
-      <div style="position:relative"><div id="wbMap"></div><div class="wb-map-tip">点左侧国家可定位 · 点位为国家中心（非精确地址）</div></div>
+      <div style="position:relative;padding:16px;overflow:auto;background:#fff" id="wbCountryPanel"><div class="text-muted small">点击左侧国家查看该国家/地区的客户与线索名单</div></div>
     </div>
   </div>
   <script>
-    window.__WB_MAP_POINTS__ = ${JSON.stringify(points.map(p => ({ country: p.country, lat: p.lat, lng: p.lng, total: p.total, customers: p.customers, leads: p.leads })))};
+    window.__WB_COUNTRY_POINTS__ = ${JSON.stringify(points.map(p => ({ country: p.country, total: p.total, customers: p.customers, leads: p.leads })))};
   </script>
-  ${configured ? `<script>window._TMapKey=${JSON.stringify(key)};</script><script src="https://map.qq.com/api/gljs?v=1.exp&key=${encodeURIComponent(key)}"></script>` : ''}
   <script>
   (function(){
-    var pts=window.__WB_MAP_POINTS__||[]; var map=null, markers=[];
-    function init(){
-      if(typeof TMap==='undefined'){document.getElementById('wbMap').innerHTML='<div style="padding:40px;text-align:center;color:#5b6879">地图 SDK 未加载。请先在设置中配置腾讯地图 Key。</div>';return;}
-      map=new TMap.Map(document.getElementById('wbMap'),{zoom:3,center:new TMap.LatLng(28,60)});
-      var geo=pts.filter(function(p){return p.lat!==null&&p.lng!==null;}).map(function(p,i){
-        return {id:String(i),styleId:'dot',position:new TMap.LatLng(p.lat,p.lng),properties:p};
-      });
-      if(geo.length){
-        markers=new TMap.MultiMarker({map:map,styles:{dot:new TMap.MarkerStyle({width:24,height:24,anchor:{x:12,y:12}})},geometries:geo});
-        markers.on('click',function(evt){var p=evt.geometry.properties;showInfo(p);});
-      }
-    }
-    function showInfo(p){
-      var names=(p.customers||[]).slice(0,5).map(function(c){return c.name;}).join('、')||'无';
-      var leads=(p.leads||[]).slice(0,5).map(function(c){return c.name;}).join('、')||'无';
-      var html='<div style="font-size:15px;line-height:1.9"><b>'+p.country+'</b><br>客户('+p.customers.length+')：'+names+'<br>线索('+p.leads.length+')：'+leads+'</div>';
-      var info=new TMap.InfoWindow({map:map,position:new TMap.LatLng(p.lat,p.lng),content:html,offset:{x:0,y:-16}});info.open();
+    var pts=window.__WB_COUNTRY_POINTS__||[];
+    var panel=document.getElementById('wbCountryPanel');
+    function show(p){
+      var names=(p.customers||[]).map(function(c){return c.name;}).join('、')||'无';
+      var leads=(p.leads||[]).map(function(c){return c.name;}).join('、')||'无';
+      panel.innerHTML='<h6 style="font-weight:700;margin:0 0 8px">'+p.country+'（共 '+p.total+'）</h6>'
+        +'<div style="font-size:14px;line-height:2"><b>客户（'+p.customers.length+'）：</b>'+names+'<br><b>线索（'+p.leads.length+'）：</b>'+leads+'</div>';
     }
     document.querySelectorAll('.wb-country').forEach(function(a){
       a.addEventListener('click',function(e){
-        e.preventDefault(); if(!map)return;
-        var lat=parseFloat(a.dataset.lat),lng=parseFloat(a.dataset.lng); if(isNaN(lat)||isNaN(lng))return;
-        map.setCenter(new TMap.LatLng(lat,lng)); map.setZoom(6);
-        var p=pts.find(function(x){return x.country===a.dataset.country;}); if(p)showInfo(p);
+        e.preventDefault();
+        var p=pts.find(function(x){return x.country===a.dataset.country;}); if(p)show(p);
       });
     });
-    if(window._TMapKey) init(); else document.getElementById('wbMap').innerHTML='<div style="padding:40px;text-align:center;color:#5b6879;line-height:2">未配置腾讯地图 Key<br><span style="font-size:14px">左侧国家列表与统计仍可使用；配置 Key 后自动显示地图</span></div>';
   })();
   </script>`;
-  return page({ title: '客户开发地图', active: 'workbench', user: ctx.user, content });
+  return page({ title: '客户国家分布', active: 'workbench', user: ctx.user, content });
 }
 
 function composePage(ctx) {

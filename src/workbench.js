@@ -101,22 +101,9 @@ function mapPoints(user) {
 }
 
 function callDeepSeek(system, userText, maxTokens) {
-  const key = getSetting('ai_api_key');
-  if (!key) throw new Error('未配置 DeepSeek API Key，请先到「系统设置 → DeepSeek 设置」填写');
-  const model = getSetting('ai_model') || 'deepseek-chat';
-  return fetch('https://api.deepseek.com/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-    body: JSON.stringify({ model, messages: [{ role: 'system', content: system }, { role: 'user', content: String(userText || '').slice(0, 28000) }], temperature: 0.3, stream: false, max_tokens: maxTokens || 1200 }),
-    signal: AbortSignal.timeout(90000),
-  }).then(async (resp) => {
-    if (!resp.ok) {
-      let msg = 'DeepSeek 返回 HTTP ' + resp.status;
-      try { const j = await resp.json(); if (j && j.error && j.error.message) msg = j.error.message; } catch (e) {}
-      throw new Error(msg);
-    }
-    const data = await resp.json();
-    return String(data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim();
+  // 统一走 aiProvider：优先豆包（火山方舟），没配豆包 Key 时自动回落 DeepSeek（2026-11-28）
+  return require('./aiProvider').chat({
+    system, user: userText, maxTokens: maxTokens || 1200, temperature: 0.3, timeoutMs: 90000,
   });
 }
 

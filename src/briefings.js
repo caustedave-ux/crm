@@ -237,9 +237,8 @@ function parseAiJson(text) {
   return JSON.parse(raw.slice(start, end + 1));
 }
 async function callDeepSeek(customer, products, articles, language) {
-  const key = getSetting('ai_api_key');
-  if (!key) throw new Error('未配置 DeepSeek API Key，请先到系统设置 → AI 助理填写');
-  const model = getSetting('ai_model') || 'deepseek-chat';
+  const api = require('./aiProvider');
+  if (!api.status().ok) throw new Error('未配置 AI Key，请先到系统设置 → AI 接入 填写豆包或 DeepSeek');
   const languageName = LANGUAGES[language] || LANGUAGES.en;
   const productText = products.length ? products.map(p => [p.product_name_en || p.product_name, p.model].filter(Boolean).join(' / ')).join('; ') : '暂无报价产品记录';
   const articleText = articles.map((a, i) => ['[' + (i + 1) + '] ' + a.title, '来源：' + a.source,
@@ -258,18 +257,9 @@ async function callDeepSeek(customer, products, articles, language) {
     '行业：' + (customer.industry || '未填写'), '联系人：' + (customer.contact_person || '未填写'),
     '历史报价产品：' + productText, '客户备注：' + safeText(customer.notes, 800), '目标语言：' + languageName,
     '月份：' + todayStr().slice(0, 7), '', '可用素材：', articleText].join('\n');
-  const resp = await fetch('https://api.deepseek.com/chat/completions', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-    body: JSON.stringify({ model, messages: [{ role: 'system', content: system }, { role: 'user', content: user.slice(0, 28000) }], temperature: 0.25, stream: false }),
-    signal: AbortSignal.timeout(90000),
+  const text = await api.chat({
+    system, user: user.slice(0, 28000), temperature: 0.25, json: true, timeoutMs: 90000,
   });
-  if (!resp.ok) {
-    let msg = 'DeepSeek 返回 HTTP ' + resp.status;
-    try { const j = await resp.json(); if (j && j.error && j.error.message) msg = j.error.message; } catch (e) {}
-    throw new Error(msg);
-  }
-  const data = await resp.json();
-  const text = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
   const parsed = parseAiJson(text);
   if (!parsed.subject || !parsed.content) throw new Error('AI 返回缺少 subject 或 content');
   return { subject: safeText(parsed.subject, 180), content: String(parsed.content || '').trim().slice(0, 3000),

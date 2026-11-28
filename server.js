@@ -9,8 +9,8 @@ const auth = require('./src/auth');
 const { autoPoolStale } = require('./src/reminders');
 const customerTiers = require('./src/customerTiers');
 const wa = require('./src/wa');
+const waSiteLink = require('./src/waSiteLink');
 const systemRestart = require('./src/systemRestart');
-const leadgenBridge = require('./src/leadgen-bridge');
 
 const PORT = parseInt(process.env.PORT || '5000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -24,6 +24,7 @@ let shuttingDown = false;
 async function shutdown(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
+  waSiteLink.stop();
   console.log('收到 ' + signal + '，正在退出…');
   // 1) 先停止接收新请求，避免退出瞬间还有人写入
   try { app.server.close(); } catch (e) {}
@@ -111,8 +112,7 @@ function lanIPs() {
 }
 
 app.server.listen(PORT, HOST, () => {
-  // 随主系统自动拉起获客核验服务（5101）；已在线则跳过，不阻塞主服务启动。
-  leadgenBridge.ensureLeadGen().catch((e) => console.error('[获客核验] 自动启动检查失败：', e.message));
+  waSiteLink.start();
   const ips = lanIPs();
   console.log('');
   console.log('====================================================');

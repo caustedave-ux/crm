@@ -23,6 +23,7 @@ const pagesMap = require('./views/pages_map'); // 客户星空统计页
 const pagesWa = require('./views/pages_wa');   // WhatsApp 实时会话
 const pagesLogistics = require('./views/pages_logistics'); // 物流跟踪
 const wa = require('./wa');
+const waSiteLink = require('./waSiteLink');
 const waCustomerVerification = require('./waCustomerVerification');
 const customerTiers = require('./customerTiers');
 const briefings = require('./briefings');
@@ -31,7 +32,6 @@ const { iso2Country, intlPhone } = require('./country');
 const { loginPage, page } = require('./views/layout');
 const websiteInquiry = require('./websiteInquiry');
 const autoReplyControl = require('./autoReplyControl');
-const leadgenBridge = require('./leadgen-bridge');
 const workbench = require('./workbench');
 const pagesWorkbench = require('./views/pages_workbench');
 const pagesKnowledge = require('./views/pages_knowledge');
@@ -143,18 +143,6 @@ function registerRoutes(app, router) {
   router.post('/api/public/website-inquiry', (ctx) => websiteInquiry.handle(ctx));
 
   // ---------- 页面 ----------
-  // 获客工作台入口：受 CRM 登录保护，确保独立服务在线后跳到同主机的 5101 端口。
-  router.get('/leadgen', async (ctx) => {
-    const r = await leadgenBridge.ensureLeadGen();
-    if (!r.ok) {
-      return ctx.res.send(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>获客工作台</title>
-<link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css"></head>
-<body class="p-4"><div class="alert alert-warning"><h5>获客工作台服务暂不可用</h5>
-<p class="mb-2">${esc(r.reason || '未知原因')}。请确认已安装 Node.js，然后双击运行 <code>suite/启动获客工作台.bat</code> 后重试。</p>
-<a class="btn btn-sm btn-primary" href="/leadgen">重试</a> <a class="btn btn-sm btn-outline-secondary" href="/dashboard">返回 CRM</a></div></body></html>`);
-    }
-    ctx.res.redirect(leadgenBridge.targetFromReq(ctx.req));
-  });
   // ---------- AI 外贸工作台 ----------
   router.get('/workbench', (ctx) => ctx.res.send(pagesWorkbench.homePage(ctx)));
   router.get('/workbench/map', (ctx) => ctx.res.send(pagesWorkbench.mapPage(ctx)));
@@ -173,6 +161,29 @@ function registerRoutes(app, router) {
     try {
       const out = await workbench.compose(ctx.user, ctx.body || {});
       ctx.res.json(200, { ok: true, ...out });
+    } catch (e) {
+      ctx.res.json(200, { ok: false, error: e.message || '生成失败' });
+    }
+  });
+  // ---------- 跟进要点 + 话术（AI） ----------
+  const followupCoach = require('./followupCoach');
+  router.get('/api/ai/followup-coach', (ctx) => {
+    const cid = parseInt(ctx.query.customer_id, 10) || 0;
+    if (!cid) return ctx.res.json(400, { ok: false, error: '缺少客户参数' });
+    const hit = followupCoach.cached(ctx.user.id, cid);
+    ctx.res.json(200, { ok: true, cached: !!hit, data: hit });
+  });
+  router.post('/api/ai/followup-coach', async (ctx) => {
+    const cid = parseInt(ctx.body.customer_id, 10) || 0;
+    if (!cid) return ctx.res.json(400, { ok: false, error: '缺少客户参数' });
+    const force = String(ctx.body.refresh || '') === '1';
+    try {
+      if (!force) {
+        const hit = followupCoach.cached(ctx.user.id, cid);
+        if (hit) return ctx.res.json(200, { ok: true, cached: true, data: hit });
+      }
+      const data = await followupCoach.generate(ctx.user.id, cid);
+      ctx.res.json(200, { ok: true, cached: false, data });
     } catch (e) {
       ctx.res.json(200, { ok: false, error: e.message || '生成失败' });
     }
@@ -601,14 +612,32 @@ function registerRoutes(app, router) {
     if (!account) return ctx.res.json(400, { ok: false, error: '请先登录 WhatsApp，再从这里直接发送', login_url: '/whatsapp/session' });
 
     const typedDigits = whatsappDigits(ctx.body.phone);
+    let jid = '';
+    // 前端指定了已有会话 → 直接发到那个会话（含 WhatsApp 的 @lid 会话），不会再新开窗口
+    const chosenId = parseInt(ctx.body.chat_id, 10) || 0;
+    if (chosenId) {
+      const chosen = get('SELECT * FROM wa_chats WHERE id=? AND account_id=? AND COALESCE(is_group,0)=0', chosenId, account.id);
+      if (!chosen) return ctx.res.json(400, { ok: false, error: '指定的会话不存在或不属于当前 WhatsApp 账号，请重新选择' });
+      jid = chosen.jid;
+    }
     const boundChat = get(`SELECT * FROM wa_chats
       WHERE account_id=? AND customer_id=? AND COALESCE(is_group,0)=0
       ORDER BY COALESCE(last_msg_at,updated_at) DESC, id DESC LIMIT 1`, account.id, customer.id);
-    let jid = '';
     // 已绑定会话优先复用原 JID，尤其兼容 WhatsApp 的 @lid 会话。
-    if (boundChat) {
+    if (!jid && boundChat) {
       const boundDigits = whatsappDigits(boundChat.phone);
       if (!typedDigits || !boundDigits || typedDigits === boundDigits) jid = boundChat.jid;
+    }
+    // 客户档案与账号里的会话没绑定时，按号码后 9 位找回原会话，避免同一个客户出现两个窗口
+    if (!jid) {
+      const pool = all(`SELECT * FROM wa_chats WHERE account_id=? AND COALESCE(is_group,0)=0
+        ORDER BY COALESCE(last_msg_at, updated_at) DESC, id DESC LIMIT 80`, account.id);
+      const tail = typedDigits.length >= 9 ? typedDigits.slice(-9) : '';
+      const match = tail ? pool.find((c) => {
+        const cd = whatsappDigits(c.phone);
+        return cd && (cd === typedDigits || cd.slice(-9) === tail);
+      }) : null;
+      if (match) jid = match.jid;
     }
     if (!jid) {
       const primaryContact = get(`SELECT COALESCE(NULLIF(mobile,''), NULLIF(phone,'')) AS phone
@@ -642,11 +671,67 @@ function registerRoutes(app, router) {
     });
   });
 
+  // 跟进页「直接发 WhatsApp」前，先找出这个客户已经存在的会话，避免发出新开窗口
+  router.get('/api/customers/:id/wa-chats', (ctx) => {
+    const cid = parseInt(ctx.params.id, 10) || 0;
+    const customer = get('SELECT * FROM customers WHERE id=?', cid);
+    if (!customer) return ctx.res.json(404, { ok: false, error: '客户不存在' });
+    const account = get('SELECT * FROM wa_accounts WHERE user_id=?', ctx.user.id);
+    if (!account) return ctx.res.json(200, { ok: true, account: false, chats: [] });
+
+    const bound = all(`SELECT id, jid, name, phone, customer_id, last_msg_at, unread FROM wa_chats
+      WHERE account_id=? AND customer_id=? AND COALESCE(is_group,0)=0
+      ORDER BY COALESCE(last_msg_at, updated_at) DESC, id DESC`, account.id, cid);
+
+    const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]/g, '');
+    const companyNorm = norm(customer.company_name);
+    const phones = [customer.whatsapp, customer.contact_phone, customer.phone].map((v) => whatsappDigits(v)).filter((v) => v.length >= 8);
+    for (const c of all(`SELECT COALESCE(NULLIF(mobile,''), NULLIF(phone,'')) AS phone FROM contacts WHERE customer_id=?`, cid)) {
+      const d = whatsappDigits(c.phone);
+      if (d.length >= 8) phones.push(d);
+    }
+
+    const others = all(`SELECT id, jid, name, phone, customer_id, last_msg_at, unread FROM wa_chats
+      WHERE account_id=? AND COALESCE(is_group,0)=0 AND COALESCE(customer_id,0)<>?
+      ORDER BY COALESCE(last_msg_at, updated_at) DESC, id DESC LIMIT 50`, account.id, cid)
+      .filter((c) => {
+        const cd = whatsappDigits(c.phone);
+        if (cd && phones.some((p) => cd === p || (p.length >= 9 && cd.endsWith(p.slice(-9))) || (cd.length >= 9 && p.endsWith(cd.slice(-9))))) return true;
+        const n = norm(c.name);
+        if (companyNorm.length >= 4 && n) {
+          if (n === companyNorm || n.startsWith(companyNorm) || companyNorm.startsWith(n)) return true;
+        }
+        return false;
+      }).slice(0, 15);
+
+    const list = [];
+    const seen = new Set();
+    for (const c of bound) { if (!seen.has(c.id)) { seen.add(c.id); list.push({ ...c, bound: true }); } }
+    for (const c of others) { if (!seen.has(c.id)) { seen.add(c.id); list.push({ ...c, bound: false }); } }
+    ctx.res.json(200, {
+      ok: true, account: true, chats: list, boundChatId: bound[0] ? bound[0].id : null,
+    });
+  });
+
   // 旧版聊天记录导入入口已移除，统一进入实时会话。
   router.get('/whatsapp', (ctx) => ctx.res.redirect('/whatsapp/session'));
 
   // ---------- WhatsApp 内置会话（Baileys） ----------
   router.get('/whatsapp/session', (ctx) => ctx.res.send(pagesWa.sessionPage(ctx)));
+  router.get('/whatsapp/site-link', (ctx) => ctx.res.send(pagesWa.siteLinkPage(ctx)));
+  router.post('/whatsapp/site-link/settings', (ctx) => {
+    const back = '/whatsapp/site-link';
+    const result = waSiteLink.configure(ctx.user.id, ctx.body);
+    if (result.error) return fail(ctx, result.error, back);
+    return ok(ctx, ctx.body.action === 'pause' ? '后台发送已暂停' : '设置已保存，后台发送已启动', back);
+  });
+  router.post('/whatsapp/site-link', async (ctx) => {
+    const back = '/whatsapp/site-link';
+    const result = await waSiteLink.sendBatch(ctx.user.id, ctx.body.chat_id, ctx.body.message);
+    const summary = '已发送 ' + result.sent + ' 个会话' + (result.skipped ? '，跳过 ' + result.skipped + ' 个' : '');
+    if (result.error) return fail(ctx, summary + '。' + result.error, back);
+    return ok(ctx, summary, back);
+  });
 
   // WhatsApp 自动回复总开关（管理员）：开启时自动写入当前会话并启动独立 worker。
   router.post('/whatsapp/auto-reply/toggle', async (ctx) => {
@@ -995,6 +1080,18 @@ function registerRoutes(app, router) {
     } catch (e) {
       console.error('翻译请求失败:', e); return ctx.res.json(500, { ok: false, error: '翻译暂时失败，请稍后重试' });
     }
+  });
+
+  // 单条消息置顶 / 取消置顶：只在本地 CRM 里标记，不改动 WhatsApp 客户端聊天。
+  router.post('/api/wa/message-pin', (ctx) => {
+    const chat = visibleChat(ctx.body.chat_id, ctx.user.id);
+    if (!chat) return ctx.res.json(404, { ok: false, error: '会话不存在或无权操作' });
+    const mid = parseInt(ctx.body.message_id, 10) || 0;
+    const row = mid ? get('SELECT id FROM wa_messages WHERE id=? AND account_id=? AND chat_jid=?', mid, chat.account_id, chat.jid) : null;
+    if (!row) return ctx.res.json(404, { ok: false, error: '消息不存在' });
+    const pin = String(ctx.body.pin) === '1';
+    run('UPDATE wa_messages SET pinned_at=? WHERE id=?', pin ? nowStr() : '', row.id);
+    ctx.res.json(200, { ok: true, pinned: pin, message_id: Number(row.id) });
   });
 
   router.post('/whatsapp/quick-replies', (ctx) => {
@@ -1965,6 +2062,27 @@ function registerRoutes(app, router) {
     run('UPDATE knowledge_articles SET title=?,category=?,tags=?,content=?,product_id=?,updated_at=? WHERE id=?', title, category, tags, content, productId, nowStr(), article.id);
     ok(ctx, '知识条目已更新', '/knowledge?article=' + article.id);
   });
+  // 豆包（火山方舟）接入：Key + 模型（接入点 ID）+ 供应商优先级
+  router.post('/settings/ai-provider', (ctx) => {
+    if (ctx.user.role !== 'admin') return ctx.res.json(403, { error: '仅管理员可设置' });
+    const prefer = String(ctx.body.ai_provider || '').trim();
+    if (prefer) {
+      if (!['doubao', 'deepseek'].includes(prefer)) return fail(ctx, '供应商只能是豆包或 DeepSeek', '/settings');
+      setSetting('ai_provider', prefer);
+    }
+    if (ctx.body.clear_doubao_key === '1') { setSetting('doubao_api_key', ''); }
+    else if (ctx.body.doubao_api_key && String(ctx.body.doubao_api_key).trim()) {
+      const v = String(ctx.body.doubao_api_key).trim();
+      if (!/^[A-Za-z0-9._:-]{8,200}$/.test(v)) return fail(ctx, '豆包 Key 格式不正确', '/settings');
+      setSetting('doubao_api_key', v);
+    }
+    const dm = String(ctx.body.doubao_model || '').trim();
+    if (dm) {
+      if (!/^[A-Za-z0-9._:-]{1,120}$/.test(dm)) return fail(ctx, '豆包模型/接入点 ID 格式不正确', '/settings');
+      setSetting('doubao_model', dm);
+    }
+    ok(ctx, 'AI 接入设置已保存', '/settings');
+  });
   router.post('/settings/ai', (ctx) => {
     if (ctx.user.role !== 'admin') return ctx.res.json(403, { error: '仅管理员可设置' });
     if (ctx.body.codex_model !== undefined) {
@@ -1979,16 +2097,6 @@ function registerRoutes(app, router) {
     if (ctx.body.model && String(ctx.body.model).trim()) setSetting('ai_model', String(ctx.body.model).trim());
     ok(ctx, ctx.body.codex_model !== undefined ? 'Codex 助理设置已保存' : 'DeepSeek 设置已保存', '/settings');
   });
-  router.post('/settings/tmap', (ctx) => {
-    if (ctx.user.role !== 'admin') return ctx.res.json(403, { error: '仅管理员可设置' });
-    const v = String(ctx.body.tmap_key || '').trim();
-    if (v) {
-      if (!/^[A-Za-z0-9_-]{10,200}$/.test(v)) return fail(ctx, '腾讯地图 Key 格式不正确', '/settings');
-      setSetting('tmap_key', v);
-    }
-    ok(ctx, v ? '腾讯地图 Key 已保存' : '腾讯地图 Key 未变更', '/settings');
-  });
-
   // ===== GitHub 应用内自动升级（仅管理员）=====
   const githubUpdate = require('./githubUpdate');
   const adminOnly = (ctx) => { if (ctx.user.role !== 'admin') { ctx.res.json(403, { ok: false, error: '仅管理员可执行升级操作' }); return false; } return true; };

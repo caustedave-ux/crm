@@ -5,6 +5,7 @@ const { page } = require('./layout');
 const { card, pageHead, badge } = require('./ui');
 const { all, get, getSetting, run, DOC_TYPE_MAP } = require('../db');
 const wa = require('../wa');
+const waSiteLink = require('../waSiteLink');
 const autoReplyControl = require('../autoReplyControl');
 const { chatNumber } = require('../waCustomerVerification');
 
@@ -412,8 +413,17 @@ function messageReceiptHtml(m) {
   return `<span class="wa-msg-receipt is-unread" data-receipt-status="${status}" title="${deliveredHint}"><i class="bi ${delivered ? 'bi-check2-all' : 'bi-check2'}"></i>${delivered ? '已送达 · 未读' : '未读'}</span>`;
 }
 
+const MSG_KIND_TEXT = { image: '[图片]', sticker: '[贴纸]', video: '[视频]', audio: '[语音]', document: '[文件]', contact: '[名片]' };
+
+/** 置顶条里的一行摘要：有文字用文字，没有就用附件名或类型占位 */
+function msgPreview(m) {
+  const p = String(m.text || '').trim() || String(m.media_name || '').trim() || MSG_KIND_TEXT[m.kind] || '[消息]';
+  return p.length > 160 ? p.slice(0, 160) + '…' : p;
+}
+
 function msgHtml(m, chat, byWaId) {
   const mine = Number(m.from_me) === 1;
+  const pinned = String(m.pinned_at || '').trim() !== '';
   const audioTs = m.ts ? new Date(String(m.ts).replace(' ', 'T')).getTime() : 0;
   const audioDownloadStale = m.kind === 'audio' && !m.media_path && audioTs > 0 && (Date.now() - audioTs > 10 * 60 * 1000);
   let media = '';
@@ -453,6 +463,7 @@ function msgHtml(m, chat, byWaId) {
         <span>${esc(String(m.ts || '').slice(5, 16))}</span>
         ${messageReceiptHtml(m)}
         <button type="button" class="btn btn-link btn-sm p-0 wa-quote-btn" data-quote-id="${Number(m.id)}" data-quote-kind="${esc(m.kind || 'text')}" data-quote-sender="${esc(quoteSender)}" data-quote-text="${esc(quoteText)}">引用</button>
+        <button type="button" class="btn btn-link btn-sm p-0 wa-pin-btn${pinned ? ' is-pinned' : ''}" data-pin-msg-id="${Number(m.id)}" data-pin="${pinned ? '0' : '1'}" title="${pinned ? '取消置顶' : '置顶这条消息'}"><i class="bi bi-pin-angle${pinned ? '-fill' : ''}"></i>${pinned ? '已置顶' : '置顶'}</button>
         ${!mine && !m.translated && m.kind === 'text' && m.text ? `<form method="post" action="/whatsapp/translate/${m.id}" class="d-inline wa-translate-form" data-chat-id="${Number(chat.id)}">
           <input type="hidden" name="chat_id" value="${Number(chat.id)}">
           <button class="btn btn-link btn-sm p-0">翻译</button></form>` : ''}
@@ -529,6 +540,92 @@ function customerVerificationResultHtml({ number, country, type, valid, customer
         `<li class="list-inline-item">${externalLink(url, label)}</li>`).join('')}</ul>
         <p class="wa-ai-hint mb-0">号码格式、同号记录和网页摘要仅供交叉核对，无法单独证明客户身份。</p>
       </section>` : ''}`;
+}
+
+function siteLinkPage(ctx) {
+  const list = waSiteLink.preview(ctx.user.id, ctx.query.page);
+  const actions = '<a class="btn btn-sm btn-outline-secondary" href="/whatsapp/session">返回 WhatsApp</a>';
+  const scheduled = !!list.job?.enabled;
+  const enabled = list.online && list.remaining > 0 && !scheduled;
+  const scheduleStatus = !scheduled ? '已暂停' : !list.online ? '等待 WhatsApp 连接'
+    : !list.remaining ? '等待额度恢复' : !list.total ? '等待符合条件的会话' : '后台发送已启用';
+  const rows = list.chats.map(chat => `<tr>
+    <td><input type="checkbox" class="form-check-input wa-site-link-selection" name="chat_id" value="${Number(chat.id)}"
+      aria-label="选择 ${esc(chatLabel(chat))}" ${enabled ? '' : 'disabled'}></td>
+    <td><a href="/whatsapp/session?chat=${Number(chat.id)}">${esc(chatLabel(chat))}</a></td>
+    <td>${esc(chat.last_msg_at)}</td>
+  </tr>`).join('');
+  const pagination = list.pages > 1 ? `<nav aria-label="会话分页" class="d-flex align-items-center gap-3 mt-3">
+    ${list.page > 1 ? `<a href="?page=${list.page - 1}">上一页</a>` : ''}
+    <span>${list.page} / ${list.pages} 页</span>
+    ${list.page < list.pages ? `<a href="?page=${list.page + 1}">下一页</a>` : ''}
+  </nav>` : '';
+  const content = `
+    ${pageHead('发送独立站链接', '待绑定会话 · 最后聊天时间从旧到新', actions)}
+    ${card({ title: '消息预览', body: `
+      <textarea class="form-control" id="waSiteLinkMessage" name="message" form="waSiteLinkForm"
+        rows="4" maxlength="${waSiteLink.MESSAGE_LIMIT}" required aria-label="消息预览" aria-describedby="waSiteLinkMessageHelp">${esc(list.job?.message || waSiteLink.MESSAGE)}</textarea>
+      <p class="small text-muted mt-2 mb-0" id="waSiteLinkMessageHelp">可以修改正文和链接，发送时请保留一个 FOEVE 站内链接。</p>
+      <p class="small text-muted mt-2 mb-0">近 ${waSiteLink.RESEND_DAYS} 天发过 FOEVE 链接的会话不会列出。手动发送每批最多 ${waSiteLink.BATCH_LIMIT} 个，逐条间隔至少 ${waSiteLink.GAP_MS / 1000} 秒。</p>
+      ${list.online ? '' : '<p class="text-danger mb-0 mt-2">请先连接 WhatsApp。</p>'}` })}
+    <form action="/whatsapp/site-link" method="post" id="waSiteLinkForm">
+      ${card({ title: '后台发送', body: `
+        <p class="mb-2">${scheduleStatus} · 滚动 24 小时最多 ${list.dailyLimit} 个，剩余 ${list.remaining} 个</p>
+        ${list.job?.last_error ? '<p class="text-danger" role="status">' + esc(list.job.last_error) + '</p>' : ''}
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6 col-lg-3">
+            <label class="form-label" for="waSiteDailyLimit">24 小时发送上限</label>
+            <input class="form-control" type="number" name="daily_limit" id="waSiteDailyLimit" min="1"
+              max="${waSiteLink.MAX_DAILY_LIMIT}" value="${list.job?.daily_limit ?? waSiteLink.DEFAULT_AUTO_LIMIT}">
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <label class="form-label" for="waSiteGap">发送间隔（秒）</label>
+            <input class="form-control" type="number" name="gap_seconds" id="waSiteGap" min="${waSiteLink.GAP_MS / 1000}"
+              max="${waSiteLink.MAX_GAP_SECONDS}" value="${list.job?.gap_seconds ?? waSiteLink.DEFAULT_AUTO_GAP}">
+          </div>
+        </div>
+        <p class="small text-muted">启动后，CRM 会按最后聊天时间从旧到新自动发送上方文案。</p>
+        <button class="btn btn-primary" type="submit" name="action" value="start" formaction="/whatsapp/site-link/settings">${scheduled ? '保存设置' : '保存并启动'}</button>
+        ${scheduled ? '<button class="btn btn-outline-secondary ms-2" type="submit" name="action" value="pause" formaction="/whatsapp/site-link/settings" formnovalidate>暂停</button>' : ''}
+      ` })}
+      ${card({ title: '可选会话（' + list.total + '）', body: rows ? `
+        <div class="table-responsive"><table class="table align-middle">
+          <thead><tr><th scope="col">选择</th><th scope="col">会话</th><th scope="col">最后聊天时间</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+        <button type="submit" id="waSiteLinkManual" class="btn btn-outline-primary" ${enabled ? '' : 'disabled'}>向所选会话发送</button>
+        <span class="ms-2 small text-muted" role="status" id="waSiteLinkStatus"></span>
+      ${pagination}` : '<p class="mb-0 text-muted">暂无符合条件的待绑定会话。</p>' })}
+    </form>
+    <script>
+      (function () {
+        var message = document.getElementById('waSiteLinkMessage');
+        var draftKey = 'waSiteLinkDraft:${Number(ctx.user.id)}';
+        try {
+          var draft = sessionStorage.getItem(draftKey);
+          if (draft !== null) message.value = draft;
+        } catch (e) {}
+        message.addEventListener('input', function () {
+          try { sessionStorage.setItem(draftKey, message.value); } catch (e) {}
+        });
+        var form = document.getElementById('waSiteLinkForm');
+        var status = document.getElementById('waSiteLinkStatus');
+        var limit = ${Math.min(waSiteLink.BATCH_LIMIT, list.remaining)};
+        form.addEventListener('submit', function (event) {
+          if (event.submitter?.id !== 'waSiteLinkManual') return;
+          var checked = form.querySelectorAll('input[name="chat_id"]:checked').length;
+          if (!checked || checked > limit) {
+            event.preventDefault();
+            status.textContent = '请选择 1 至 ' + limit + ' 个会话。';
+            return;
+          }
+          event.submitter.disabled = true;
+          status.textContent = '正在逐条发送，请等待结果。';
+        });
+      })();
+    </script>
+  `;
+  return page({ title: '发送独立站链接', active: 'wa', user: ctx.user, content, flash: ctx.flash() });
 }
 
 function sessionPage(ctx) {
@@ -637,6 +734,7 @@ function sessionPage(ctx) {
   let mediaSaved = 0;
   let receiptState = 0;
   let activeMessages = [];
+  let pinnedMessages = [];
   if (active) {
     const msgs = selectedHistoryMessage
       ? [
@@ -648,6 +746,9 @@ function sessionPage(ctx) {
         ]
       : all(`SELECT * FROM wa_messages WHERE account_id=? AND chat_jid=? ORDER BY ts DESC, id DESC LIMIT 500`, active.account_id, active.jid);
     activeMessages = msgs;
+    // 置顶消息单独取一遍：可能早于当前 500 条窗口，所以要独立查询，不受消息窗口限制。
+    pinnedMessages = all(`SELECT * FROM wa_messages WHERE account_id=? AND chat_jid=?
+      AND TRIM(COALESCE(pinned_at,''))<>'' ORDER BY pinned_at DESC, id DESC LIMIT 30`, active.account_id, active.jid);
     const msgIds = new Set(msgs.map(m => Number(m.id)));
     // 引用目标可能早于当前 500 条消息；补入一条目标消息，点击引用时才能滚动到原消息。
     const quotedIds = [...new Set(msgs.map(m => String(m.quoted_msg_id || '')).filter(Boolean))];
@@ -725,6 +826,22 @@ function sessionPage(ctx) {
       </div>`;
 
     const customerList = customers.map(c => `<option value="#${c.id} · ${esc(c.company_name)}"></option>`).join('');
+    // 置顶消息条：会话顶部常驻，点文字回跳原消息，点 × 取消置顶。
+    const pinnedHtml = pinnedMessages.length ? `
+      <div class="wa-pinned-strip" id="waPinnedStrip">
+        <div class="wa-pinned-head">
+          <i class="bi bi-pin-angle-fill"></i><span>置顶消息</span><span class="wa-pinned-count">${pinnedMessages.length}</span>
+          <button type="button" class="btn btn-link btn-sm p-0 wa-pinned-toggle" data-bs-toggle="collapse" data-bs-target="#waPinnedList" aria-expanded="true" aria-controls="waPinnedList" title="展开 / 收起置顶消息"><i class="bi bi-chevron-up"></i></button>
+        </div>
+        <div class="collapse show" id="waPinnedList">
+          ${pinnedMessages.map(pm => `<div class="wa-pinned-item">
+            <span class="wa-pinned-who">${Number(pm.from_me) === 1 ? '我' : esc(pm.sender_name || '客户')}</span>
+            <span class="wa-pinned-text" role="button" tabindex="0" data-pin-target="${Number(pm.id)}" title="定位到原消息">${esc(msgPreview(pm))}</span>
+            <span class="wa-pinned-time">${esc(String(pm.ts || '').slice(5, 16))}</span>
+            <button type="button" class="wa-pinned-off wa-pin-btn" data-pin-msg-id="${Number(pm.id)}" data-pin="0" title="取消置顶"><i class="bi bi-x-lg"></i></button>
+          </div>`).join('')}
+        </div>
+      </div>` : '';
     convHtml = `
       <div class="wa-conversation-head">
         <span class="wa-avatar wa-avatar-lg">${chatAvatarHtml(active, true)}</span>
@@ -768,6 +885,7 @@ function sessionPage(ctx) {
         </form>
       </div>
       ${adAttributionHtml}
+      ${pinnedHtml}
       <div class="wa-bindbar">
         <form method="post" action="/whatsapp/bind" class="d-flex gap-1 align-items-center flex-grow-1" id="waBindForm">
             <input type="hidden" name="chat_id" value="${active.id}">
@@ -964,16 +1082,16 @@ function sessionPage(ctx) {
     });
     return `<a class="wa-order-row" href="${url}"><span><b>${esc(title)}</b><small>${esc(caption)}</small></span><span><b>${esc(row.currency || 'USD')} ${amount}</b><small>${esc(row.status || '')}</small></span></a>`;
   }).join('');
-  const orderQuotePanelHtml = orderQuoteRowsHtml || `<div class="wa-panel-empty">
+  const orderQuoteActions = (extraClass) => (activeCustomer && !Number(activeCustomer.in_pool)) ? `<div class="wa-order-actions${extraClass ? ' ' + extraClass : ''}">
+    <a class="btn btn-sm btn-primary" href="/documents/new?type=so&amp;customer_id=${Number(activeCustomer.id)}" target="_blank" rel="noopener"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>新建订单</a>
+    <a class="btn btn-sm btn-outline-secondary" href="/quotes/new?customer_id=${Number(activeCustomer.id)}" target="_blank" rel="noopener"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>新建报价</a>
+  </div>` : '';
+  const orderQuotePanelHtml = orderQuoteRowsHtml
+    ? orderQuoteActions('') + orderQuoteRowsHtml
+    : `<div class="wa-panel-empty">
     <div>
       <p class="mb-0">${activeCustomer ? '该客户暂无报价或订单记录。' : '绑定 CRM 客户后，可查看或添加报价与订单。'}</p>
-      ${activeCustomer && !Number(activeCustomer.in_pool) ? `<div class="dropdown mt-3">
-        <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>添加</button>
-        <ul class="dropdown-menu">
-          <li><a class="dropdown-item" href="/documents/new?type=so&amp;customer_id=${Number(activeCustomer.id)}" target="_blank" rel="noopener">新建订单</a></li>
-          <li><a class="dropdown-item" href="/quotes/new?customer_id=${Number(activeCustomer.id)}" target="_blank" rel="noopener">新建报价</a></li>
-        </ul>
-      </div>` : ''}
+      ${orderQuoteActions('justify-content-center mt-3')}
     </div>
   </div>`;
   const activeProfile = activeCustomer ? `<div class="wa-profile-summary">
@@ -1008,7 +1126,7 @@ function sessionPage(ctx) {
     </section>
   </aside>`;
   const content = `
-    ${pageHead('WhatsApp', '客户会话 · CRM 档案 · AI 销售助手', `<div class="d-flex gap-2 flex-wrap align-items-center"><span class="badge text-bg-light">${stats.total || 0} 个会话</span><span class="badge text-bg-danger">${stats.unread_msgs || 0} 条未读</span><span class="badge text-bg-warning">${stats.unbound || 0} 个待绑定</span></div>`)}
+    ${pageHead('WhatsApp', '客户会话 · CRM 档案 · AI 销售助手', `<div class="d-flex gap-2 flex-wrap align-items-center"><span class="badge text-bg-light">${stats.total || 0} 个会话</span><span class="badge text-bg-danger">${stats.unread_msgs || 0} 条未读</span><span class="badge text-bg-warning">${stats.unbound || 0} 个待绑定</span><a class="btn btn-sm btn-outline-primary" href="/whatsapp/site-link">发送独立站链接</a></div>`)}
     <nav class="wa-workbench-metrics" aria-label="WhatsApp 工作台快捷入口">
       ${[
         ['messages', 'bi-chat-dots', todayMessages, '今日客户消息', '/whatsapp/session?metric=messages'],
@@ -1213,6 +1331,47 @@ function sessionPage(ctx) {
           [220, 650, 1300].forEach(function (delay) {
             window.setTimeout(function () { centerTarget('auto'); }, delay);
           });
+        }
+
+        // 单条消息置顶（2026-11-28）：置顶只在本地 CRM 生效，不会改动 WhatsApp 客户端里的聊天。
+        function pinMessage(button) {
+          var panel = activePanel();
+          var chatId = Number(panel && panel.dataset.chatId || 0);
+          var messageId = Number(button.dataset.pinMsgId || 0);
+          if (!chatId || !messageId || button.disabled) return;
+          var pin = String(button.dataset.pin || '1') === '1';
+          button.disabled = true;
+          fetch('/api/wa/message-pin', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, message_id: messageId, pin: pin ? 1 : 0 })
+          }).then(function (response) {
+            return response.json().then(function (data) {
+              if (!response.ok || !data.ok) throw new Error(data.error || '置顶失败');
+              return data;
+            });
+          }).then(function () {
+            refreshInboxFromPoll();
+          }).catch(function (error) {
+            button.disabled = false;
+            window.alert(error.message || '置顶失败，请稍后重试');
+          });
+        }
+
+        function jumpToPinnedMessage(item) {
+          var target = document.getElementById('wa-msg-' + String(item.dataset.pinTarget || ''));
+          var box = document.getElementById('waMsgs');
+          if (!target || !box) {
+            window.alert('这条置顶消息不在当前加载的消息里，可先翻到它再取消置顶');
+            return;
+          }
+          var boxRect = box.getBoundingClientRect();
+          var targetRect = target.getBoundingClientRect();
+          box.scrollTop += (targetRect.top - boxRect.top) - Math.max(12, (box.clientHeight - targetRect.height) / 2);
+          target.classList.remove('wa-message-jump-flash');
+          void target.offsetWidth;
+          target.classList.add('wa-message-jump-flash');
+          window.setTimeout(function () { target.classList.remove('wa-message-jump-flash'); }, 1800);
         }
 
         function saveDraft() {
@@ -2361,6 +2520,18 @@ function sessionPage(ctx) {
             applyQuote(quoteButton);
             return;
           }
+          var pinButton = e.target.closest ? e.target.closest('.wa-pin-btn') : null;
+          if (pinButton && inbox.contains(pinButton)) {
+            e.preventDefault();
+            pinMessage(pinButton);
+            return;
+          }
+          var pinnedJump = e.target.closest ? e.target.closest('[data-pin-target]') : null;
+          if (pinnedJump && inbox.contains(pinnedJump)) {
+            e.preventDefault();
+            jumpToPinnedMessage(pinnedJump);
+            return;
+          }
           var quoteCancel = e.target.closest ? e.target.closest('#waQuoteCancel') : null;
           if (quoteCancel && inbox.contains(quoteCancel)) {
             e.preventDefault();
@@ -2397,4 +2568,4 @@ function sessionPage(ctx) {
   return page({ title: 'WhatsApp 会话', active: 'wa', user: ctx.user, content, flash: ctx.flash() });
 }
 
-module.exports = { sessionPage, customerVerificationResultHtml, accountCard, autoReplyBar, waSettingsCards, classifyWaChat, categoryOf, WA_CATEGORY };
+module.exports = { sessionPage, siteLinkPage, customerVerificationResultHtml, accountCard, autoReplyBar, waSettingsCards, classifyWaChat, categoryOf, WA_CATEGORY };

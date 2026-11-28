@@ -254,6 +254,8 @@ textarea.form-control { min-height: auto; }
 .form-check-input { border-color: #c9ccd2; }
 .form-check-input:checked { border-color: var(--neo-ink); background-color: var(--neo-ink); }
 .form-check-input:focus { border-color: var(--neo-ink); box-shadow: 0 0 0 3px rgba(18,19,22,.08); }
+.form-check-input.wa-site-link-selection:checked { border-color: #dc2626; background-color: #dc2626; }
+.form-check-input.wa-site-link-selection:focus-visible { outline: 2px solid #f87171; outline-offset: 2px; }
 .form-switch .form-check-input { width: 2.25em; }
 .search-filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; padding: 10px; border: 1px solid var(--neo-line); border-radius: 12px; background: var(--neo-surface-2); }
 
@@ -782,6 +784,7 @@ a:hover{color:var(--neo-coral);}
 .wa-main-tab-panel[data-wa-main-panel="chat"] .wa-compose .d-flex.align-items-end>button{flex:0 0 auto;white-space:nowrap;}
 .wa-main-tab-panel[data-wa-main-panel="chat"]>details{flex:0 0 auto;}
 .wa-records-panel{gap:0;}
+.wa-order-actions{display:flex;flex-wrap:wrap;gap:10px;padding:4px 2px 12px;}
 .wa-workbench-record,.wa-order-row,.wa-file-tile{padding:11px 12px;border-bottom:1px solid #332942;background:transparent;color:#e7dfef;}
 .wa-workbench-record:last-child,.wa-order-row:last-child,.wa-file-tile:last-child{border-bottom:0;}
 .wa-workbench-record-meta{display:flex;align-items:center;gap:7px;color:#aa9bb9;font-size:12px;}
@@ -1345,6 +1348,21 @@ a:hover { color: #c18bff; }
 .wa-note-strip.has-note, .wa-note-editor { background: #30291d; }
 .wa-note-label, .wa-note-content > i, .wa-note-edit { color: #f0cd80; }
 .wa-note-text { color: #f2e9d7; }
+/* 单条消息置顶条（2026-11-28） */
+.wa-pinned-strip { padding: 6px 14px; border-bottom: 1px solid #332942; background: #1b2233; }
+.wa-pinned-head { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; letter-spacing: .05em; color: #9db8e0; }
+.wa-pinned-count { background: #3d5c8a; color: #fff; border-radius: 9px; padding: 0 6px; font-size: 11px; font-weight: 600; }
+.wa-pinned-toggle { color: #9db8e0; margin-left: auto; text-decoration: none; }
+.wa-pinned-toggle i { transition: transform .15s ease; }
+.wa-pinned-toggle[aria-expanded="false"] i { transform: rotate(180deg); }
+.wa-pinned-item { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; border-top: 1px dashed rgba(157, 184, 224, .18); }
+.wa-pinned-who { flex: 0 0 auto; color: #9db8e0; font-size: 13px; font-weight: 600; }
+.wa-pinned-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #e6ecf7; cursor: pointer; }
+.wa-pinned-text:hover { text-decoration: underline; }
+.wa-pinned-time { flex: 0 0 auto; font-size: 12px; color: #b9aec8; }
+.wa-pinned-off { flex: 0 0 auto; border: 0; background: none; padding: 0 2px; line-height: 1; color: #b9aec8; }
+.wa-pinned-off:hover { color: #ff9aa8; }
+.wa-pin-btn.is-pinned { color: #9db8e0 !important; font-weight: 600; }
 .wa-messages, #waChatPanel.wa-category-new .wa-messages, #waChatPanel.wa-category-following .wa-messages,
 #waChatPanel.wa-category-won .wa-messages, #waChatPanel.wa-category-lost .wa-messages { background: #100c18; }
 .wa-message-mine { border-color: #944ad4; background: #692bb0; color: #fff; }
