@@ -97,7 +97,9 @@ function chatInsightsSql(whereSql, limit) {
       GROUP BY customer_id
     ) d ON d.customer_id=c.customer_id
     WHERE ${whereSql}
-    ORDER BY c.last_msg_at DESC, c.id DESC LIMIT ${safeLimit}`;
+    ORDER BY CASE WHEN COALESCE(c.pinned_at,'')<>'' THEN 0 ELSE 1 END,
+      CASE WHEN COALESCE(c.pinned_at,'')<>'' THEN c.pinned_at END DESC,
+      c.last_msg_at DESC, c.id DESC LIMIT ${safeLimit}`;
 }
 
 function loadChatInsights(userId, whereSql, whereArgs, limit, offset = 0) {
@@ -340,7 +342,16 @@ function chatListHtml(chats, activeId, hrefFor, backUrl, filter) {
   const pinnedHtml = filter === 'pinned'
     ? `<div class="wa-pin-group-label"><i class="bi bi-pin-angle-fill"></i><span>置顶会话</span><b>${chats.length}</b></div>`
     : '';
-  return pinnedHtml + chats.map(renderChat).join('');
+  if (pinnedHtml) return pinnedHtml + chats.map(renderChat).join('');
+  // 其他筛选下：置顶会话固定排在最前（单独分组），其余仍按最新消息时间排序。
+  const pinnedChats = chats.filter(isPinned);
+  const restChats = chats.filter(c => !isPinned(c));
+  if (!pinnedChats.length) return restChats.map(renderChat).join('');
+  const restHtml = restChats.length
+    ? `<div class="wa-pin-group-label wa-pin-group-rest"><i class="bi bi-chat-dots"></i><span>其他会话</span><b>${restChats.length}</b></div>` + restChats.map(renderChat).join('')
+    : '';
+  return `<div class="wa-pin-group-label"><i class="bi bi-pin-angle-fill"></i><span>置顶会话</span><b>${pinnedChats.length}</b></div>`
+    + pinnedChats.map(renderChat).join('') + restHtml;
 }
 
 function parseQuotedPreview(value) {
