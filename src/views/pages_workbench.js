@@ -6,6 +6,7 @@ const { getSetting, all } = require('../db');
 
 const SKILLS = [
   { key: 'dev', icon: 'bi-globe2', title: '开发客户', sub: '发现全球商业机会', href: '/workbench/map' },
+  { key: 'background', icon: 'bi-person-badge', title: '获客工作台', sub: '地图找客、AI 整理、开发信、WhatsApp', href: '/leadgen', blank: true },
   { key: 'compose', icon: 'bi-envelope', title: '写开发信', sub: '让每一次触达更有效', href: '/workbench/compose' },
   { key: 'quote', icon: 'bi-currency-exchange', title: '报价谈判', sub: '专业报价，从容成交', href: '/workbench?skill=quote' },
   { key: 'marketing', icon: 'bi-megaphone', title: '营销推广', sub: '多渠道连接全球客户', href: '/workbench?skill=marketing' },
@@ -129,6 +130,7 @@ function mapPage(ctx) {
   <div class="wb-wrap">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div><h4 style="margin:0;font-weight:800;color:#f1f1f8">客户国家分布</h4><div class="text-muted" style="font-size:14px">按国家聚合显示客户 ${points.reduce((a,p)=>a+p.customers.length,0)} 家、线索 ${points.reduce((a,p)=>a+p.leads.length,0)} 条 · 点击国家查看名单</div></div>
+      <a class="btn btn-sm btn-outline-secondary" href="/leadgen" target="_blank" rel="noopener"><i class="bi bi-funnel"></i> 去获客工作台</a>
     </div>
     <div class="wb-map-wrap">
       <div class="wb-map-side">

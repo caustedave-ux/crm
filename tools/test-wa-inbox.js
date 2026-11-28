@@ -441,7 +441,8 @@ const sortQuoteId = Number(run('INSERT INTO quote_history(user_id,customer_id,qu
 const sortOrderId = Number(run('INSERT INTO documents(user_id,customer_id,doc_no,doc_type,issue_date) VALUES(?,?,?,?,?)',
   user.id, 9998, 'WA-SORT-ORDER', 'so', '2025-01-01').lastInsertRowid);
 const mixedOrders = renderHistory({ chat: String(chat.id) });
-eq(mixedOrders.includes('/documents/new?type=so&amp;customer_id=9998'), false, '有记录时继续显示原订单报价列表');
+eq(mixedOrders.includes('/documents/new?type=so&amp;customer_id=9998') && mixedOrders.includes('/quotes/new?customer_id=9998'),
+  true, '有订单或报价时仍然显示新建订单/新建报价入口');
 const sortedOrderPos = mixedOrders.indexOf('class="wa-order-row" href="/documents/' + sortOrderId + '"');
 const sortedQuotePos = mixedOrders.indexOf('class="wa-order-row" href="/quotes/' + sortQuoteId + '/edit"');
 eq(sortedOrderPos >= 0 && sortedQuotePos > sortedOrderPos, true, '订单与报价按日期混排');
