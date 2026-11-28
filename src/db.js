@@ -1006,15 +1006,19 @@ ensureColumn('wa_messages', 'pinned_at', "TEXT DEFAULT ''");
     for (const sp of syncProducts) syncProductToSupplier(sp.id);
   } catch (e) { console.error('产品供应商同步失败：', e.message); }
 
-  // 单据明细图片放大为原先 3 倍（44px -> 132px）：已保存单据快照同步升级
+  // 单据明细图片：老快照里 3 倍放大用了 cover（图片被裁切），改成 contain 保留整张图
   try {
     const IMG_OLD = 'width:44px;height:44px;object-fit:cover;';
     const IMG_NEW = 'width:132px;height:132px;object-fit:cover;';
+    const IMG_FIT = 'max-width:132px;max-height:132px;width:auto;height:auto;object-fit:contain;background:#fff;';
     const imgDocs = all('SELECT id, content_html FROM documents');
     for (const imd of imgDocs) {
-      if (imd.content_html && imd.content_html.indexOf(IMG_OLD) >= 0) {
-        run('UPDATE documents SET content_html=? WHERE id=?', imd.content_html.split(IMG_OLD).join(IMG_NEW), imd.id);
-      }
+      const html = String(imd.content_html || '');
+      if (!html) continue;
+      let next = html;
+      if (next.indexOf(IMG_OLD) >= 0) next = next.split(IMG_OLD).join(IMG_NEW);
+      if (next.indexOf(IMG_NEW) >= 0) next = next.split(IMG_NEW).join(IMG_FIT);
+      if (next !== html) run('UPDATE documents SET content_html=? WHERE id=?', next, imd.id);
     }
   } catch (e) {}
 

@@ -193,7 +193,7 @@ function buildDocContext(opts) {
     const nameHtml = esc(it.name) + (it.name_en ? ' <span style="color:#555;font-size:11px;">' + esc(it.name_en) + '</span>' : '');
     const img = String(it.image || '').trim();
     const imageHtml = img
-      ? '<img src="' + esc(img) + '" style="width:132px;height:132px;object-fit:cover;border:1px solid #e5e7eb;border-radius:6px;margin-right:8px;float:left;" alt="">'
+      ? '<img src="' + esc(img) + '" style="max-width:132px;max-height:132px;width:auto;height:auto;object-fit:contain;background:#fff;border:1px solid #e5e7eb;border-radius:6px;margin-right:8px;float:left;" alt="">'
       : '';
     return {
       seq: i + 1,
